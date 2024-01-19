@@ -1,7 +1,7 @@
 <!-- badges: start -->
-![GitHub](https://img.shields.io/github/license//flea-extent)
-![GitHub Workflow Status](https://img.shields.io/github/workflow/status//flea-extent/check-project)
-![GitHub repo size](https://img.shields.io/github/repo-size//flea-extent)
+![GitHub](https://img.shields.io/github/license/inbo/flea-extent)
+![GitHub Workflow Status](https://img.shields.io/github/workflow/status/inbo/flea-extent/check-project)
+![GitHub repo size](https://img.shields.io/github/repo-size/inbo/flea-extent)
 <!-- badges: end -->
 
 # Flanders Ecosystem Accounting
