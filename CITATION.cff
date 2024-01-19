@@ -26,5 +26,6 @@ doi: ~
 license: CC-BY-4.0
 repository-code: https://github.com/inbo/flea-extent/
 type: software
-abstract: "Replace this with a short description of the project.\nIt becomes the abstract
-  of the project in the citation information.\nAnd the project description at https://zenodo.org"
+abstract: "This repository holds source code for accuracy assessment and validation
+  of land\nuse maps which are used to derive indicators for ecosystem extent accounts
+  for\nFlanders."

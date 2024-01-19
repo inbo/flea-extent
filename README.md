@@ -22,9 +22,9 @@ Research Institute for Nature and Forest (INBO)[^cph][^fnd]
 <!-- community: inbo -->
 
 <!-- description: start -->
-Replace this with a short description of the project.
-It becomes the abstract of the project in the citation information.
-And the project description at https://zenodo.org
+This repository holds source code for accuracy assessment and validation of land
+use maps which are used to derive indicators for ecosystem extent accounts for
+Flanders.
 <!-- description: end -->
 
-Anything below here is visible in the README but not in the citation.
+

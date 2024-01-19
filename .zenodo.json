@@ -1,7 +1,7 @@
 {
   "access_right": "open",
   "title": "Flanders Ecosystem Accounting",
-  "description": "<p>Replace this with a short description of the project. It becomes the\nabstract of the project in the citation information. And the project\ndescription at https://zenodo.org<\/p>",
+  "description": "<p>This repository holds source code for accuracy assessment and\nvalidation of land use maps which are used to derive indicators for\necosystem extent accounts for Flanders.<\/p>",
   "keywords": [
     "natural capital accounting",
     "ecosystem extent"
