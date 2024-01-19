@@ -1,0 +1,31 @@
+cff-version: 1.2.0
+message: If you use this software, please cite it using these metadata.
+title: "Flanders Ecosystem Accounting"
+authors:
+- given-names: Hans
+  family-names: Van Calster
+  affiliation: Research Institute for Nature and Forest (INBO)
+  orcid: 0000-0001-8595-8426
+- given-names: Maarten
+  family-names: Stevens
+  affiliation: Research Institute for Nature and Forest (INBO)
+  orcid: 0000-0003-2251-2878
+- given-names: Wouter
+  family-names: Van Reeth
+  affiliation: Research Institute for Nature and Forest (INBO)
+  orcid: 0000-0002-9117-3198
+keywords:
+- natural capital accounting
+- ecosystem extent
+contact:
+- given-names: Hans
+  family-names: Van Calster
+  affiliation: Research Institute for Nature and Forest (INBO)
+  orcid: 0000-0001-8595-8426
+doi: ~
+license: CC-BY-4.0
+repository-code: https://github.com/inbo/flea-extent/
+type: software
+abstract: "This repository holds source code for accuracy assessment and validation
+  of land\nuse maps which are used to derive indicators for ecosystem extent accounts
+  for\nFlanders."
