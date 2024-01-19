@@ -1,6 +1,6 @@
 <!-- badges: start -->
 ![GitHub](https://img.shields.io/github/license/inbo/flea-extent)
-![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/inbo/flea-extent/check-project.yml?branch=main)
+![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/inbo/flea-extent/check_project.yml?branch=main)
 ![GitHub repo size](https://img.shields.io/github/repo-size/inbo/flea-extent)
 <!-- badges: end -->
 
