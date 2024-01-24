@@ -333,7 +333,7 @@ lgarea_change <- lgarea %>%
   summarise(count = sum(count), area = sum(area))
 ```
 
-## Originele landgebruiksklassen ----
+## Originele landgebruiksklassen
 
 
 ```{r}
@@ -395,18 +395,7 @@ ma_lu <- as.data.frame.matrix(confus_lu$table)
 
 Methode Olofsson et al., 2014 - Code uit het FAO tool
 
-```{r validatie, results='hide'}
-
-# Hulpvariabelen
-maparea_val <- lgarea %>% # Analyse validatieklassen
-  dplyr::pull(2)
-maparea_change <- lgarea_change %>% # Analyse change - no change
-  dplyr::pull(2)
-maparea_lu <- lgarea_lu %>% # Analyse originele lu-klassen
-  dplyr::pull(2)
-
-pixelsize <- 0.01 # the size of each pixel in ha (10mx10m = 0,01 ha)
-
+```{r validation-function}
 ### Function to estimate accuracies
 validation <- function(ma, maparea) {
   dyn <- rownames(ma)
@@ -482,6 +471,21 @@ validation <- function(ma, maparea) {
   ov$ci_oa <- c(round(1.96 * sqrt(v_oa), 3), rep(NA, times = length(dyn) - 1))
   ov
 }
+
+```
+
+
+```{r validatie, results='hide'}
+# Hulpvariabelen
+maparea_val <- lgarea %>% # Analyse validatieklassen
+  dplyr::pull(2)
+maparea_change <- lgarea_change %>% # Analyse change - no change
+  dplyr::pull(2)
+maparea_lu <- lgarea_lu %>% # Analyse originele lu-klassen
+  dplyr::pull(2)
+
+pixelsize <- 0.01 # the size of each pixel in ha (10mx10m = 0,01 ha)
+
 
 ov_val <- validation(ma = ma_val, maparea = maparea_val)
 ov_change <- validation(ma = ma_change, maparea = maparea_change)
@@ -822,7 +826,7 @@ bar_lu <- ggplot(
     axis.line.y = element_line(color = "black"),
     panel.background = element_rect(
       fill = "white", colour = "white",
-      size = 0.5, linetype = "solid"
+      linewidth = 0.5, linetype = "solid"
     ),
     panel.grid.major.y = element_line(colour = "grey", linetype = "dotted"),
     legend.key.size = unit(0.3, "cm"),
