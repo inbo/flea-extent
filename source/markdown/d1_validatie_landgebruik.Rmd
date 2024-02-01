@@ -166,7 +166,6 @@ points <- punten %>%
   # de LG-kaart
   ungroup()
 
-#saveRDS(points, file = "points.rds")
 
 points_id <- points %>%
   # puntenset met 1 waarde per objectid
@@ -269,7 +268,8 @@ points_lu <- as.data.frame(points_id_orig) %>%
   dplyr::select(objectid, changeclass, changeclassref)
 
 points_lu <- points_lu %>%
-  dplyr::filter(!str_detect(changeclass, "W"), !str_detect(changeclassref, "W")) %>%
+  dplyr::filter(!str_detect(changeclass, "W"), !str_detect(changeclassref, "W")
+  ) %>%
   # alles met water in weglaten
   droplevels()
 
@@ -636,7 +636,7 @@ plot_val <- ov_val %>%
 options(scipen = 999)
 
 bar <- ggplot(
-  plot_val %>% 
+  plot_val %>%
     dplyr::filter(!class %in% c("A_A", "HG_HG", "O_O", "ON_ON", "U_U")),
   aes(x = classfull, y = adj_area, text = paste(
     "PA:", paperc, " - UA:", uaperc,
@@ -790,7 +790,7 @@ plot_lu <- ov_lu %>%
 theme_set(theme_inbo())
 
 bar_lu <- ggplot(
-  plot_lu %>% 
+  plot_lu %>%
     dplyr::filter(!class %in% c(
     "A_A", "B_B", "G_G", "HG_HG", "LG_LG",
     "O_O", "ON_ON", "U_U"
