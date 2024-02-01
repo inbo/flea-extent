@@ -1,0 +1,16 @@
+..generic:
+  git2rdata: 0.4.0
+  optimize: no
+  NA string: NA
+  hash: 743a04c423d07d29e68d9e0de930c6fdee420d0e
+  data_hash: 82567f26713f073a9c116a9ccf30432e46245111
+OBJECTID..:
+  class: integer
+Value:
+  class: integer
+Count:
+  class: integer
+LG2013_ChangeCla:
+  class: integer
+LG2016_ChangeCla:
+  class: integer

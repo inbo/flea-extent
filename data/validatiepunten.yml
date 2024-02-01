@@ -1,0 +1,635 @@
+..generic:
+  git2rdata: 0.4.0
+  optimize: no
+  NA string: NA
+  hash: 0bd060869c2a90ff80deabd87f1aa7605e25a717
+  data_hash: f4ffa15cd7e1439fc19d2cfac7ba07d9a3fc3164
+objectid:
+  class: integer
+type:
+  class: factor
+  labels:
+  - change
+  - nochange
+  index:
+  - 1
+  - 2
+  ordered: no
+X2013:
+  class: factor
+  labels:
+  - <Null>
+  - Akker
+  - Bos
+  - Grasland
+  - Hoog groen
+  - Laag groen
+  - Open natuur
+  - Overig
+  - Urbaan
+  - Water
+  index:
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 7
+  - 8
+  - 9
+  - 10
+  ordered: no
+X2016:
+  class: factor
+  labels:
+  - <Null>
+  - Akker
+  - Bos
+  - Grasland
+  - Hoog groen
+  - Laag groen
+  - Open natuur
+  - Overig
+  - Urbaan
+  - Water
+  index:
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 7
+  - 8
+  - 9
+  - 10
+  ordered: no
+change:
+  class: factor
+  labels:
+  - <Null>
+  - Ja
+  - Nee
+  index:
+  - 1
+  - 2
+  - 3
+  ordered: no
+X2013.1:
+  class: factor
+  labels:
+  - <Null>
+  - Akker
+  - Bos
+  - Grasland
+  - Hoog groen
+  - Laag groen
+  - Open natuur
+  - Overig
+  - Urbaan
+  - Water
+  index:
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 7
+  - 8
+  - 9
+  - 10
+  ordered: no
+X2016.1:
+  class: factor
+  labels:
+  - <Null>
+  - Akker
+  - Bos
+  - Grasland
+  - Hoog groen
+  - Laag groen
+  - Open natuur
+  - Overig
+  - Urbaan
+  - Water
+  index:
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 7
+  - 8
+  - 9
+  - 10
+  ordered: no
+change.1:
+  class: factor
+  labels:
+  - <Null>
+  - Ja
+  - Nee
+  index:
+  - 1
+  - 2
+  - 3
+  ordered: no
+X2013.2:
+  class: factor
+  labels:
+  - <Null>
+  - Akker
+  - Bos
+  - Grasland
+  - Hoog groen
+  - Laag groen
+  - Open natuur
+  - Overig
+  - Urbaan
+  - Water
+  index:
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 7
+  - 8
+  - 9
+  - 10
+  ordered: no
+X2016.2:
+  class: factor
+  labels:
+  - <Null>
+  - Akker
+  - Bos
+  - Grasland
+  - Hoog groen
+  - Laag groen
+  - Open natuur
+  - Overig
+  - Urbaan
+  - Water
+  index:
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 7
+  - 8
+  - 9
+  - 10
+  ordered: no
+change.2:
+  class: factor
+  labels:
+  - <Null>
+  - Ja
+  - Nee
+  index:
+  - 1
+  - 2
+  - 3
+  ordered: no
+X2013.3:
+  class: factor
+  labels:
+  - <Null>
+  - Akker
+  - Bos
+  - Grasland
+  - Hoog groen
+  - Laag groen
+  - Open natuur
+  - Overig
+  - Urbaan
+  - Water
+  index:
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 7
+  - 8
+  - 9
+  - 10
+  ordered: no
+X2016.3:
+  class: factor
+  labels:
+  - <Null>
+  - Akker
+  - Bos
+  - Grasland
+  - Hoog groen
+  - Laag groen
+  - Open natuur
+  - Overig
+  - Urbaan
+  - Water
+  index:
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 7
+  - 8
+  - 9
+  - 10
+  ordered: no
+change.3:
+  class: factor
+  labels:
+  - <Null>
+  - Ja
+  - Nee
+  index:
+  - 1
+  - 2
+  - 3
+  ordered: no
+X2013.4:
+  class: factor
+  labels:
+  - <Null>
+  - Akker
+  - Bos
+  - Grasland
+  - Hoog groen
+  - Laag groen
+  - Open natuur
+  - Overig
+  - Urbaan
+  - Water
+  index:
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 7
+  - 8
+  - 9
+  - 10
+  ordered: no
+X2016.4:
+  class: factor
+  labels:
+  - <Null>
+  - Akker
+  - Bos
+  - Grasland
+  - Hoog groen
+  - Laag groen
+  - Open natuur
+  - Overig
+  - Urbaan
+  - Water
+  index:
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 7
+  - 8
+  - 9
+  - 10
+  ordered: no
+change.4:
+  class: factor
+  labels:
+  - <Null>
+  - Ja
+  - Nee
+  index:
+  - 1
+  - 2
+  - 3
+  ordered: no
+X2013.5:
+  class: factor
+  labels:
+  - <Null>
+  - Akker
+  - Bos
+  - Grasland
+  - Hoog groen
+  - Laag groen
+  - Open natuur
+  - Overig
+  - Urbaan
+  - Water
+  index:
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 7
+  - 8
+  - 9
+  - 10
+  ordered: no
+X2016.5:
+  class: factor
+  labels:
+  - <Null>
+  - Akker
+  - Bos
+  - Grasland
+  - Hoog groen
+  - Laag groen
+  - Open natuur
+  - Overig
+  - Urbaan
+  - Water
+  index:
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 7
+  - 8
+  - 9
+  - 10
+  ordered: no
+change.5:
+  class: factor
+  labels:
+  - <Null>
+  - Ja
+  - Nee
+  index:
+  - 1
+  - 2
+  - 3
+  ordered: no
+X2013.6:
+  class: factor
+  labels:
+  - <Null>
+  - Akker
+  - Bos
+  - Grasland
+  - Hoog groen
+  - Laag groen
+  - Open natuur
+  - Overig
+  - Urbaan
+  - Water
+  index:
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 7
+  - 8
+  - 9
+  - 10
+  ordered: no
+X2016.6:
+  class: factor
+  labels:
+  - <Null>
+  - Akker
+  - Bos
+  - Grasland
+  - Hoog groen
+  - Laag groen
+  - Open natuur
+  - Overig
+  - Urbaan
+  - Water
+  index:
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 7
+  - 8
+  - 9
+  - 10
+  ordered: no
+change.6:
+  class: factor
+  labels:
+  - <Null>
+  - Ja
+  - Nee
+  index:
+  - 1
+  - 2
+  - 3
+  ordered: no
+X2013.7:
+  class: factor
+  labels:
+  - <Null>
+  - Akker
+  - Bos
+  - Grasland
+  - Hoog groen
+  - Laag groen
+  - Open natuur
+  - Overig
+  - Urbaan
+  - Water
+  index:
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 7
+  - 8
+  - 9
+  - 10
+  ordered: no
+X2016.7:
+  class: factor
+  labels:
+  - <Null>
+  - Akker
+  - Bos
+  - Grasland
+  - Hoog groen
+  - Laag groen
+  - Open natuur
+  - Overig
+  - Urbaan
+  - Water
+  index:
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 7
+  - 8
+  - 9
+  - 10
+  ordered: no
+change.7:
+  class: factor
+  labels:
+  - <Null>
+  - Ja
+  - Nee
+  index:
+  - 1
+  - 2
+  - 3
+  ordered: no
+X2013.8:
+  class: factor
+  labels:
+  - <Null>
+  - Akker
+  - Bos
+  - Grasland
+  - Hoog groen
+  - Laag groen
+  - Open natuur
+  - Overig
+  - Urbaan
+  - Water
+  index:
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 7
+  - 8
+  - 9
+  - 10
+  ordered: no
+X2016.8:
+  class: factor
+  labels:
+  - <Null>
+  - Akker
+  - Bos
+  - Grasland
+  - Hoog groen
+  - Laag groen
+  - Open natuur
+  - Overig
+  - Urbaan
+  - Water
+  index:
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 7
+  - 8
+  - 9
+  - 10
+  ordered: no
+change.8:
+  class: factor
+  labels:
+  - <Null>
+  - Ja
+  - Nee
+  index:
+  - 1
+  - 2
+  - 3
+  ordered: no
+X2013.9:
+  class: factor
+  labels:
+  - <Null>
+  - Akker
+  - Bos
+  - Grasland
+  - Hoog groen
+  - Laag groen
+  - Open natuur
+  - Overig
+  - Urbaan
+  - Water
+  index:
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 7
+  - 8
+  - 9
+  - 10
+  ordered: no
+X2016.9:
+  class: factor
+  labels:
+  - <Null>
+  - Akker
+  - Bos
+  - Grasland
+  - Hoog groen
+  - Laag groen
+  - Open natuur
+  - Overig
+  - Urbaan
+  - Water
+  index:
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 7
+  - 8
+  - 9
+  - 10
+  ordered: no
+change.9:
+  class: factor
+  labels:
+  - <Null>
+  - Ja
+  - Nee
+  index:
+  - 1
+  - 2
+  - 3
+  ordered: no
+POINT_X:
+  class: integer
+POINT_Y:
+  class: numeric
+change2013:
+  class: integer
+change2016:
+  class: integer

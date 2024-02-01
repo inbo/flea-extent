@@ -22,3 +22,6 @@ spelling:
   ignore:
   - .github
   - LICENSE.md
+  - source/checklist.R
+  other:
+    nl-BE: source/markdown/d1_validatie_landgebruik.Rmd

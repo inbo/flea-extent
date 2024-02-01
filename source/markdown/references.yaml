@@ -1,0 +1,32 @@
+---
+references:
+- id: olofsson2014
+  accessed: 2017-11-29
+  author:
+  - family: Olofsson
+    given: Pontus
+  - family: Foody
+    given: Giles M.
+  - family: Herold
+    given: Martin
+  - family: Stehman
+    given: Stephen V.
+  - family: Woodcock
+    given: Curtis E.
+  - family: Wulder
+    given: Michael A.
+  container-title: Remote Sensing of Environment
+  DOI: 10.1016/j.rse.2014.02.015
+  ISSN: 00344257
+  issued: 2014-05-25
+  key: 2LLRBWYL
+  libraryID: 1
+  page: 42-57
+  providerKey: 2509FBBE-5BB0-44C4-B119-6083A81ED673
+  Publisher: Elsevier
+  title: Good practices for estimating area and assessing accuracy of
+    land change
+  type: article-journal
+  URL: "https://www.sciencedirect.com/science/article/pii/S0034425714000704?via%3Dihub"
+  volume: 148
+...

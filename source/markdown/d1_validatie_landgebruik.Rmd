@@ -1,0 +1,845 @@
+---
+title: "Landgebruiksverandering - Validatie"
+date: 2020-07-01T10:00:00
+hoofdstuk: 4
+thema:
+  - Natuur & maatschappij
+keywords:
+  - landgebruiksveranderingen
+  - landgebruikskaart
+  - validatie
+  - onzekerheid
+lang: nl
+tab: indicator
+verantwoordelijke:
+- Maarten Stevens <maarten.stevens@inbo.be>
+output: html_document
+editor_options: 
+  markdown: 
+    wrap: sentence
+bibliography: references.yaml
+---
+
+```{r setup, include=FALSE}
+
+library(knitr)
+opts_chunk$set(
+  message = FALSE,
+  warning = FALSE,
+  echo = FALSE
+)
+library(caret) # Confusion matrix maken
+library(tidyverse)
+library(git2rdata)
+library(plotly)
+library(INBOtheme)
+library(htmlwidgets)
+library(here)
+
+theme_set(theme_inbo()) # het nara-kleurenpallet selecteren
+switch_colour(inbo_hoofd) # het INBO-kleurenpallet activeren
+
+set.seed(20200520)
+setWidgetIdSeed(20200520)
+options(htmlwidgets.TOJSON_ARGS = list(pretty = TRUE))
+```
+
+```{r data_inlezen}
+punten <- read_vc(
+  file = "validatiepunten",
+  root = here("data")
+) # Gevalideerde punten
+combine <- read_vc(
+  file = "combine",
+  root = here("data")
+) # Combine van de validatieklassenkaart van 2013
+# en 2016 -> geeft de oppervlakte van de landgebruiksveranderingen en
+# van de stabiele klassen
+
+# Omzettingstabel landgebruiken
+lu <- c(
+  "Open natuur", "Bos", "Grasland", "Akker", "Urbaan", "Laag groen",
+  "Hoog groen", "Water", "Overig"
+)
+lucode <- c(1, 2, 3, 4, 5, 6, 7, 8, 9)
+valid <- c(
+  "Open natuur", "Hoog groen", "Open natuur", "Akker", "Urbaan",
+  "Open natuur", "Hoog groen", "Water", "Overig"
+)
+validcode <- c(1, 2, 1, 4, 5, 1, 2, 8, 9)
+tbltrans <- data.frame(lu, lucode, valid, validcode) %>%
+  mutate(valid = as.character(valid))
+```
+
+# Opmaak dataset
+
+De dataset met validatiepunten bevat informatie over de verandering van een cel (0/1) en de aard van de verandering (klasse A gaat naar klasse B).
+Voor de validatie werden achteraf een aantal moeilijk te onderscheiden klassen samengenomen.
+De analyse kan dus op 3 niveaus uitgevoerd worden:
+
+(1) verandering - geen verandering,
+(2) originele landgebruiksklassen en
+(3) de geaggregeerde klassen. In het onderstaande script worden deze drie validatiesets apart aangemaakt.
+
+## Puntenset
+
+```{r data_bewerken, results='hide'}
+
+points <- punten %>%
+  as_tibble() %>%
+  mutate(
+    across(where(is.factor), ~as.character(.)),
+    across(where(is.character), ~na_if(., "<Null>"))) %>%
+  # Alle <Null> omzetten in NA
+  gather(key = klasse, value = oordeel, X2013:change.9) %>%
+  # Van breed formaat naar lang formaat
+  separate(col = klasse, into = c("klasse", "eval"), sep = "\\.") %>%
+  replace_na(list(eval = "0")) %>%
+  # Voeg evaluator toe
+  drop_na() %>%
+  # Alle NA laten vallen
+  rename(
+    x = POINT_X, y = POINT_Y, lu2013 = change2013, lu2016 = change2016,
+    verandering = type
+  ) %>%
+  mutate(oordeel = recode(oordeel, "Nee" = "nochange", "Ja" = "change")) %>%
+  mutate(klasse = gsub("\\..*", "", klasse)) %>%
+  # Alles na "." weglaten -> \\.. definieert . en * betekent "alles na"
+  mutate(klasse = recode(klasse,
+    X2013 = "lu2013", X2016 = "lu2016",
+    change = "verandering"
+  )) %>%
+  mutate(lu2013 = recode(lu2013,
+    "1" = "Open natuur", "2" = "Bos", "3" = "Grasland", "4" = "Akker",
+    "5" = "Urbaan",
+    "6" = "Laag groen", "7" = "Hoog groen", "8" = "Water", "9" = "Overig"
+  )) %>%
+  # codes naar tekst
+  mutate(lu2016 = recode(lu2016,
+    "1" = "Open natuur", "2" = "Bos", "3" = "Grasland", "4" = "Akker",
+    "5" = "Urbaan",
+    "6" = "Laag groen", "7" = "Hoog groen", "8" = "Water", "9" = "Overig"
+  )) %>%
+  # codes naar tekst
+  rowwise() %>%
+  mutate(lu_c = ifelse(klasse == "lu2013" & lu2013 == oordeel,
+    1, ifelse(klasse == "lu2016" & lu2016 == oordeel,
+      1, 0
+    )
+  )) %>%
+  # Check of de gevalideerde landgebruiken overeenkomen met de LG van de kaart
+  mutate(change_c = ifelse(verandering == oordeel,
+    1, 0
+  )) %>%
+  # Check of de beoordeling "change/nochange" overeenkomt met die van de
+  # LG-kaart
+  ungroup() %>%
+  group_by(objectid) %>%
+  mutate(n = n() / 3) %>%
+  ungroup() %>%
+  dplyr::filter(n >= 1) %>%
+  # alleen punten die gevalideerd zijn
+  arrange(objectid) %>%
+  left_join(dplyr::select(tbltrans, valid, lu), by = c("lu2013" = "lu")) %>%
+  rename(luval13 = valid) %>%
+  # validatieklassen toevoegen (= aggregatie van oorspronkelijke lu-klassen)
+  left_join(dplyr::select(tbltrans, valid, lu), by = c("lu2016" = "lu")) %>%
+  rename(luval16 = valid) %>%
+  left_join(dplyr::select(tbltrans, valid, lu), by = c("oordeel" = "lu")) %>%
+  rename(oordeelval = valid) %>%
+  group_by(objectid, eval) %>%
+  mutate(oordeelval = ifelse(is.na(oordeelval),
+    ifelse(identical(oordeelval[1], oordeelval[2]),
+      "nochange", "change"
+    ), oordeelval
+  )) %>%
+  # Aanpassen beoordeling "verandering" -> als de validatieklasse 2 x hetzelfde
+  # is per evaluator, dan "nochange"
+  rowwise() %>%
+  mutate(veranderingval = ifelse(luval13 == luval16, "nochange", "change")) %>%
+  mutate(luval_c = ifelse(klasse == "lu2013" & luval13 == oordeelval, 1,
+    ifelse(klasse == "lu2016" & luval16 == oordeelval, 1, 0)
+  )) %>%
+  # Check of de gevalideerde landgebruiken overeenkomen met de LG van de kaart
+  mutate(changeval_c = ifelse(veranderingval == oordeelval, 1, 0)) %>%
+  # Check of de beoordeling "change/nochange" overeenkomt met die van
+  # de LG-kaart
+  ungroup()
+
+
+points_id <- points %>%
+  # puntenset met 1 waarde per objectid
+  # filter(klasse != "verandering") %>%
+  spread(klasse, oordeelval) %>%
+  group_by(objectid, eval) %>%
+  summarise(
+    luval13 = first(luval13), luval16 = first(luval16),
+    verand = first(veranderingval),
+    lu13oord = first(na.omit(lu2013)), lu16oord = first(na.omit(lu2016)),
+    verandoord = first(na.omit(verandering))
+  ) %>%
+  group_by(objectid) %>%
+  sample_n(1) %>%
+  na.omit() %>%
+  mutate(codeval13 = gsub("\\b(\\pL)\\pL{2,}|.", "\\U\\1", luval13,
+    perl = TRUE
+  )) %>%
+  mutate(codeval16 = gsub("\\b(\\pL)\\pL{2,}|.", "\\U\\1", luval16,
+    perl = TRUE
+  )) %>%
+  unite(changeclass, codeval13, codeval16, sep = "_") %>%
+  mutate(codeval13 = gsub("\\b(\\pL)\\pL{2,}|.", "\\U\\1", lu13oord,
+    perl = TRUE
+  )) %>%
+  mutate(codeval16 = gsub("\\b(\\pL)\\pL{2,}|.", "\\U\\1", lu16oord,
+    perl = TRUE
+  )) %>%
+  unite(changeclassref, codeval13, codeval16, sep = "_")
+```
+
+### Punten validatieklasse
+
+```{r}
+
+points_val <- as.data.frame(points_id) %>%
+  mutate(
+    changeclass = as.factor(changeclass),
+    changeclassref = as.factor(changeclassref)
+  ) %>%
+  dplyr::select(objectid, changeclass, changeclassref)
+```
+
+Alleen de verandering ON_W werd gevalideerd.
+In 38 van de 40 gevalideerde punten verandert er niets (water blijft water), de andere 2 punten blijken ook onveranderlijk (O_O en ON_ON).
+Hieruit besluiten we dat de kaart de klasse ON_W heel slecht weergeeft en dat we niet van een significante verandering kunnen spreken.
+Voor de rest van de validatie laten we de waterklassen volledig weg.
+
+```{r}
+points_val <- points_val %>%
+  dplyr::filter(
+    !changeclass %in% c("W_W", "ON_W", "O_W"),
+    !changeclassref %in% c("W_W", "ON_W", "O_W")
+  ) %>%
+  droplevels()
+```
+
+### Punten Change - nochange <!-- spell-check: ignore -->
+
+```{r}
+points_change <- as.data.frame(points_id) %>%
+  dplyr::select(objectid, verand, verandoord)
+```
+
+### Punten originele lg-klassen
+
+```{r}
+points_id_orig <- points %>%
+  # puntenset met 1 waarde per objectid
+  # filter(klasse != "verandering") %>%
+  rename(lu2013map = lu2013, lu2016map = lu2016, verandmap = verandering) %>%
+  spread(klasse, oordeel) %>%
+  group_by(objectid, eval) %>%
+  summarise(
+    lu2013map = first(lu2013map), lu2016map = first(lu2016map),
+    verandmap = first(verandmap),
+    lu13oord = first(na.omit(lu2013)), lu16oord = first(na.omit(lu2016)),
+    verandoord = first(na.omit(verandering))
+  ) %>%
+  group_by(objectid) %>%
+  sample_n(1) %>%
+  na.omit() %>%
+  mutate(code13 = gsub("\\b(\\pL)\\pL{2,}|.", "\\U\\1", lu2013map,
+    perl = TRUE
+  )) %>%
+  mutate(code16 = gsub("\\b(\\pL)\\pL{2,}|.", "\\U\\1", lu2016map,
+    perl = TRUE
+  )) %>%
+  unite(changeclass, code13, code16, sep = "_") %>%
+  mutate(code13 = gsub("\\b(\\pL)\\pL{2,}|.", "\\U\\1", lu13oord,
+    perl = TRUE
+  )) %>%
+  mutate(code16 = gsub("\\b(\\pL)\\pL{2,}|.", "\\U\\1", lu16oord,
+    perl = TRUE
+  )) %>%
+  unite(changeclassref, code13, code16, sep = "_")
+
+points_lu <- as.data.frame(points_id_orig) %>%
+  dplyr::select(objectid, changeclass, changeclassref)
+
+points_lu <- points_lu %>%
+  dplyr::filter(!str_detect(changeclass, "W"), !str_detect(changeclassref, "W")
+  ) %>%
+  # alles met water in weglaten
+  droplevels()
+
+points_lu <- points_lu %>%
+  # er ontbreken een aantal klassen in de referentieset
+  add_row(objectid = 5001, changeclass = NA, changeclassref = "B_HG") %>%
+  add_row(objectid = 5002, changeclass = NA, changeclassref = "HG_B") %>%
+  add_row(objectid = 5003, changeclass = NA, changeclassref = "HG_ON") %>%
+  add_row(objectid = 5004, changeclass = NA, changeclassref = "O_ON") %>%
+  add_row(objectid = 5005, changeclass = NA, changeclassref = "U_B") %>%
+  add_row(objectid = 5006, changeclass = NA, changeclassref = "U_G") %>%
+  add_row(objectid = 5007, changeclass = NA, changeclassref = "U_ON")
+```
+
+# Oppervlaktes
+
+## Validatieklassen
+
+Veranderingen van de waterklassen worden niet meegenomen: klasse 8 (water)
+
+```{r}
+lgarea <- combine %>%
+  dplyr::select(LG2013_ChangeCla, LG2016_ChangeCla, Count) %>%
+  rename(
+    lu2013 = LG2013_ChangeCla, lu2016 = LG2016_ChangeCla,
+    count = Count
+  ) %>%
+  left_join(dplyr::select(tbltrans, valid, lucode),
+    by = c("lu2013" = "lucode")
+  ) %>%
+  rename(val2013 = valid) %>%
+  left_join(dplyr::select(tbltrans, valid, lucode),
+    by = c("lu2016" = "lucode")
+  ) %>%
+  rename(val2016 = valid) %>%
+  mutate(codeval13 = gsub("\\b(\\pL)\\pL{2,}|.", "\\U\\1", val2013,
+    perl = TRUE
+  )) %>%
+  mutate(codeval16 = gsub("\\b(\\pL)\\pL{2,}|.", "\\U\\1", val2016,
+    perl = TRUE
+  )) %>%
+  unite(class, codeval13, codeval16, sep = "_") %>%
+  dplyr::select(class, count) %>%
+  group_by(class) %>%
+  summarise(count = sum(count)) %>%
+  dplyr::filter(!str_detect(class, "W")) %>%
+  # alles met water in weglaten
+  droplevels() %>%
+  mutate(area = count / sum(count))
+```
+
+## Change - no change <!-- spell-check: ignore -->
+
+```{r}
+lgarea_change <- lgarea %>%
+  mutate(change = ifelse(!class %in% c("A_A", "HG_HG", "O_O", "ON_ON", "U_U"),
+    "change", "nochange"
+  )) %>%
+  group_by(change) %>%
+  summarise(count = sum(count), area = sum(area))
+```
+
+## Originele landgebruiksklassen
+
+```{r}
+lgarea_lu <- combine %>%
+  dplyr::select(LG2013_ChangeCla, LG2016_ChangeCla, Count) %>%
+  rename(
+    lu2013code = LG2013_ChangeCla, lu2016code = LG2016_ChangeCla,
+    count = Count
+  ) %>%
+  left_join(dplyr::select(tbltrans, lucode, lu),
+    by = c("lu2013code" = "lucode")
+  ) %>%
+  rename(lu2013 = lu) %>%
+  left_join(dplyr::select(tbltrans, lucode, lu),
+    by = c("lu2016code" = "lucode")
+  ) %>%
+  rename(lu2016 = lu) %>%
+  mutate(code13 = gsub("\\b(\\pL)\\pL{2,}|.", "\\U\\1", lu2013,
+    perl = TRUE
+  )) %>%
+  mutate(code16 = gsub("\\b(\\pL)\\pL{2,}|.", "\\U\\1", lu2016,
+    perl = TRUE
+  )) %>%
+  unite(class, code13, code16, sep = "_") %>%
+  dplyr::select(class, count) %>%
+  group_by(class) %>%
+  summarise(count = sum(count)) %>%
+  dplyr::filter(!str_detect(class, "W")) %>%
+  # alles met water in weglaten
+  droplevels() %>%
+  mutate(area = count / sum(count))
+```
+
+# Analyse
+
+## Confusionmatrix <!-- spell-check: ignore -->
+
+```{r confusionmatrices, results='hide'}
+# Confusionmatrices maken via package Caret
+confus_val <- confusionMatrix(as.factor(points_val$changeclass),
+  as.factor(points_val$changeclassref),
+  dnn = c("Map", "Reference")
+)
+confus_change <- confusionMatrix(as.factor(points_change$verand),
+  as.factor(points_change$verandoord),
+  dnn = c("Map", "Reference")
+)
+confus_lu <- confusionMatrix(as.factor(points_lu$changeclass),
+  as.factor(points_lu$changeclassref),
+  dnn = c("Map", "Reference")
+)
+
+ma_val <- as.data.frame.matrix(confus_val$table)
+ma_change <- as.data.frame.matrix(confus_change$table)
+ma_lu <- as.data.frame.matrix(confus_lu$table)
+```
+
+## Validatie
+
+Methode [@olofsson2014] - Code uit het FAO tool
+
+```{r validation-function}
+### Function to estimate accuracies
+validation <- function(ma, maparea) {
+  dyn <- rownames(ma)
+  aoi <- sum(maparea) # calculate the area proportions for each map class
+  propmaparea <- maparea / aoi
+
+  # convert the absolute cross tab into a probability cross tab
+  ni <- rowSums(ma) # number of reference points per map class
+  propma <- as.matrix(ma / ni * propmaparea)
+  propma[is.nan(propma)] <- 0 # for classes with ni. = 0
+
+  # estimate the accuracies now
+  oa <- sum(diag(propma))
+  # overall accuracy (Eq. 1 in Olofsson et al. 2014)
+  ua <- diag(propma) / rowSums(propma)
+  # user's accuracy (Eq. 2 in Olofsson et al. 2014)
+  pa <- diag(propma) / colSums(propma)
+  # producer's accuracy (Eq. 3 in Olofsson et al. 2014)
+
+  # estimate confidence intervals for the accuracies
+  v_oa <- sum(propmaparea^2 * ua * (1 - ua) / (ni - 1), na.rm = TRUE)
+  # variance of overall accuracy (Eq. 5 in Olofsson et al. 2014)
+
+  v_ua <- ua * (1 - ua) / (rowSums(ma) - 1)
+  # variance of user's accuracy (Eq. 6 in Olofsson et al. 2014)
+
+  # variance of producer's accuracy (Eq. 7 in Olofsson et al. 2014)
+  n_j <- array(0, dim = length(dyn))
+  aftersumsign <- array(0, dim = length(dyn))
+  for (cj in seq_len(length(dyn))) {
+    n_j[cj] <- sum(maparea / ni * ma[, cj], na.rm = TRUE)
+    aftersumsign[cj] <- sum(maparea[-cj]^2 * ma[-cj, cj] / ni[-cj] *
+      (1 - ma[-cj, cj] / ni[-cj]) /
+      (ni[-cj] - 1), na.rm = TRUE)
+  }
+  v_pa <- 1 / n_j^2 * (maparea^2 * (1 - pa)^2 * ua * (1 - ua) / (ni - 1) +
+    pa^2 * aftersumsign)
+  v_pa[is.nan(v_pa)] <- 0
+
+  ### Estimate area
+
+  # proportional area estimation
+  propareaest <- colSums(propma)
+  # proportion of area (Eq. 8 in Olofsson et al. 2014)
+
+  # standard errors of the area estimation (Eq. 10 in Olofsson et al. 2014)
+  v_propareaest <- array(0, dim = length(dyn))
+  for (cj in seq_len(length(dyn))) {
+    v_propareaest[cj] <- sum((propmaparea * propma[, cj] - propma[, cj]^2) /
+      (rowSums(ma) + 0.001 - 1)) # + 0.001 voor klassen met maar 1 punt
+  }
+  v_propareaest[is.na(v_propareaest)] <- 0
+
+  # produce the overview table
+  ov <- as.data.frame(round(propma, 3))
+  ov$class <- rownames(ov)
+  ov <- dplyr::select(ov, class)
+  ov$totpunt <- rowSums(ma)
+  ov$area_ha <- round(maparea * pixelsize) # in ha
+  ov$prop_area <- round(propmaparea, 3)
+  ov$adj_proparea <- round(propareaest, 3)
+  ov$ci_adj_proparea <- round(1.96 * sqrt(v_propareaest), 3)
+  ov$adj_area <- round(ov$adj_proparea * aoi * pixelsize, 3)
+  # in ha
+  ov$ci_adj_area <- round(1.96 * sqrt(v_propareaest) * aoi * pixelsize, 3)
+  # in ha
+  ov$ua <- round(ua, 3)
+  ov$ci_ua <- round(1.96 * sqrt(v_ua), 3)
+  ov$pa <- round(pa, 3)
+  ov$ci_pa <- round(1.96 * sqrt(v_pa), 3)
+  rownames(ov) <- colnames(ma)
+  ov$oa <- c(round(oa, 3), rep(NA, times = length(dyn) - 1))
+  ov$ci_oa <- c(round(1.96 * sqrt(v_oa), 3), rep(NA, times = length(dyn) - 1))
+  ov
+}
+
+```
+
+```{r validatie, results='hide'}
+# Hulpvariabelen
+maparea_val <- lgarea %>% # Analyse validatieklassen
+  dplyr::pull(2)
+maparea_change <- lgarea_change %>% # Analyse change - no change
+  dplyr::pull(2)
+maparea_lu <- lgarea_lu %>% # Analyse originele lu-klassen
+  dplyr::pull(2)
+
+pixelsize <- 0.01 # the size of each pixel in ha (10mx10m = 0,01 ha)
+
+
+ov_val <- validation(ma = ma_val, maparea = maparea_val)
+ov_change <- validation(ma = ma_change, maparea = maparea_change)
+ov_lu <- validation(ma = ma_lu, maparea = maparea_lu)
+
+```
+
+```{r evaluatoren, eval = FALSE}
+# Overeenkomst tussen evaluatoren (not run)
+eval <- points %>%
+  dplyr::select(objectid, verandering, lu2013, lu2016, klasse,
+                oordeel, eval, n) %>%
+  dplyr::filter(n >= 2 & n < 3) %>%
+  # selecteer punten die 2 keer geëvalueerd werden. Eval = nr evaluator
+  rename("verandmap" = "verandering", "lu13map" = "lu2013",
+         "lu16map" = "lu2016") %>%
+  spread(key = klasse, value = oordeel) %>%
+  rename("verandref" = "verandering", "lu13ref" = "lu2013",
+         "lu16ref" = "lu2016") %>%
+  left_join(dplyr::select(tbltrans, valid, lu), by = c("lu13map" = "lu")) %>%
+  rename(lu13mapval = valid) %>%
+  # validatieklassen toevoegen (= aggregatie van oorspronkelijke lu-klassen)
+  left_join(dplyr::select(tbltrans, valid, lu), by = c("lu16map" = "lu")) %>%
+  rename(lu16mapval = valid) %>%
+  left_join(dplyr::select(tbltrans, valid, lu), by = c("lu13ref" = "lu")) %>%
+  rename(lu13refval = valid) %>%
+  # validatieklassen toevoegen (= aggregatie van oorspronkelijke lu-klassen)
+  left_join(dplyr::select(tbltrans, valid, lu), by = c("lu16ref" = "lu")) %>%
+  rename(lu16refval = valid)
+
+eval_perid <- eval %>%
+  group_by(objectid) %>%
+  summarise(verand = identical(verandref[1], verandref[2]),
+            lu2013 = identical(lu13ref[1], lu13ref[2]),
+            lu2016 = identical(lu16ref[1], lu16ref[2]),
+            lu2013val = identical(lu13refval[1], lu13refval[2]),
+            lu2016val = identical(lu16refval[1], lu16refval[2])) %>%
+  mutate(verand_klasse = ifelse(lu2013 == TRUE & lu2016 == TRUE,
+                                TRUE, FALSE)) %>%
+  mutate(verand_klasseval = ifelse(lu2013val == TRUE &
+                                     lu2016val == TRUE, TRUE, FALSE)) %>%
+  left_join(eval, by = "objectid") %>%
+  # dplyr::select(-c(eval:lu16refval)) %>%
+  distinct()
+
+tbl_eval <- eval_perid %>% # Voor de oorspronkelijke klassen
+  group_by(lu13map, lu16map) %>%
+  summarise(n = n(), verand = sum(verand[TRUE]),
+            verand_klasse = sum(verand_klasse[TRUE]))
+
+tbl_evalval <- eval_perid %>% # Voor de geaggregeerde klassen
+  group_by(lu13mapval, lu16mapval) %>%
+  summarise(n = n(), verand = sum(verand[TRUE]),
+            verand_klasse = sum(verand_klasseval[TRUE]))
+
+# Originele klassen
+totaal <- tbl_eval %>%
+  ungroup() %>%
+  summarise(
+    verandering = sum(verand) / sum(n),
+    type_verandering = sum(verand_klasse) / sum(n)
+  ) %>%
+  mutate(naam = "Totaal")
+veranderend <- tbl_eval %>%
+  ungroup() %>%
+  dplyr::filter(lu13map != lu16map) %>%
+  summarise(
+    verandering = sum(verand) / sum(n),
+    type_verandering = sum(verand_klasse) / sum(n)
+  ) %>%
+  mutate(naam = "Veranderende cellen")
+onveranderd <- tbl_eval %>%
+  ungroup() %>%
+  dplyr::filter(lu13map == lu16map) %>%
+  summarise(
+    verandering = sum(verand) / sum(n),
+    type_verandering = sum(verand_klasse) / sum(n)
+  ) %>%
+  mutate(naam = "Onveranderlijke cellen")
+
+bind_rows(totaal, veranderend, onveranderd)
+
+### Resultaat:
+# verandering type_verandering naam
+# 0.9136213	  0.7574751	       Totaal
+# 0.8916667	  0.7333333	       Veranderende cellen
+# 1.0000000	  0.8524590	       Onveranderlijke cellen
+
+## Geaggregeerde klassen
+totaal <- tbl_evalval %>%
+  ungroup() %>%
+  summarise(
+    verandering = sum(verand) / sum(n),
+    type_verandering = sum(verand_klasse) / sum(n)
+  ) %>%
+  mutate(naam = "Totaal")
+veranderend <- tbl_evalval %>%
+  ungroup() %>%
+  dplyr::filter(lu13mapval != lu16mapval) %>%
+  summarise(
+    verandering = sum(verand) / sum(n),
+    type_verandering = sum(verand_klasse) / sum(n)
+  ) %>%
+  mutate(naam = "Veranderende cellen")
+onveranderd <- tbl_evalval %>%
+  ungroup() %>%
+  dplyr::filter(lu13mapval == lu16mapval) %>%
+  summarise(
+    verandering = sum(verand) / sum(n),
+    type_verandering = sum(verand_klasse) / sum(n)
+  ) %>%
+  mutate(naam = "Onveranderlijke cellen")
+
+bind_rows(totaal, veranderend, onveranderd)
+### Resultaat:
+#   verandering type_verandering  naam
+#   0.914       0.811             Totaal
+#   0.877       0.778             Veranderende cellen
+#   1           0.888             Onveranderlijke cellen
+```
+
+De validatie van de landgebruiksveranderingen (2013 - 2016) toont aan dat de foutenmarges op de schattingen meestal groter zijn dan de veranderingen zelf.
+Daardoor is het niet mogelijk om statistisch onderbouwde uitspraken te doen over de precieze omvang van de meeste landgebruiksveranderingen op korte termijn.
+
+```{r staafdiagram-val, fig.width = 10, fig.height = 5, fig.cap = "Figuur 1. Oppervlakte van de landgebruiksveranderingen tussen 2013 en 2016 op basis van de kaart (punten) en de gevalideerde punten (horizontale balken) voor de geaggregeerde klassen. * = verandering significant verschillend van 0. Pop-up: PA = volledigheid van de kartering; UA = juistheid van de kartering. Deze figuur verwijst naar figuur 31 uit het Natuurrapport 2020."}
+
+plot_val <- ov_val %>%
+  dplyr::select(class, area_ha, adj_area, ci_adj_area, ua, pa) %>%
+  mutate(conf.low = adj_area - ci_adj_area, conf.high = adj_area +
+    ci_adj_area) %>%
+  mutate(signif0 = ifelse(conf.low <= 0, "", "*")) %>%
+  separate(class, c("lu13", "lu16"), sep = "_", remove = FALSE) %>%
+  mutate(lu13_lang = recode(lu13,
+    "A" = "Akker", "HG" = "Hoog groen",
+    "O" = "Overig", "ON" = "Open natuur",
+    "U" = "Urbaan"
+  )) %>%
+  mutate(lu16_lang = recode(lu16,
+    "A" = "Akker", "HG" = "Hoog groen",
+    "O" = "Overig", "ON" = "Open natuur",
+    "U" = "Urbaan"
+  )) %>%
+  unite("classfull", lu13_lang:lu16_lang, sep = " > ", remove = FALSE) %>%
+  mutate(paperc = scales::percent(pa, accuracy = 1)) %>%
+  mutate(uaperc = scales::percent(ua, accuracy = 1))
+
+options(scipen = 999)
+
+bar <- ggplot(
+  plot_val %>%
+    dplyr::filter(!class %in% c("A_A", "HG_HG", "O_O", "ON_ON", "U_U")),
+  aes(x = classfull, y = adj_area, text = paste(
+    "PA:", paperc, " - UA:", uaperc,
+    "\nGevalideerde opp.:", round(adj_area), " ha",
+    "\nOpp. op kaart:", round(area_ha), " ha",
+    "\nBI:", round(conf.low), " ha - ", round(conf.high), " ha"
+  ))
+) +
+  geom_bar(aes(fill = lu13_lang),
+    stat = "identity", position = "dodge",
+    width = 0.7
+  ) +
+  geom_errorbar(aes(ymin = conf.low, ymax = conf.high),
+    width = 0.2,
+    colour = "black", position = position_dodge(width = 0.7)
+  ) +
+  geom_point(aes(y = area_ha), colour = "black") +
+  labs(y = "Oppervlakte (ha)", fill = "Klasse 2013") +
+  geom_text(aes(y = -1000, label = signif0), colour = inbo_hoofd) +
+  theme(
+    axis.title.x = element_text(margin = margin(
+      t = 5, r = 0, b = 0,
+      l = 0
+    ), hjust = 0),
+    axis.line.x = element_line(color = "black"),
+    axis.title.y = element_blank(),
+    axis.line.y = element_line(color = "black"),
+    panel.grid.major.x = element_line(colour = "grey", linetype = "dotted"),
+    panel.grid.major.y = element_blank(),
+    legend.key.size = unit(0.3, "cm")
+  ) +
+  coord_flip()
+
+ggplotly(bar, tooltip = c("text"))
+```
+
+## Definitie
+
+Bij de validatie van een kaart wordt het landgebruik op de kaart vergeleken met een steekproef van referentiepunten die het werkelijke landgebruik met een hogere accuraatheid weergeven.
+
+## Bespreking
+
+Voor het Natuurrapport 2020 werden de ecosysteemvoorraad, de landgebruiksveranderingen en de versnippering van ecosystemen berekend op basis van een set van landgebruikskaarten.
+Omdat zo’n kaarten altijd een vereenvoudiging zijn van de werkelijkheid, moet je rekening houden met een mate van onzekerheid en die ook communiceren met beleidsmakers en beheerders.
+Om die reden werd een validatie uitgevoerd voor de landgebruikskaart die voor het Natuurrapport werd gebruikt, meer bepaald met betrekking tot de onzekerheid van de **veranderingen tussen 2013 en 2016**.
+De validatie gaat na of het landgebruik van een cel tussen 2013 en 2016 verandert en zo ja, tussen welke klassen de cel verschuift.
+
+De analyse van de gevalideerde punten laat toe om een aantal accuraatheidsmaten te berekenen [@olofsson_good_2014].
+De *overall accuracy* (OA) geeft het percentage van de punten waarvoor de veranderingsklasse op de kaart en in de referentieset hetzelfde is.
+Het is een maat voor de algemene accuraatheid van de kaart.
+De *producers accuracy* (PA) geeft aan hoe volledig de kartering een bepaalde klasse weergeeft.
+De *users accuracy* (UA) geeft de kans weer dat een klasse op de kaart ook op het terrein die klasse is.
+Waar de *producers accuracy* een maat is voor de **volledigheid** van de kaart, is de *users accuracy* een maat voor de **juistheid** ervan.
+
+Als we alleen kijken naar de verandering van een cel (veranderd / niet veranderd) en geen rekening houden met het type landgebruiksverandering, dan is de *overall accuracy* (OA) van de kaart hoog (90-91%).
+De *users accuracy* (UA) is zeer hoog (99%) voor de cellen met onveranderd landgebruik, maar zeer laag (20%) voor de cellen waarvan het landgebruik verandert tussen 2013 en 2016.
+De kaart overschat sterk de oppervlakte die verandert.
+Volgens de kaart verandert er in die periode 11 procent van de oppervlakte van Vlaanderen, terwijl dat volgens de gevalideerde puntenset slechts 3 procent (± 0,6%) is (Figuur 2).
+Dat illustreert de zwakheid van de landgebruikskaart om veranderingen in landgebruik te detecteren.
+
+Omdat de variatie in de beoordeling van het landgebruik tussen de evaluatoren voor een aantal klassen te hoog was, werd een aantal klassen in de statistische analyse gegroepeerd in zes hoofdklassen: open natuur (heide, duinen, moeras, permanent grasland, laag groen, slikken en schorren), hoog groen (bos en hoog groen), akker (tijdelijk grasland, akker), urbaan (bebouwing en infrastructuur), overig (bodemverharding) en water.
+De OA van de kaart met de geaggregeerde klassen blijft hoog (84-86%).
+De UA voor de veranderingsklassen ligt echter zeer laag (zie Figuur 1).
+Dat betekent dat de kaart die landgebruiksveranderingen overschat.
+Voor alle veranderingsklassen behalve open natuur → urbaan ligt de schatting van de oppervlakte op basis van de kaart (veel) hoger dan op basis van de gevalideerde punten (zie Figuur 1).
+In de meeste gevallen kunnen we op basis van de analyse zelfs niet besluiten dat de landgebruiksveranderingen significant groter zijn dan nul.
+De belangrijkste significante veranderingen zijn open natuur → akker, open natuur → overig, open natuur → urbaan, hoog groen → open natuur en akker → open natuur.
+De omzettingen tussen akker en open natuur houden elkaar min of meer in evenwicht.
+
+```{r staafdiagram-change, fig.width = 5, fig.height = 2, fig.cap = "Figuur 2. Oppervlakte van de cellen waarvoor het landgebruik verandert en niet verandert op basis van de kaart (punten) en de gevalideerde punten (balken). * = significant verschillend van 0."}
+
+plot_change <- ov_change %>%
+  dplyr::select(class, area_ha, adj_area, ci_adj_area, ) %>%
+  mutate(class = recode(class,
+    "change" = "verandering",
+    "nochange" = "geen verandering"
+  )) %>%
+  mutate(
+    conf.low = adj_area - ci_adj_area,
+    conf.high = adj_area + ci_adj_area
+  ) %>%
+  mutate(signif0 = ifelse(conf.low <= 0, "", "*"))
+
+options(scipen = 999)
+
+bar_change <- ggplot(plot_change, aes(
+  x = class, y = adj_area,
+  text = paste(
+    "Gevalideerde opp.:", round(adj_area), " ha",
+    "\nOpp. op kaart:", round(area_ha), " ha",
+    "\nBI:", round(conf.low), " ha - ", round(conf.high), " ha"
+  )
+)) +
+  geom_bar(aes(fill = class, label = adj_area),
+    stat = "identity",
+    position = "dodge", width = 0.5
+  ) +
+  geom_errorbar(aes(ymin = conf.low, ymax = conf.high, ),
+    width = 0.2, colour = "black",
+    position = position_dodge(width = 0.7)
+  ) +
+  geom_point(aes(y = area_ha, label = area_ha), colour = "black") +
+  labs(y = "Oppervlakte (ha)", fill = "Validatie", colour = "Kaart") +
+  theme(
+    plot.title = element_text(margin = margin(t = 5), vjust = 5),
+    axis.title.x = element_text(
+      margin = margin(t = 5, r = 0, b = 0, l = 0),
+      hjust = 0
+    ),
+    axis.line.x = element_line(color = "black"),
+    axis.title.y = element_blank(),
+    axis.line.y = element_line(color = "black"),
+    panel.background = element_rect(
+      fill = "white", colour = "white",
+      size = 0.5, linetype = "solid"
+    ),
+    panel.grid.major.y = element_line(colour = "grey", linetype = "dotted"),
+    legend.key.size = unit(0.3, "cm"),
+    legend.position = "none"
+  ) +
+  coord_flip()
+
+ggplotly(bar_change, tooltip = c("text"))
+```
+
+Voor een aantal landgebruiksveranderingen kunnen we ook naar de niet-geaggregeerde landgebruiksklassen kijken.
+Ook daar zijn de UA's zeer laag (Figuur 3).
+De positieve uitschieters (dus met hogere UA) zijn laag groen → urbaan (43%), hoog groen → urbaan (40%) en (permanent) grasland → akker (52%).
+De kaart scoort dus behoorlijk goed voor het in beeld brengen van urbanisatie en de omzetting van grasland naar akker.
+De gedetailleerde analyse geeft ook meer inzicht in de omzettingen tussen de geaggregeerde klassen open natuur en akker.
+Die blijken voor het grootste deel te verklaren door de omzetting van blijvend grasland in akker en vice versa.
+Netto wordt er echter significant meer blijvend grasland omgezet naar akker dan omgekeerd.
+
+```{r staafdiagram-lu, fig.width = 7, fig.height = 10, fig.cap = "Figuur 3. Oppervlakte van de landgebruiksveranderingsklassen op basis van de kaart (punten) en de gevalideerde punten (balken). * = significant verschillend van 0."}
+
+plot_lu <- ov_lu %>%
+  dplyr::select(class, area_ha, adj_area, ci_adj_area, ) %>%
+  mutate(
+    conf.low = adj_area - ci_adj_area,
+    conf.high = adj_area + ci_adj_area
+  ) %>%
+  mutate(signif0 = ifelse(conf.low <= 0, "", "*")) %>%
+  separate(class, c("lu13", "lu16"), sep = "_", remove = FALSE) %>%
+  mutate(lu13_lang = recode(lu13,
+    "A" = "Akker", "HG" = "Hoog groen",
+    "O" = "Overig", "ON" = "Open natuur",
+    "U" = "Urbaan", "B" = "Bos", "G" = "Grasland",
+    "LG" = "Laag groen"
+  ))
+
+theme_set(theme_inbo())
+
+bar_lu <- ggplot(
+  plot_lu %>%
+    dplyr::filter(!class %in% c(
+    "A_A", "B_B", "G_G", "HG_HG", "LG_LG",
+    "O_O", "ON_ON", "U_U"
+  )),
+  aes(
+    x = class, y = adj_area,
+    text = paste(
+      "Gevalideerde opp.:", round(adj_area), " ha",
+      "\nOpp. op kaart:", round(area_ha), " ha",
+      "\nBI:", round(conf.low), " ha - ", round(conf.high), " ha"
+    )
+  )
+) +
+  geom_bar(aes(fill = lu13_lang, label = adj_area),
+    stat = "identity",
+    position = "dodge", width = 0.7
+  ) +
+  geom_errorbar(aes(ymin = conf.low, ymax = conf.high),
+    width = 0.2,
+    colour = "black", position = position_dodge(width = 0.7)
+  ) +
+  geom_point(aes(y = area_ha, label = area_ha), colour = "black") +
+  labs(y = "Oppervlakte (ha)", fill = "klasse 2013") +
+  geom_text(aes(y = -1000, label = signif0), colour = inbo_hoofd) +
+  theme(
+    plot.title = element_text(margin = margin(t = 5), vjust = 5),
+    axis.title.x = element_text(
+      margin = margin(t = 5, r = 0, b = 0, l = 0),
+      hjust = 0
+    ),
+    axis.line.x = element_line(color = "black"),
+    axis.title.y = element_blank(),
+    axis.line.y = element_line(color = "black"),
+    panel.background = element_rect(
+      fill = "white", colour = "white",
+      linewidth = 0.5, linetype = "solid"
+    ),
+    panel.grid.major.y = element_line(colour = "grey", linetype = "dotted"),
+    legend.key.size = unit(0.3, "cm"),
+    legend.position = c(0.8, 0.8)
+  ) +
+  coord_flip()
+
+ggplotly(bar_lu, tooltip = c("text"))
+```
+
+Uit de validatie blijkt dat een aantal omvangrijke landgebruiksveranderingen slecht in beeld worden gebracht.
+Aan de basis daarvan ligt de grote variatie in de identificatie van de landgebruiksklassen hoog groen, laag groen, overig en blijvend grasland.
+Door verkleuring van de vegetatie in droge jaren wordt laag groen vaak als overig geïdentificeerd en de omvang van hoog groen (boomkruinen) varieert afhankelijk van de invalshoek van de camera.
+Blijvend grasland in landbouwgebruik wordt geïdentificeerd op basis van vijf opeenvolgende landbouwaangiftes.
+De aangifte geeft echter geen uitsluitsel of het grasland al dan niet omgeploegd wordt.
+Voor de open natuurtypes heide, duinen en moeras en voor bos steunt de landgebruikskaart op de BWK, die vooral buiten de beschermde gebieden sterk verouderd is.
+Door de relatief grote foutenmarges kunnen we op korte termijn geen statistisch onderbouwde uitspraken doen over de precieze omvang van deze landgebruiksveranderingen.
+Als de geobserveerde landgebruiksveranderingen zich doorzetten, zullen ze na verloop van tijd wel groot genoeg worden om significante trends te detecteren.
+Zolang de accuraatheid van de basiskaarten niet verbetert, is de landgebruikskaart vooral bruikbaar om de omvang van de ecosystemen en veranderingen op middellange tot lange termijn in beeld te brengen, maar minder bruikbaar voor de opvolging van veranderingen op korte termijn.
+
+## Referenties
