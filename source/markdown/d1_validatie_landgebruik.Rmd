@@ -14,6 +14,10 @@ tab: indicator
 verantwoordelijke:
 - Maarten Stevens <maarten.stevens@inbo.be>
 output: html_document
+editor_options: 
+  markdown: 
+    wrap: sentence
+bibliography: references.yaml
 ---
 
 ```{r setup, include=FALSE}
@@ -69,19 +73,15 @@ tbltrans <- data.frame(lu, lucode, valid, validcode) %>%
 
 # Opmaak dataset
 
-De dataset met validatiepunten bevat informatie over de verandering van een
-cel (0/1) en de aard van de verandering (klasse A -> klasse B).
-Voor de validatie werden achteraf een aantal moeilijk te onderscheiden klassen
-samengenomen.
+De dataset met validatiepunten bevat informatie over de verandering van een cel (0/1) en de aard van de verandering (klasse A gaat naar klasse B).
+Voor de validatie werden achteraf een aantal moeilijk te onderscheiden klassen samengenomen.
 De analyse kan dus op 3 niveaus uitgevoerd worden:
 
 (1) verandering - geen verandering,
 (2) originele landgebruiksklassen en
-(3) de geaggregeerde klassen. In het onderstaande script worden deze
-drie validatiesets apart aangemaakt.
+(3) de geaggregeerde klassen. In het onderstaande script worden deze drie validatiesets apart aangemaakt.
 
 ## Puntenset
-
 
 ```{r data_bewerken, results='hide'}
 
@@ -223,13 +223,12 @@ points_val <- points_val %>%
   droplevels()
 ```
 
-### Punten Change - nochange
+### Punten Change - nochange <!-- spell-check: ignore -->
 
 ```{r}
 points_change <- as.data.frame(points_id) %>%
   dplyr::select(objectid, verand, verandoord)
 ```
-
 
 ### Punten originele lg-klassen
 
@@ -288,7 +287,7 @@ points_lu <- points_lu %>%
 
 ## Validatieklassen
 
-Veranderingen van de waterklassen worden niet meegenomen -> klasse 8 (water)
+Veranderingen van de waterklassen worden niet meegenomen: klasse 8 (water)
 
 ```{r}
 lgarea <- combine %>%
@@ -321,8 +320,7 @@ lgarea <- combine %>%
   mutate(area = count / sum(count))
 ```
 
-## Change - no change
-
+## Change - no change <!-- spell-check: ignore -->
 
 ```{r}
 lgarea_change <- lgarea %>%
@@ -334,7 +332,6 @@ lgarea_change <- lgarea %>%
 ```
 
 ## Originele landgebruiksklassen
-
 
 ```{r}
 lgarea_lu <- combine %>%
@@ -369,7 +366,7 @@ lgarea_lu <- combine %>%
 
 # Analyse
 
-## Confusionmatrix
+## Confusionmatrix <!-- spell-check: ignore -->
 
 ```{r confusionmatrices, results='hide'}
 # Confusionmatrices maken via package Caret
@@ -393,7 +390,7 @@ ma_lu <- as.data.frame.matrix(confus_lu$table)
 
 ## Validatie
 
-Methode Olofsson et al., 2014 - Code uit het FAO tool
+Methode [@olofsson2014] - Code uit het FAO tool
 
 ```{r validation-function}
 ### Function to estimate accuracies
@@ -474,7 +471,6 @@ validation <- function(ma, maparea) {
 
 ```
 
-
 ```{r validatie, results='hide'}
 # Hulpvariabelen
 maparea_val <- lgarea %>% # Analyse validatieklassen
@@ -492,7 +488,6 @@ ov_change <- validation(ma = ma_change, maparea = maparea_change)
 ov_lu <- validation(ma = ma_lu, maparea = maparea_lu)
 
 ```
-
 
 ```{r evaluatoren, eval = FALSE}
 # Overeenkomst tussen evaluatoren (not run)
@@ -608,7 +603,7 @@ bind_rows(totaal, veranderend, onveranderd)
 #   1           0.888             Onveranderlijke cellen
 ```
 
-De validatie van de landgebruiksveranderingen (2013 - 2016) toont aan dat de foutenmarges op de schattingen meestal groter zijn dan de veranderingen zelf. 
+De validatie van de landgebruiksveranderingen (2013 - 2016) toont aan dat de foutenmarges op de schattingen meestal groter zijn dan de veranderingen zelf.
 Daardoor is het niet mogelijk om statistisch onderbouwde uitspraken te doen over de precieze omvang van de meeste landgebruiksveranderingen op korte termijn.
 
 ```{r staafdiagram-val, fig.width = 10, fig.height = 5, fig.cap = "Figuur 1. Oppervlakte van de landgebruiksveranderingen tussen 2013 en 2016 op basis van de kaart (punten) en de gevalideerde punten (horizontale balken) voor de geaggregeerde klassen. * = verandering significant verschillend van 0. Pop-up: PA = volledigheid van de kartering; UA = juistheid van de kartering. Deze figuur verwijst naar figuur 31 uit het Natuurrapport 2020."}
@@ -679,19 +674,19 @@ Bij de validatie van een kaart wordt het landgebruik op de kaart vergeleken met 
 
 ## Bespreking
 
-Voor het Natuurrapport 2020 werden de ecosysteemvoorraad, de landgebruiksveranderingen en de versnippering van ecosystemen berekend op basis van een set van landgebruikskaarten. 
-Omdat zo’n kaarten altijd een vereenvoudiging zijn van de werkelijkheid, moet je rekening houden met een mate van onzekerheid en die ook communiceren met beleidsmakers en beheerders. 
+Voor het Natuurrapport 2020 werden de ecosysteemvoorraad, de landgebruiksveranderingen en de versnippering van ecosystemen berekend op basis van een set van landgebruikskaarten.
+Omdat zo’n kaarten altijd een vereenvoudiging zijn van de werkelijkheid, moet je rekening houden met een mate van onzekerheid en die ook communiceren met beleidsmakers en beheerders.
 Om die reden werd een validatie uitgevoerd voor de landgebruikskaart die voor het Natuurrapport werd gebruikt, meer bepaald met betrekking tot de onzekerheid van de **veranderingen tussen 2013 en 2016**.
 De validatie gaat na of het landgebruik van een cel tussen 2013 en 2016 verandert en zo ja, tussen welke klassen de cel verschuift.
 
-De analyse van de gevalideerde punten laat toe om een aantal accuraatheidsmaten te berekenen [@olofsson_good_2014]. 
+De analyse van de gevalideerde punten laat toe om een aantal accuraatheidsmaten te berekenen [@olofsson_good_2014].
 De *overall accuracy* (OA) geeft het percentage van de punten waarvoor de veranderingsklasse op de kaart en in de referentieset hetzelfde is.
 Het is een maat voor de algemene accuraatheid van de kaart.
 De *producers accuracy* (PA) geeft aan hoe volledig de kartering een bepaalde klasse weergeeft.
 De *users accuracy* (UA) geeft de kans weer dat een klasse op de kaart ook op het terrein die klasse is.
 Waar de *producers accuracy* een maat is voor de **volledigheid** van de kaart, is de *users accuracy* een maat voor de **juistheid** ervan.
 
-Als we alleen kijken naar de verandering van een cel (veranderd/niet veranderd) en geen rekening houden met het type landgebruiksverandering, dan is de overall accuracy (OA) van de kaart hoog (90-91%).
+Als we alleen kijken naar de verandering van een cel (veranderd / niet veranderd) en geen rekening houden met het type landgebruiksverandering, dan is de *overall accuracy* (OA) van de kaart hoog (90-91%).
 De *users accuracy* (UA) is zeer hoog (99%) voor de cellen met onveranderd landgebruik, maar zeer laag (20%) voor de cellen waarvan het landgebruik verandert tussen 2013 en 2016.
 De kaart overschat sterk de oppervlakte die verandert.
 Volgens de kaart verandert er in die periode 11 procent van de oppervlakte van Vlaanderen, terwijl dat volgens de gevalideerde puntenset slechts 3 procent (± 0,6%) is (Figuur 2).
@@ -702,9 +697,9 @@ De OA van de kaart met de geaggregeerde klassen blijft hoog (84-86%).
 De UA voor de veranderingsklassen ligt echter zeer laag (zie Figuur 1).
 Dat betekent dat de kaart die landgebruiksveranderingen overschat.
 Voor alle veranderingsklassen behalve open natuur → urbaan ligt de schatting van de oppervlakte op basis van de kaart (veel) hoger dan op basis van de gevalideerde punten (zie Figuur 1).
-In de meeste gevallen kunnen we op basis van de analyse zelfs niet besluiten dat de landgebruiksveranderingen significant groter zijn dan nul. 
-De belangrijkste significante veranderingen zijn open natuur → akker, open natuur → overig, open natuur → urbaan, hoog groen → open natuur en akker → open natuur. 
-De omzettingen tussen akker en open natuur houden elkaar min of meer in evenwicht. 
+In de meeste gevallen kunnen we op basis van de analyse zelfs niet besluiten dat de landgebruiksveranderingen significant groter zijn dan nul.
+De belangrijkste significante veranderingen zijn open natuur → akker, open natuur → overig, open natuur → urbaan, hoog groen → open natuur en akker → open natuur.
+De omzettingen tussen akker en open natuur houden elkaar min of meer in evenwicht.
 
 ```{r staafdiagram-change, fig.width = 5, fig.height = 2, fig.cap = "Figuur 2. Oppervlakte van de cellen waarvoor het landgebruik verandert en niet verandert op basis van de kaart (punten) en de gevalideerde punten (balken). * = significant verschillend van 0."}
 
@@ -762,10 +757,10 @@ bar_change <- ggplot(plot_change, aes(
 ggplotly(bar_change, tooltip = c("text"))
 ```
 
-Voor een aantal landgebruiksveranderingen kunnen we ook naar de niet-geaggregeerde landgebruiksklassen kijken. 
-Ook daar zijn de UA’s zeer laag (Figuur 3).
+Voor een aantal landgebruiksveranderingen kunnen we ook naar de niet-geaggregeerde landgebruiksklassen kijken.
+Ook daar zijn de UA's zeer laag (Figuur 3).
 De positieve uitschieters (dus met hogere UA) zijn laag groen → urbaan (43%), hoog groen → urbaan (40%) en (permanent) grasland → akker (52%).
-De kaart scoort dus behoorlijk goed voor het in beeld brengen van urbanisatie en de omzetting van grasland naar akker. 
+De kaart scoort dus behoorlijk goed voor het in beeld brengen van urbanisatie en de omzetting van grasland naar akker.
 De gedetailleerde analyse geeft ook meer inzicht in de omzettingen tussen de geaggregeerde klassen open natuur en akker.
 Die blijken voor het grootste deel te verklaren door de omzetting van blijvend grasland in akker en vice versa.
 Netto wordt er echter significant meer blijvend grasland omgezet naar akker dan omgekeerd.
@@ -837,11 +832,12 @@ bar_lu <- ggplot(
 ggplotly(bar_lu, tooltip = c("text"))
 ```
 
-Uit de validatie blijkt dat een aantal omvangrijke landgebruiksveranderingen slecht in beeld worden gebracht. 
-Aan de basis daarvan ligt de grote variatie in de identificatie van de landgebruiksklassen ‘hoog groen’, ‘laag groen’, ‘overig’ en ‘blijvend grasland’.
+Uit de validatie blijkt dat een aantal omvangrijke landgebruiksveranderingen slecht in beeld worden gebracht.
+Aan de basis daarvan ligt de grote variatie in de identificatie van de landgebruiksklassen hoog groen, laag groen, overig en blijvend grasland.
 Door verkleuring van de vegetatie in droge jaren wordt laag groen vaak als overig geïdentificeerd en de omvang van hoog groen (boomkruinen) varieert afhankelijk van de invalshoek van de camera.
 Blijvend grasland in landbouwgebruik wordt geïdentificeerd op basis van vijf opeenvolgende landbouwaangiftes.
-De aangifte geeft echter geen uitsluitsel of het grasland al dan niet omgeploegd wordt. Voor de open natuurtypes heide, duinen en moeras en voor bos steunt de landgebruikskaart op de BWK, die vooral buiten de beschermde gebieden sterk verouderd is.
+De aangifte geeft echter geen uitsluitsel of het grasland al dan niet omgeploegd wordt.
+Voor de open natuurtypes heide, duinen en moeras en voor bos steunt de landgebruikskaart op de BWK, die vooral buiten de beschermde gebieden sterk verouderd is.
 Door de relatief grote foutenmarges kunnen we op korte termijn geen statistisch onderbouwde uitspraken doen over de precieze omvang van deze landgebruiksveranderingen.
 Als de geobserveerde landgebruiksveranderingen zich doorzetten, zullen ze na verloop van tijd wel groot genoeg worden om significante trends te detecteren.
 Zolang de accuraatheid van de basiskaarten niet verbetert, is de landgebruikskaart vooral bruikbaar om de omvang van de ecosystemen en veranderingen op middellange tot lange termijn in beeld te brengen, maar minder bruikbaar voor de opvolging van veranderingen op korte termijn.
