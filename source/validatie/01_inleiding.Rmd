@@ -20,7 +20,7 @@ De statistiek over de omvang (extent) van de ecosystemen is gebiedsdekkend voor 
 Hij is gebaseerd op de gegevens van het Landgebruiksbestand Vlaanderen, aangevuld met, en gevalideerd op basis van, de oppervlaktegegevens die INBO verzamelt, beheert en rapporteert in het kader van diverse onderzoeks- en monitoringprogramma’s en -projecten.
 Het onderzoek naar de ecosysteemoppervlakte ontwikkelt een herhaalbare methode voor de validatie van de gegevens over ecosysteemverandering op basis van remote sensing, met onder andere een kritische toetsing op basis van de terreingegevens en de expertkennis op het INBO.
 
-Het System of Environmental Economic Accounting - Ecosystem Accounting (SEEA-EA) of ‘ecosysteemrekeningen’, althans de fysische modules ervan, zijn sinds maart 2021 een internationale statistische standaard van de Verenigde Naties.
+Het System of Environmental Economic Accounting - Ecosystem Accounting (SEEA-EA) of "ecosysteemrekeningen", althans de fysische modules ervan, zijn sinds maart 2021 een internationale statistische standaard van de Verenigde Naties.
 De Europese Commissie, die hieraan bijdroeg, werkte dit in juli 2022 uit tot een voorstel van Europese Verordening.
 Die wil vanaf 2026 een driejaarlijkse rapportering van ecosysteemoppervlakte, -toestand en -diensten verplicht maken, beginnend vanaf het basisjaar 2024.
 De ontwikkeling en invoering hiervan staat al jaren op de agenda’s van het internationale en het Europese biodiversiteitsbeleid, onder andere de (niet gehaalde) Aichi-targets, de Europese 2010-target en de Biodiversiteitsstrategie 2020.
@@ -28,4 +28,3 @@ De Sustainable Development Goals, de Europese Biodiversiteitsstrategie 2030 en h
 De bedoeling van deze statistieken is onder andere om biodiversiteitsdata beter te verbinden met nationale economische rekeningen en economische besluitvorming, en zo de mainstreaming van het biodiversiteitsbeleid te ondersteunen.
 Het biodiversiteitsverlies keren lukt immers niet met enkele beleids- en beheermaatregelen binnen het eigen beleidsdomein, maar vergt ook fundamentele veranderingen in andere beleidsdomeinen.
 Ecosystem accounting is één van de hefbomen om daar werk van te maken.
-
