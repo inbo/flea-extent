@@ -1,5 +1,6 @@
 ---
 title: "Schatting van veranderingen in oppervlakte landgebruiksklassen aan de hand van referentiedata"
+subtitle: "Technisch rapport in het kader van het Flanders Ecosystem Accounting (FLEA) project"
 author:
   - name:
       given: "Hans"
@@ -38,22 +39,23 @@ output:
   bookdown::dontrun: default
 ---
 
-# Dankwoord {-}
+# Dankwoord {.unnumbered}
 
 De tekst voor het optionele dankwoord.
 
-# Voorwoord {-}
+# Voorwoord {.unnumbered}
 
 De tekst voor het optionele voorwoord.
 
-# Samenvatting {-}
+# Samenvatting {.unnumbered}
 
 <!-- description: start -->
+
 De tekst voor de verplichte samenvatting.
 Hou het [Heerlijk Helder](https://overheid.vlaanderen.be/communicatie/heerlijk-helder).
 <!-- description: end -->
 
-# Aanbevelingen voor beheer en/of beleid {-}
+# Aanbevelingen voor beheer en/of beleid {.unnumbered}
 
 Verplicht wanneer relevant.
 
@@ -90,3 +92,4 @@ if (interactive()) {
   )
 }
 ```
+
