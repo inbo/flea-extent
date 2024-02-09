@@ -1,0 +1,30 @@
+<!-- hier komt de inhoudstafel bij pdf -->
+
+\mainmatter
+
+# Inleiding
+
+Flanders Ecosystem Accounting (FLEA) wil gedurende een periode van 2,5 jaar INBO-expertise bundelen voor het ontwikkelen en kritisch toetsen van ecosystem accounts of ecosysteemrekeningen.
+Die omvatten een internationale statistiek over de omvang (extent), toestand (condition) en diensten (services) van ecosystemen.
+De data en variabelen voor het opstellen van de modules extent en condition hangen nauw samen met datastromen op basis waarvan de BWK, N2000- en KRW-rapportering gebeuren, en die voor een aantal recente Europese verordeningen (o.a. LULUCF, Nature Restoration Law, Forest Monitoring, Soil Restoration Law).
+De ontwikkeling van deze statistiek is een hefboom voor de mainstreaming van biodiversiteit naar andere beleidsdomeinen.
+Dit kan onder andere door een betere integratie van biodiversiteitsdata met nationale economische rekeningen.
+Een recent voorstel van Europese Verordening inzake milieu-economische rekeningen, de Europese Biodiversiteitsstrategie 2030, de SDG en de targets van het Global Biodiversity Framework van Kunming-Montreal maken die ontwikkeling dwingender, en dringender, bijvoorbeeld voor de nationale biodiversiteitsstrategieën en actieplannen.
+Voor 2024 streeft FLEA naar de uitwerking van een ecosystem extent account met bijhorende indicatoren.
+
+Voor een aantal data wordt overleg met ANB en het departement Omgeving voorzien.
+De resultaten van dit onderzoek worden gedeeld met ANB, het Departement Omgeving en Statistiek Vlaanderen.
+Die laatsten starten hier in 2024, op vraag van het Federaal Planbureau, een entiteitsoverschrijdende werking rond op.
+
+De statistiek over de omvang (extent) van de ecosystemen is gebiedsdekkend voor Vlaanderen en wordt driejaarlijks geactualiseerd.
+Hij is gebaseerd op de gegevens van het Landgebruiksbestand Vlaanderen, aangevuld met, en gevalideerd op basis van, de oppervlaktegegevens die INBO verzamelt, beheert en rapporteert in het kader van diverse onderzoeks- en monitoringprogramma’s en -projecten.
+Het onderzoek naar de ecosysteemoppervlakte ontwikkelt een herhaalbare methode voor de validatie van de gegevens over ecosysteemverandering op basis van remote sensing, met onder andere een kritische toetsing op basis van de terreingegevens en de expertkennis op het INBO.
+
+Het System of Environmental Economic Accounting - Ecosystem Accounting (SEEA-EA) of "ecosysteemrekeningen", althans de fysische modules ervan, zijn sinds maart 2021 een internationale statistische standaard van de Verenigde Naties.
+De Europese Commissie, die hieraan bijdroeg, werkte dit in juli 2022 uit tot een voorstel van Europese Verordening.
+Die wil vanaf 2026 een driejaarlijkse rapportering van ecosysteemoppervlakte, -toestand en -diensten verplicht maken, beginnend vanaf het basisjaar 2024.
+De ontwikkeling en invoering hiervan staat al jaren op de agenda’s van het internationale en het Europese biodiversiteitsbeleid, onder andere de (niet gehaalde) Aichi-targets, de Europese 2010-target en de Biodiversiteitsstrategie 2020.
+De Sustainable Development Goals, de Europese Biodiversiteitsstrategie 2030 en het Global Biodiversity Framework van Kunming-Montreal vermelden het eveneens in hun teksten en targets.
+De bedoeling van deze statistieken is onder andere om biodiversiteitsdata beter te verbinden met nationale economische rekeningen en economische besluitvorming, en zo de mainstreaming van het biodiversiteitsbeleid te ondersteunen.
+Het biodiversiteitsverlies keren lukt immers niet met enkele beleids- en beheermaatregelen binnen het eigen beleidsdomein, maar vergt ook fundamentele veranderingen in andere beleidsdomeinen.
+Ecosystem accounting is één van de hefbomen om daar werk van te maken.
