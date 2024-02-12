@@ -1,1 +1,51 @@
+---
+bibliography: [references.yaml, references.bib]
+---
+
 # Materiaal en methoden
+
+## Landgebruikskaart Vlaanderen
+
+@poelmans2021 beschrijven de gebruikte databronnen en de methodes die werden gebruikt om de landgebruikskaarten te produceren.
+De verschillende databronnen worden samengevoegd in een landgebruiksbestand.
+Dit bestand bestaat uit een combinatie van zowel vector- als rasterbestanden.
+Dit landgebruiksbestand en de databronnen die erin zitten, worden om de drie jaar geactualiseerd.
+Het eerste jaar waarvoor dit beschikbaar is, is 2013.
+De toestand van een landgebruiksbestand in een bepaald jaar, zal niet noodzakelijk overal een juiste weerspiegeling zijn van de toestand in dat jaar.
+Het is de laatst gekende toestand volgens een bepaalde databron.
+
+De landgebruikskaarten zijn afgeleide (raster) producten op basis van de informatie in de landgebruiksbestanden.
+Door de verschillende vector en rasterlagen (databronnnen in het landgebruiksbestand) volgens een bepaalde methode te combineren worden de landgebruikskaarten berekend.
+Deze methode legt een aantal zaken vast die bepalen hoe de (een) landgebruikskaart eruit zal zien:
+
+-   de verschillende landgebruiksklassen, evenals een hiërarchisch systeem om landgebruiken te clusteren op hogere niveaus
+
+-   welke databronnen gebruikt worden voor welke landgebruiksklassen
+
+-   welke aggregaties hiervoor nodig zijn (van klassen binnen één van de databronnen) en welke combinaties van databronnen hiervoor nodig zijn
+
+-   de ruimtelijke resolutie van het afgeleide rasterproduct
+
+Er is dus flexibiliteit in welke methode juist gebruikt wordt en de keuzes die daarbij gemaakt worden hangen af van de doeleinden waarvoor de kaart gebruikt zal worden.
+Er moet enkel op toegezien worden dat dezelfde methode wordt gebruikt wanneer landgebruikskaarten van verschillende jaren met elkaar vergeleken worden.
+Zo zijn er voor het Natuurrapport 2020 twee landgebruikskaarten (één voor 2013 en één voor 2016) gemaakt [@schneiders2020], die een andere methodiek gebruiken dan de landgebruikskaart die @poelmans2021 bespreken.
+Voor de analyses in @schneiders2020 werd een classificatie in tien ecosystemen (landgebruiken) gebruikt.
+Deze komt overeen met een classificatie die ook door de Europese Commissie wordt gebruikt voor de evaluatie van de EU Biodiversiteitsstrategie 2020 (Maes etal., 2018).
+Een later project, dat hierop verder bouwde [@jocque2022], had tot doel om in een pilootproject verschillende verbeteropties voor deze landgebruikskaart te bekijken en na te gaan of de verbeterde kaarten effectief bijdroegen aan een hogere accuraatheid.
+Tevens wordt in dit rapport de link gelegd tussen deze landgebruikskaarten en de mogelijkheden die ze bieden om te rapporteren over ecosystem extent accounts volgens de richtlijnen die "The System of Environmental-Economic Accounting—Ecosystem Accounting (SEEA EA)" [@seea2021] meegeeft.
+Het SEEA EA kader geeft de basis voor het opstellen van verschillende ecosysteem accounts met de volgende vijf belangrijkste accounts: (i) de "ecosystem extent account"; (ii) de "ecosystem condition account"; (iii) de "ecosystem services flow account in physical terms"; (iv) de "ecosystem services flow account in monetary terms"; en (v) de "monetary ecosystem asset account".
+De "extent account" vormt de basis voor alle daaropvolgende accounts en is daarom van groot belang.
+Een "ecosystem extent account" meet de lokatie en oppervlakte van de verschillende ecosysteemtypes voor een bepaalde regio.
+Een "account" slaat gewoonlijk op een bepaalde "accounting period".
+Voor deze periode geeft de "extent account" de toestand weer aan het begin en het einde van deze periode, evenals de oppervlaktewijzigingen tussen ecosystemen over deze periode (wat is veranderd en wat is hetzelfde gebleven?).
+
+Het EEA stelt een drieledige aanpak voor om rekeningen van de omvang van ecosystemen in Europa te ontwikkelen.
+Niveau I omvat ecosysteemklassen die overeenkomen en overlappen met de brede ecosysteemtypen die zijn ontwikkeld in het MAES-proces (Mapping and assessment of ecosystems and their services) (12 klassen).
+De rekeningen van niveau II zorgen voor een verdere onderverdeling van de ecosysteemtypen van niveau I en omvatten 23 ecosysteemcategorieën.
+De rekeningen van niveau III voegen nog meer resolutie toe, onderverdelen de rekeningen van niveau II verder en omvatten 30 ecosysteemtypen.
+
+## Schatting van de oppervlakte en accuraatheid van landgebruiken
+
+### Algemeen protocol
+
+### Verschillende soorten van vertekening
