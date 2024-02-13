@@ -22,6 +22,7 @@ spelling:
   ignore:
   - .github
   - LICENSE.md
+  - NCA_validatingextend
   - source/checklist.R
   - source/validatie/LICENSE.md
   - source/validatie/000_abstract.Rmd
