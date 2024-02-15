@@ -74,13 +74,45 @@ Tevens wordt in @jocque2022 de link gelegd tussen deze landgebruikskaarten en de
 
 De rekening voor de omvang van ecosystemen vormt de basis voor alle daaropvolgende ecosysteemrekeningen en is daarom van groot belang. Een rekening voor de omvang van ecosystemen meet de lokatie en oppervlakte van de verschillende ecosysteemtypes voor een bepaalde regio. Een ecosysteemrekening slaat gewoonlijk op een bepaalde periode. Voor deze periode geeft de rekening voor de omvang van ecosystemen de toestand weer aan het begin en het einde van deze periode, evenals de oppervlaktewijzigingen tussen ecosystemen over deze periode (wat is veranderd en wat is hetzelfde gebleven?).
 
-Het EEA stelt een drieledige aanpak voor om rekeningen van de omvang van ecosystemen in Europa te ontwikkelen [@seea2021]. Niveau I omvat ecosysteemklassen die overeenkomen en overlappen met de brede ecosysteemtypen die zijn ontwikkeld in het MAES-proces (Mapping and assessment of ecosystems and their services) (12 klassen). De rekeningen van niveau II zorgen voor een verdere onderverdeling van de ecosysteemtypen van niveau I en omvatten 23 ecosysteemcategorieën. De rekeningen van niveau III voegen nog meer resolutie toe, onderverdelen de rekeningen van niveau II verder en omvatten 30 ecosysteemtypen.
+Het EEA stelt een drieledige aanpak voor om rekeningen van de omvang van ecosystemen in Europa te ontwikkelen [@seea2021]. Niveau I omvat ecosysteemklassen die overeenkomen en overlappen met de brede ecosysteemtypen die zijn ontwikkeld in het MAES-proces (Mapping and assessment of ecosystems and their services) (14 klassen). De rekeningen van niveau II zorgen voor een verdere onderverdeling van de ecosysteemtypen van niveau I en omvatten 23 ecosysteemcategorieën. De rekeningen van niveau III voegen nog meer resolutie toe, onderverdelen de rekeningen van niveau II verder en omvatten 30 ecosysteemtypen.
+
+De 14 klassen van niveau I zijn:
+
+1.  Artificial surfaces (including urban and associated areas)
+
+2.  Herbaceous crops
+
+3.  Woody crops
+
+4.  Multiple or layered crops
+
+5.  Grassland
+
+6.  Tree covered areas
+
+7.  Mangroves
+
+8.  Shrub covered areas
+
+9.  Shrubs and/or herbaceous vegetation, aquatic or regularly flooded
+
+10. Sparsely natural vegetated areas
+
+11. Terrestrial barren land
+
+12. Permanent snow and glaciers
+
+13. Inland water bodies
+
+14. Coastal water bodies and inter-tidal areas
 
 ## Schatting van de oppervlakte en accuraatheid van landgebruiken
 
 ### Algemeen protocol
 
-@stehman2011 bespreken de invloed van de keuze van de steekproefeenheid op de uitkomsten van de accuraatheidsschattingen. Ze vergelijken daarbij pixels, blokken van pixels en polygonen als mogelijke alternatieve steekproefeenheden. Ze concluderen dat deze keuze een belangrijk effect heeft op OA, UA en PA. Ze kunnen echter geen duidelijke verklaring geven voor deze verschillen. @gu2020 stellen dat pixel-gebaseerde accuraatheidsschattingen geen goed idee zijn wanneer positionele accuraatheid een issue is. Dit probleem wordt erger in heterogene landschappen en naarmate de landgebruiksclassificatie meer klassen telt. @gu2021 gingen hetzelfde effect na voor blokken van pixels en stellen dat dit te verkiezen is. @radoux2017 gaan dieper in op de specifieke kwesties die komen kijken bij accuraatheidsschattingen op basis van polygonen.
+@olofsson2014
+
+@stehman2011 bespreken de invloed van de keuze van de steekproefeenheid op de uitkomsten van de accuraatheidsschattingen. Ze vergelijken daarbij pixels, blokken van pixels en polygonen als mogelijke alternatieve steekproefeenheden. Ze concluderen dat deze keuze een belangrijk effect heeft op OA, UA en PA. Ze kunnen echter geen duidelijke verklaring geven voor deze verschillen. @gu2020 stellen dat pixel-gebaseerde accuraatheidsschattingen geen goed idee zijn wanneer positionele accuraatheid een issue is. Dit probleem wordt erger in heterogene landschappen en naarmate de landgebruiksclassificatie meer klassen telt. @gu2021 gingen hetzelfde effect na voor blokken van pixels en stellen dat dit te verkiezen is. @radoux2017 gaan dieper in op de specifieke kwesties die komen kijken bij accuraatheidsschattingen op basis van polygonen. Zij geven formules voor OA, UA en PA die aangepast zijn voor polygoon-gebaseerde accuraatheidsschattingen door rekening te houden met de oppervlakte van de polygonen. Formules voor de variantie geven ze echter enkel voor OA. We merken ook op dat blokken van pixels als steekproefeenheid niet mogen verward worden met pixels als steekproefeenheid in combinatie met cluster sampling. In het eerste geval kennen we slechts één label toe aan de blok van pixels, terwijl in het laatste geval elke pixel in een cluster een label krijgt (waarbij die cluster ook de vorm kan aannemen van een blok).
 
 @wickham2021 gebruiken voor het protocol om labels toe te kennen aan de referentieset zowel een primair als een alternatief referentielabel. Ze berekenen UA en PA zowel op basis van overeenkomst met enkel het primaire label als overeenkomst met het primaire of het alternatieve label.
 
