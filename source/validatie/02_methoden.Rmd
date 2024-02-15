@@ -6,17 +6,21 @@ bibliography: [references.yaml, references.bib]
 
 ## Landgebruikskaart Vlaanderen
 
-@poelmans2021 beschrijven de gebruikte databronnen en de methodes die werden gebruikt om de landgebruikskaarten te produceren.
-De verschillende databronnen worden samengevoegd in een landgebruiksbestand.
-Dit bestand bestaat uit een combinatie van zowel vector- als rasterbestanden.
-Dit landgebruiksbestand en de databronnen die erin zitten, worden om de drie jaar geactualiseerd.
-Het eerste jaar waarvoor dit beschikbaar is, is 2013.
-De toestand van een landgebruiksbestand in een bepaald jaar, zal niet noodzakelijk overal een juiste weerspiegeling zijn van de toestand in dat jaar.
-Het is de laatst gekende toestand volgens een bepaalde databron.
+@poelmans2019landgebruik en @poelmans2021 beschrijven de gebruikte databronnen en de methodes die werden gebruikt om de landgebruikskaarten te produceren. De verschillende databronnen worden samengevoegd in een landgebruiksbestand. Dit bestand bestaat uit een combinatie van zowel GIS-lagen (vector- en rasterbestanden) en andere (ruimtelijke) databanken. Dit landgebruiksbestand en de databronnen die erin zitten, worden om de drie jaar geactualiseerd. Het eerste jaar waarvoor dit beschikbaar is, is 2013. De toestand van een landgebruiksbestand in een bepaald jaar, zal niet noodzakelijk overal een juiste weerspiegeling zijn van de toestand in dat jaar. Het is de laatst gekende -- en dus mogelijk gedateerde -- toestand volgens een bepaalde databron.
 
-De landgebruikskaarten zijn afgeleide (raster) producten op basis van de informatie in de landgebruiksbestanden.
-Door de verschillende vector en rasterlagen (databronnnen in het landgebruiksbestand) volgens een bepaalde methode te combineren worden de landgebruikskaarten berekend.
-Deze methode legt een aantal zaken vast die bepalen hoe de (een) landgebruikskaart eruit zal zien:
+De landgebruikskaarten zijn afgeleide (raster) producten op basis van de informatie in de landgebruiksbestanden. De gegevens zijn volgens een bepaalde volgorde samengevoegd in een geodatabase met 4 rasterlagen met een 10m-resolutie (1 are):
+
+-   niveau 1 bodembedekking (22 klassen)
+
+-   niveau 2 verstedelijkt landgebruik (39 klassen)
+
+-   niveau 3 multifunctioneel landgebruik (6 klassen)
+
+-   niveau 4 haventerreinen en militaire domeinen (2 klassen)
+
+Deze lagen worden in een bepaalde volgorde verder gecombineerd tot een eenlagige gebiedsdekkende landgebruikskaart.
+
+In @poelmans2019landgebruik en @poelmans2021 werd een methodiek gebruikt die resulteerde in een landgebruikskaart met 18 klassen. Deze methode legt een aantal zaken vast die bepalen hoe de (een) landgebruikskaart eruit zal zien:
 
 -   de verschillende landgebruiksklassen, evenals een hiërarchisch systeem om landgebruiken te clusteren op hogere niveaus
 
@@ -24,28 +28,62 @@ Deze methode legt een aantal zaken vast die bepalen hoe de (een) landgebruikskaa
 
 -   welke aggregaties hiervoor nodig zijn (van klassen binnen één van de databronnen) en welke combinaties van databronnen hiervoor nodig zijn
 
+-   de volgorde waarin landgebruiken worden toegewezen aan een rastercel
+
 -   de ruimtelijke resolutie van het afgeleide rasterproduct
 
-Er is dus flexibiliteit in welke methode juist gebruikt wordt en de keuzes die daarbij gemaakt worden hangen af van de doeleinden waarvoor de kaart gebruikt zal worden.
-Er moet enkel op toegezien worden dat dezelfde methode wordt gebruikt wanneer landgebruikskaarten van verschillende jaren met elkaar vergeleken worden.
-Zo zijn er voor het Natuurrapport 2020 twee landgebruikskaarten (één voor 2013 en één voor 2016) gemaakt [@schneiders2020], die een andere methodiek gebruiken dan de landgebruikskaart die @poelmans2021 bespreken.
-Voor de analyses in @schneiders2020 werd een classificatie in tien ecosystemen (landgebruiken) gebruikt.
-Deze komt overeen met een classificatie die ook door de Europese Commissie wordt gebruikt voor de evaluatie van de EU Biodiversiteitsstrategie 2020 (Maes etal., 2018).
-Een later project, dat hierop verder bouwde [@jocque2022], had tot doel om in een pilootproject verschillende verbeteropties voor deze landgebruikskaart te bekijken en na te gaan of de verbeterde kaarten effectief bijdroegen aan een hogere accuraatheid.
-Tevens wordt in dit rapport de link gelegd tussen deze landgebruikskaarten en de mogelijkheden die ze bieden om te rapporteren over ecosystem extent accounts volgens de richtlijnen die "The System of Environmental-Economic Accounting—Ecosystem Accounting (SEEA EA)" [@seea2021] meegeeft.
-Het SEEA EA kader geeft de basis voor het opstellen van verschillende ecosysteem accounts met de volgende vijf belangrijkste accounts: (i) de "ecosystem extent account"; (ii) de "ecosystem condition account"; (iii) de "ecosystem services flow account in physical terms"; (iv) de "ecosystem services flow account in monetary terms"; en (v) de "monetary ecosystem asset account".
-De "extent account" vormt de basis voor alle daaropvolgende accounts en is daarom van groot belang.
-Een "ecosystem extent account" meet de lokatie en oppervlakte van de verschillende ecosysteemtypes voor een bepaalde regio.
-Een "account" slaat gewoonlijk op een bepaalde "accounting period".
-Voor deze periode geeft de "extent account" de toestand weer aan het begin en het einde van deze periode, evenals de oppervlaktewijzigingen tussen ecosystemen over deze periode (wat is veranderd en wat is hetzelfde gebleven?).
+Er is dus flexibiliteit in welke methode juist gebruikt wordt en de keuzes die daarbij gemaakt worden hangen af van de doeleinden waarvoor de kaart gebruikt zal worden. Er moet enkel op toegezien worden dat dezelfde methode wordt gebruikt wanneer landgebruikskaarten van verschillende jaren met elkaar vergeleken worden.
 
-Het EEA stelt een drieledige aanpak voor om rekeningen van de omvang van ecosystemen in Europa te ontwikkelen.
-Niveau I omvat ecosysteemklassen die overeenkomen en overlappen met de brede ecosysteemtypen die zijn ontwikkeld in het MAES-proces (Mapping and assessment of ecosystems and their services) (12 klassen).
-De rekeningen van niveau II zorgen voor een verdere onderverdeling van de ecosysteemtypen van niveau I en omvatten 23 ecosysteemcategorieën.
-De rekeningen van niveau III voegen nog meer resolutie toe, onderverdelen de rekeningen van niveau II verder en omvatten 30 ecosysteemtypen.
+Voor het Natuurrapport 2020 zijn er twee landgebruikskaarten (één voor 2013 en één voor 2016) gemaakt [@schneiders2020], die een andere methodiek gebruiken dan de landgebruikskaart die @poelmans2019landgebruik en @poelmans2021 bespreken. Voor de analyses in @schneiders2020 werd een classificatie in tien ecosystemen (landgebruiken) gebruikt en hiervoor werd de bodembedekkingslaag van het Landgebruiksbestand Vlaanderen als volgt aangepast:
+
+-   In het Schelde-estuarium zijn de slikken en schorren aangepast op basis van ecotopenkaarten voor 2013 en 2016, waarbij de slikken en schorren voorrang krijgen op de waterlaag of andere terrestrische klassen (bv. overig laag groen).
+
+-   In het IJzer- en het Schelde-estuarium is het water in de zone onder getijdeninvloed geherklasseerd tot een extra klasse overgangswater, het overig water wordt beschouwd als zoetwater.
+
+-   De wateroppervlakte voor de kust is uitgebreid tot het volledige Belgische deel van de Noordzee en als marien geklasseerd.
+
+-   De bodembedekkingsklasse ruigte en struweel is opgesplitst in ruigte en struweel op basis van de rasterlaag BWK_natuur.
+
+-   Landbouwpercelen die in 2015 (of 2012) als grasland zijn aangegeven en waarvoor in een of meer van de vier voorgaande jaren een andere teelt is aangegeven, zijn geherklasseerd als akker. Grasland krijgt hierdoor de betekenis van blijvend (vijfjarig) cultuurgrasland. Stappen 1 tot 5 resulteren in een aangepaste bodembedekkingskaart met 25 klassen.
+
+-   De aangepaste bodembedekkingskaart is vervolgens samengevoegd met de niveaus 2 tot 4 van het Landgebruiksbestand Vlaanderen volgens de procedure beschreven in @poelmans2019landgebruik. Hierdoor wordt van de meeste ecosystemen een beperkte oppervlakte geherklasseerd naar stedelijk en bebouwd gebied. Er is afgeweken van de procedure van @poelmans2019landgebruik voor de cellen die als bodembedekking overig (d.w.z. onbekend) hebben en die buiten de zone verstedelijkt landgebruik (landgebruiksbestand, niveau 2) liggen. Die percelen zijn voor deze analyse meegeteld bij in de klasse stedelijk en bebouwd gebied. Dit leidt tot een aangepaste landgebruikskaart met 34 landgebruiksklassen ([Zie Tabel 3, kolom 2](https://www.vlaanderen.be/inbo/backgroundindicatoren/landgebruiksverandering-ecosysteemvoorraad-landgebruiksbestand-vlaanderen)).
+
+-   De aangepaste landgebruikskaart wordt herleid tot een ecosysteemkaart met 10 klassen (zie [Tabel 3, kolom 3](https://www.vlaanderen.be/inbo/backgroundindicatoren/landgebruiksverandering-ecosysteemvoorraad-landgebruiksbestand-vlaanderen)). Die indeling is gebaseerd op een ecosysteemtypologie voorgesteld door de Europese Commissie [@maes2013mapping; @maes2018mapping] en de richtlijnen van de Copernicus Land Monitoring Service.
+
+Een later project, dat hierop verder bouwde [@jocque2022], had tot doel om in een pilootproject verschillende verbeteropties voor deze landgebruikskaart te bekijken en na te gaan of de verbeterde kaarten effectief bijdroegen aan een hogere accuraatheid. Er werden vier verschillende verbeteropties uitgetest en hiervan werd de accuraatheid geëvalueerd en vergeleken ten opzichte van de basiskaart die hierboven beschreven is en gebruikt werd in @schneiders2020. De accuraatheid van de basiskaart werd reeds onder de loep genomen door middel van een validatiedataset van 3815 punten in [deze studie](https://www.vlaanderen.be/inbo/backgroundindicatoren/landgebruiksverandering-validatie). Dezelfde validatieset werd gebruikt om de nieuwe kaarten met de volgende verbeteringen te evalueren:
+
+-   Basiskaart + bos: Voor deze kaart werd de basiskaart verbeterd door gebruik te maken van de Boswijzer (beschikbaar voor 2009, 2015, 2018). Praktisch zou dit willen zeggen dat er een stap wordt toegevoegd in de bos-laag via de Digitale Boswijzer waarbij bossen voorrang krijgen op andere terrestrische klassen (bv. overig laag groen).
+
+-   Basiskaart + gras: Door verkleuring van de vegetatie in droge jaren wordt laag groen vaak als overig geïdentificeerd. Blijvend grasland in landbouwgebruik wordt geïdentificeerd op basis van vijf opeenvolgende landbouwaangiftes. De aangifte geeft echter geen uitsluitsel of het grasland al dan niet omgeploegd wordt. Beide landgebruikstypes zouden beter in kaart gebracht kunnen worden via de analyse van kortetermijn tijdreeksen van satellietbeelden, zoals dat gebeurt voor de controle van het scheuren van poldergraslanden.
+
+-   Basiskaart + bak: De bodemafdekkingskaart (BAK) heeft een resolutie van 5x5m en kan gebruikt worden om de verharde oppervlakte te identificeren binnen de klasse overig van de landgebruikskaart. Cellen overig die overlappen met de BAK blijven overig en de andere cellen worden laag groen.
+
+-   Basiskaart + bos + gras + bak: Combinatie van de drie voorgaande kaarten.
+
+Tevens wordt in @jocque2022 de link gelegd tussen deze landgebruikskaarten en de mogelijkheden die ze bieden om te rapporteren over ecosystem extent accounts volgens de richtlijnen die "The System of Environmental-Economic Accounting—Ecosystem Accounting (SEEA EA)" [@seea2021] meegeeft. Het SEEA EA kader geeft de basis voor het opstellen van verschillende ecosysteemrekeningen met de volgende vijf belangrijkste ecosysteemrekeningen:
+
+-   rekening voor de omvang van ecosystemen ("ecosystem extent account")
+
+-   rekening voor de kwaliteit van ecosystemen ("ecosystem condition account")
+
+-   rekening voor de ecosysteemdiensten in fysische eenheden ("ecosystem services flow account in physical terms")
+
+-   rekening voor de ecosysteemdiensten in monetaire eenheden ("ecosystem services flow account in monetary terms")
+
+-   monetaire rekening ecosysteemactiva ("monetary ecosystem asset account")
+
+De rekening voor de omvang van ecosystemen vormt de basis voor alle daaropvolgende ecosysteemrekeningen en is daarom van groot belang. Een rekening voor de omvang van ecosystemen meet de lokatie en oppervlakte van de verschillende ecosysteemtypes voor een bepaalde regio. Een ecosysteemrekening slaat gewoonlijk op een bepaalde periode. Voor deze periode geeft de rekening voor de omvang van ecosystemen de toestand weer aan het begin en het einde van deze periode, evenals de oppervlaktewijzigingen tussen ecosystemen over deze periode (wat is veranderd en wat is hetzelfde gebleven?).
+
+Het EEA stelt een drieledige aanpak voor om rekeningen van de omvang van ecosystemen in Europa te ontwikkelen [@seea2021]. Niveau I omvat ecosysteemklassen die overeenkomen en overlappen met de brede ecosysteemtypen die zijn ontwikkeld in het MAES-proces (Mapping and assessment of ecosystems and their services) (12 klassen). De rekeningen van niveau II zorgen voor een verdere onderverdeling van de ecosysteemtypen van niveau I en omvatten 23 ecosysteemcategorieën. De rekeningen van niveau III voegen nog meer resolutie toe, onderverdelen de rekeningen van niveau II verder en omvatten 30 ecosysteemtypen.
 
 ## Schatting van de oppervlakte en accuraatheid van landgebruiken
 
 ### Algemeen protocol
+
+@stehman2011 bespreken de invloed van de keuze van de steekproefeenheid op de uitkomsten van de accuraatheidsschattingen. Ze vergelijken daarbij pixels, blokken van pixels en polygonen als mogelijke alternatieve steekproefeenheden. Ze concluderen dat deze keuze een belangrijk effect heeft op OA, UA en PA. Ze kunnen echter geen duidelijke verklaring geven voor deze verschillen. @gu2020 stellen dat pixel-gebaseerde accuraatheidsschattingen geen goed idee zijn wanneer positionele accuraatheid een issue is. Dit probleem wordt erger in heterogene landschappen en naarmate de landgebruiksclassificatie meer klassen telt. @gu2021 gingen hetzelfde effect na voor blokken van pixels en stellen dat dit te verkiezen is. @radoux2017 gaan dieper in op de specifieke kwesties die komen kijken bij accuraatheidsschattingen op basis van polygonen.
+
+@wickham2021 gebruiken voor het protocol om labels toe te kennen aan de referentieset zowel een primair als een alternatief referentielabel. Ze berekenen UA en PA zowel op basis van overeenkomst met enkel het primaire label als overeenkomst met het primaire of het alternatieve label.
+
+@radoux2020 werken het idee uit om de steekproefgrootte niet op voorhand vast te pinnen en gelijk te nemen voor elke te evalueren landgebruiksklasse, maar de lengte van het betrouwbaarheidsinterval te monitoren tot het een vooropgesteld kwaliteitscriterium bereikt heeft. @magnussen2021 presenteren een gelijkaardig idee.
 
 ### Verschillende soorten van vertekening

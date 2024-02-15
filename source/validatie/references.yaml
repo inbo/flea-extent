@@ -19,4 +19,175 @@ references:
   title: Landgebruik en ruimtebeslag in Vlaanderen, toestand 2019
   type: report
   URL: "https://archief-algemeen.omgeving.vlaanderen.be/xmlui/bitstream/handle/acd/449392/Landgebruik_en_Ruimtebeslag_2019_def_correctie.pdf?sequence=1&isAllowed=y"
+- id: wickham2021
+  author:
+  - family: Wickham
+    given: James D.
+  - family: Stehman
+    given: Stephen V.
+  - family: Sorenson
+    given: Daniel G.
+  - family: Gass
+    given: Leila
+  - family: Dewitz
+    given: Jon
+  container-title: Remote Sensing of Environment
+  DOI: 10.1016/j.rse.2021.112357
+  issued: 2021
+  key: GCRW3N4N
+  libraryID: 1
+  MAG ID: 3131122836
+  note: "MAG ID: 3131122836"
+  page: 112357
+  providerKey: Zotero
+  title: Thematic accuracy assessment of the NLCD 2016 land cover for
+    the conterminous United States
+  type: article-journal
+  volume: 257
+- id: radoux2020
+  accessed: "07:16:26"
+  author:
+  - family: Radoux
+    given: Julien
+  - family: Waldner
+    given: François
+  - family: Bogaert
+    given: Patrick
+  container-title: Remote Sensing
+  DOI: 10.3390/rs12020257
+  ISSN: 2072-4292
+  issue: 2
+  issued: 2020-01
+  key: 6ISVPME8
+  language: en
+  libraryID: 1
+  Number: 2
+  page: 257
+  providerKey: Zotero
+  Publisher: Multidisciplinary
+  rights: "http://creativecommons.org/licenses/by/3.0/"
+  source: www.mdpi.com
+  title: How Response Designs and Class Proportions Affect the Accuracy
+    of Validation Data
+  type: article-journal
+  URL: "https://www.mdpi.com/2072-4292/12/2/257"
+  volume: 12
+- id: stehman2011
+  accessed: "07:12:21"
+  author:
+  - family: Stehman
+    given: Stephen V.
+  - family: Wickham
+    given: James D.
+  container-title: Remote Sensing of Environment
+  container-title-short: Remote Sensing of Environment
+  DOI: 10.1016/j.rse.2011.06.007
+  ISSN: 0034-4257
+  issue: 12
+  issued: 2011-12-15
+  key: HLHDA6SA
+  libraryID: 1
+  page: 3044-3055
+  providerKey: Zotero
+  source: ScienceDirect
+  title: "Pixels, blocks of pixels, and polygons: Choosing a spatial
+    unit for thematic accuracy assessment"
+  title-short: Pixels, blocks of pixels, and polygons
+  type: article-journal
+  URL: "https://www.sciencedirect.com/science/article/pii/S0034425711002318"
+  volume: 115
+- id: magnussen2021
+  accessed: "07:26:38"
+  author:
+  - family: Magnussen
+    given: Steen
+  container-title: Open Journal of Forestry
+  container-title-short: OJF
+  DOI: 10.4236/ojf.2021.111002
+  ISSN: 2163-0429, 2163-0437
+  issue: 01
+  issued: 2021
+  key: BBD4JLEG
+  libraryID: 1
+  page: 14-36
+  providerKey: Zotero
+  source: DOI.org (Crossref)
+  title: Calibration of a Confidence Interval for a Classification
+    Accuracy
+  type: article-journal
+  URL: "https://www.scirp.org/journal/doi.aspx?doi=10.4236/ojf.2021.111002"
+  volume: 11
+- id: gu2020
+  accessed: "07:30:47"
+  author:
+  - family: Gu
+    given: Jianyu
+  - family: Congalton
+    given: Russell G.
+  container-title: Remote Sensing
+  container-title-short: Remote Sensing
+  DOI: 10.3390/rs12244093
+  ISSN: 2072-4292
+  issue: 24
+  issued: 2020-12-15
+  key: YBNR7ZB7
+  language: en
+  libraryID: 1
+  page: 4093
+  providerKey: Zotero
+  source: DOI.org (Crossref)
+  title: Analysis of the Impact of Positional Accuracy When Using a
+    Single Pixel for Thematic Accuracy Assessment
+  type: article-journal
+  URL: "https://www.mdpi.com/2072-4292/12/24/4093"
+  volume: 12
+- id: gu2021
+  accessed: "07:37:42"
+  author:
+  - family: Gu
+    given: Jianyu
+  - family: Congalton
+    given: Russell G.
+  container-title: Geographies
+  container-title-short: Geographies
+  DOI: 10.3390/geographies1020009
+  ISSN: 2673-7086
+  issue: 2
+  issued: 2021-09-18
+  key: VVECWZI6
+  language: en
+  libraryID: 1
+  page: 143-165
+  providerKey: Zotero
+  source: DOI.org (Crossref)
+  title: Analysis of the Impact of Positional Accuracy When Using a
+    Block of Pixels for Thematic Accuracy Assessment
+  type: article-journal
+  URL: "https://www.mdpi.com/2673-7086/1/2/9"
+  volume: 1
+- id: radoux2017
+  accessed: "10:14:06"
+  author:
+  - family: Radoux
+    given: Julien
+  - family: Bogaert
+    given: Patrick
+  container-title: Remote Sensing
+  DOI: 10.3390/rs9070646
+  ISSN: 2072-4292
+  issue: 7
+  issued: 2017-07
+  key: YARKBYJN
+  language: en
+  libraryID: 1
+  Number: 7
+  page: 646
+  providerKey: Zotero
+  Publisher: Multidisciplinary
+  rights: "http://creativecommons.org/licenses/by/3.0/"
+  source: www.mdpi.com
+  title: Good Practices for Object-Based Accuracy Assessment
+  type: article-journal
+  URL: "https://www.mdpi.com/2072-4292/9/7/646"
+  volume: 9
 ...
