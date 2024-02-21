@@ -219,4 +219,26 @@ references:
   type: article-journal
   URL: "https://www.sciencedirect.com/science/article/pii/S0034425714000704?via%3Dihub"
   volume: 148
+- id: stehman2019
+  accessed: "07:45:24"
+  author:
+  - family: Stehman
+    given: Stephen V.
+  - family: Foody
+    given: Giles M.
+  container-title: Remote Sensing of Environment
+  container-title-short: Remote Sensing of Environment
+  DOI: 10.1016/j.rse.2019.05.018
+  ISSN: 0034-4257
+  issued: 2019-09-15
+  key: I5ZLL8UG
+  libraryID: 1
+  page: 111199
+  providerKey: Zotero
+  source: ScienceDirect
+  title: Key issues in rigorous accuracy assessment of land cover
+    products
+  type: article-journal
+  URL: "https://www.sciencedirect.com/science/article/pii/S0034425719302111"
+  volume: 231
 ...

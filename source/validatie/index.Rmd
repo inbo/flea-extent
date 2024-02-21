@@ -78,6 +78,7 @@ opts_chunk$set(
 )
 library(tidyverse)
 library(INBOtheme)
+library(kableExtra)
 if (interactive()) {
   theme_set(theme_inbo(base_size = 10))
 } else {

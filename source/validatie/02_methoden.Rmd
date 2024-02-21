@@ -4,17 +4,17 @@ bibliography: [references.yaml, references.bib]
 
 # Materiaal en methoden
 
-## Landgebruikskaart Vlaanderen
+## Landgebruiksbestand en landgebruikskaart Vlaanderen
 
 @poelmans2019landgebruik en @poelmans2021 beschrijven de gebruikte databronnen en de methodes die werden gebruikt om de landgebruikskaarten te produceren.
-De verschillende databronnen worden samengevoegd in een landgebruiksbestand.
+De verschillende databronnen worden samengevoegd in een **landgebruiksbestand**.
 Dit bestand bestaat uit een combinatie van zowel GIS-lagen (vector- en rasterbestanden) en andere (ruimtelijke) databanken.
 Dit landgebruiksbestand en de databronnen die erin zitten, worden om de drie jaar geactualiseerd.
 Het eerste jaar waarvoor dit beschikbaar is, is 2013.
 De toestand van een landgebruiksbestand in een bepaald jaar, zal niet noodzakelijk overal een juiste weerspiegeling zijn van de toestand in dat jaar.
 Het is de laatst gekende -- en dus mogelijk gedateerde -- toestand volgens een bepaalde databron.
 
-De landgebruikskaarten zijn afgeleide (raster) producten op basis van de informatie in de landgebruiksbestanden.
+De **landgebruikskaarten** zijn afgeleide (raster) producten op basis van de informatie in de landgebruiksbestanden.
 De gegevens zijn volgens een bepaalde volgorde samengevoegd in een geodatabase met 4 rasterlagen met een 10m-resolutie (1 are):
 
 -   niveau 1 bodembedekking (22 klassen)
@@ -43,7 +43,12 @@ Deze methode legt een aantal zaken vast die bepalen hoe de (een) landgebruikskaa
 Er is dus flexibiliteit in welke methode juist gebruikt wordt en de keuzes die daarbij gemaakt worden hangen af van de doeleinden waarvoor de kaart gebruikt zal worden.
 Er moet enkel op toegezien worden dat dezelfde methode wordt gebruikt wanneer landgebruikskaarten van verschillende jaren met elkaar vergeleken worden.
 
-Voor het Natuurrapport 2020 zijn er twee landgebruikskaarten (één voor 2013 en één voor 2016) gemaakt [@schneiders2020], die een andere methodiek gebruiken dan de landgebruikskaart die @poelmans2019landgebruik en @poelmans2021 bespreken.
+De landgebruikskaarten zelf, die op basis van het landgebruiksbestand worden gemaakt door de afdeling VPO van het departement Omgeving, staan op [Geopunt](https://www.vlaanderen.be/datavindplaats/catalogus/landgebruik-vlaanderen-toestand-2022).
+Maar voor FLEA gaan we ecosysteemkaarten maken op basis van een ecosysteem extent-classificatie die afwijkt van de klassen van die landgebruikskaart.
+
+## Ecosysteemkaarten Vlaanderen
+
+Voor het Natuurrapport 2020 zijn er twee "ecosysteemkaarten" (één voor 2013 en één voor 2016) gemaakt [@schneiders2020], die een andere methodiek gebruiken dan de landgebruikskaart die @poelmans2019landgebruik en @poelmans2021 bespreken.
 Voor de analyses in @schneiders2020 werd een classificatie in tien ecosystemen (landgebruiken) gebruikt en hiervoor werd de bodembedekkingslaag van het Landgebruiksbestand Vlaanderen als volgt aangepast:
 
 -   In het Schelde-estuarium zijn de slikken en schorren aangepast op basis van ecotopenkaarten voor 2013 en 2016, waarbij de slikken en schorren voorrang krijgen op de waterlaag of andere terrestrische klassen (bv. overig laag groen).
@@ -125,7 +130,7 @@ Voor deze periode geeft de rekening voor de omvang van ecosystemen de toestand w
 Het EEA stelt een drieledige aanpak voor om rekeningen van de omvang van ecosystemen in Europa te ontwikkelen [@seea2021].
 Niveau I omvat ecosysteemklassen die overeenkomen en overlappen met de brede ecosysteemtypen die zijn ontwikkeld in het MAES-proces (Mapping and assessment of ecosystems and their services) (14 klassen).
 De rekeningen van niveau II zorgen voor een verdere onderverdeling van de ecosysteemtypen van niveau I en omvatten 23 ecosysteemcategorieën.
-De rekeningen van niveau III voegen nog meer resolutie toe, onderverdelen de rekeningen van niveau II verder en omvatten 30 ecosysteemtypen.
+De rekeningen van niveau III voegen nog meer resolutie toe, delen de rekeningen van niveau II verder op en omvatten 30 ecosysteemtypen.
 
 De 14 klassen van niveau I zijn:
 
@@ -161,7 +166,13 @@ De 14 klassen van niveau I zijn:
 
 ### Algemeen protocol
 
-@olofsson2014
+@olofsson2014 en @stehman2019:
+
+-   Keuzes in verband met het steekproefontwerp ("sampling design")
+
+-   Keuzes in verband met het ontwerp van het protocol voor de beoordeling van een steekproefeenheid ("response design")
+
+-   Keuzes in verband met analyse
 
 @stehman2011 bespreken de invloed van de keuze van de steekproefeenheid op de uitkomsten van de accuraatheidsschattingen.
 Ze vergelijken daarbij pixels, blokken van pixels en polygonen als mogelijke alternatieve steekproefeenheden.
@@ -202,4 +213,95 @@ Ze berekenen UA en PA zowel op basis van overeenkomst met enkel het primaire lab
 
 -   fouten tengevolge van variabiliteit op niveau van sub-samples binnen een steekproefeenheid
 
-### Verschillende soorten van vertekening
+### Interpretatie van een confusion matrix
+
+Een confusion matrix is een $K*K$ kruistabel waarmee twee classificaties, die een identieke set van $K$ classificatielabels gebruiken, met elkaar vergeleken worden.
+In de context van validatie en accuraatheidsschatting van een landgebruikskaart is de ene set de landgebruikskaart zelf en de andere set een referentiedataset waarvan kan aangenomen worden dat de foutenlast van de referentiedataset verwaarloosbaar is ten opzichte van deze van de landgebruikskaart.
+Deze matrix dient een dubbel doel.
+Ze laat enerzijds toe om de accuraatheid in te schatten van de kaart, en, anderzijds, om een onvertekende schatting te maken van de oppervlakte (totalen en de onzekerheid hierop) voor elk van de klassen.
+
+In de praktijk zal het onhaalbaar zijn om de referentiedataset voor de volledige regio waarin men geïnteresseerd is te bepalen (de ROI of "region of interest" die normaal samenvalt met de kaart).
+Er zal dan ook een aselecte steekproef nodig zijn voor de referentiedataset en het is enkel voor deze steekproef dat onderlinge vergelijking tussen de kaart en de referentie mogelijk is.
+
+Een fictitief voorbeeld van een confusion matrix tonen we in tabel \@ref(tab: accuraatheidsmatrixvb).
+Volgens de referentiedata, zijn er 5 boscellen, 2 water cellen en 3 urbane cellen.
+Volgens de kaart zijn er 4 cellen bos, 2 cellen water en 4 cellen urbaan.
+De *totale accuraatheid* (OA of "overall accuracy") is dan gelijk aan het percentage overeenkomst tussen beide sets: de som van de diagonaalelementen in de matrix, gedeeld door het totaal aantal cellen (10); $=\frac{4+1+3}{10}=80\%$ [@olofsson2014].
+Gebruikersaccuraatheid (UA of "user's accuracy") is gelijk aan $1-$ commission error.
+Het is een maat voor de juistheid van de kaart en het is de kans dat een klasse op de kaart correct is volgens de referentiedata[@olofsson2014]:
+
+-   Voor bos is UA $\frac{4}{4}=100\%$ en commission error is $\frac{0}{4}=0\%$.
+-   Voor water is UA $\frac{1}{2}=50\%$ en commission error is $\frac{1}{2}=50\%$.
+-   Voor urbaan is UA $\frac{3}{4}=75\%$ and commission error is $\frac{1}{4}=25\%$.
+
+De producentenaccuraatheid (PA of "producers accuracy") is gelijk aan $1-$ omission error en is een maat voor de volledigheid van de kaart omdat het voor een klasse aangeeft welke proportie ervan op de kaart getoond wordt [@olofsson2014]:
+
+-   Voor bos is de PA $\frac{4}{5}=80\%$ en omission error is $\frac{1}{5}=20\%$.
+-   Voor water is PA $\frac{1}{2}=50\%$ en omission error is $\frac{1}{2}=50\%$.
+-   Voor urbaan is PA $\frac{3}{3}=100\%$ en omission error is $\frac{0}{3}=0\%$.
+
+```{r , include = TRUE}
+vb <- data.frame(rows = c("Bos", "Water","Urbaan","Totaal"),
+                 forest = c(4,1,0,5),
+                 water = c(0,1,1,2),
+                 urban = c(0,0,3,3),
+                 total = c(4,2,4,10)
+                 ) 
+vb %>% kable(booktabs = TRUE,
+             caption = "Fictief voorbeeld van een confusion matrix.",
+             col.names = c("","Bos", "Water","Urbaan","Totaal")) %>%
+  add_header_above(c(" ", "Referentiedata" = 3,""), bold = T) %>%
+  column_spec(1, bold = T, border_right = T) %>%
+  column_spec(4, border_right = T) %>%
+  row_spec(3, hline_after = TRUE) %>%
+  pack_rows("Kaartdata", 1, 3) 
+```
+
+Voor het geval van wijzigingen tussen twee of meer kaarten, worden de problemen om waarmee men geconfronteerd wordt bij de keuzes die gemaakt moeten worden in verband met steekproefontwerp, response design en analyses nog eens versterkt omdat:
+
+-   landgebruiksveranderingen vaak zeldzaam zijn
+
+-   er meestal interesse is in vele types van landgebruiksverandering
+
+De volledige confusion matrix, voor een kaart die de veranderingen tussen twee tijdsstippen toont, wordt een $K^2*K^2$ matrix met $K$ klassen waar geen verandering is en $K*(K-1)$ mogelijke wijzigingen tussen klassen.
+Om het probleem enigszins behapbaar te houden zal het vaak nodig zijn om keuzes te maken door bijvoorbeeld te prioriteren in welke types van landgebruiksverandering men het meest geïnteresseerd is.
+
+## Steekproefontwerp
+
+-   ecosysteemkaart
+    -   bereken mode klasse in blok
+    -   dit geeft stratificatie per klasse
+        -   eventueel strata samenvoegen
+        -   binnen elk stratum ruimtelijk gebalanceerde steekproef (= trekking van PSU's)
+        -   binnen elk blok (PSU) wordt elke SSU bekeken (= pixels)
+
+## Response design
+
+### Keuze steekproefeenheid
+
+-   Primaire steekproefeenheid (PSU): vierkante polygoon (blok) met afmeting $\sqrt{n_2}*\sqrt{n_2}$ pixels (bijvoorbeeld 9 x 9 pixels)
+-   Secundaire steekproefeenheid (SSU): pixel 10 m x 10 m
+
+maar in de praktijk gaan we als volgt te werk:
+
+-   blok van $\sqrt{n_2}*\sqrt{n_2} = n_2$ pixels
+-   volledige blok wordt gedigitaliseerd (opgedeeld in polygonen en aan elke polygoon wordt een primair label toegekend en een alternatief label)
+-   deze polygoonkaart van het blok wordt verrasterd en deze verrastering levert ons de referentiewaarde voor elke pixel binnen een blok
+
+### Gebruikte referentiedata
+
+Wat de **resolutie van de orthofoto's** betreft, de middenschalige foto's van 2023 hebben een resolutie van 15 cm.
+In het jaar 2000 was dat nog 1 m.
+Het zou dus wel kunnen dat voor de periode 2013 tot 2022 er was evolutie zit op die resolutie, en dat foto's voor het valideren van een ecosysteemkaart van 2013, minder nauwkeurig zijn dan die voor 2022.
+
+## Analyse
+
+Omwille van het complexere steekproefontwerp (afweging precisie en kostenefficiëntie) zullen de standaard formules opgegeven in @olofsson2014 enkel gelden op niveau van de PSU's.
+Met dit steekproefontwerp hebben we achteraf nog de flexibiliteit om accuraatheid en oppervlakteschattingen voor verschillende scenario's te berekenen.
+Stel bijvoorbeeld dat we als PSU een blok nemen van 9 x 9 pixels:
+
+-   bepalen van label op niveau van PSU voor referentiedata en kaart en vervolgens verwerken volgens formules in @olofsson2014
+    -   hoe het label bepaald wordt, moeten we vastleggen in regels (bv volgens een meerderheidsregel of een binaire classificatie)
+-   bepalen van label op deel van de PSU, bv de centrale 3 x 3 blok van pixels en vervolgens identief verwerken
+-   alle informatie gebruiken (van alle pixels) en dus validatie op pixelniveau; in dat geval wellicht formules uit de model-assisted survey sampling literatuur en/of schatters voor cluster sampling nodig om de analyse te doen.
+    -   ook hier kan nog een regel nodig zijn voor toekenning van labels in de referentiedata in geval een polygoon een pixel doorsnijdt
