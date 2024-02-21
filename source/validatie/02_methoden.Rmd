@@ -266,6 +266,43 @@ Voor het geval van wijzigingen tussen twee of meer kaarten, worden de problemen 
 De volledige confusion matrix, voor een kaart die de veranderingen tussen twee tijdsstippen toont, wordt een $K^2*K^2$ matrix met $K$ klassen waar geen verandering is en $K*(K-1)$ mogelijke wijzigingen tussen klassen.
 Om het probleem enigszins behapbaar te houden zal het vaak nodig zijn om keuzes te maken door bijvoorbeeld te prioriteren in welke types van landgebruiksverandering men het meest geïnteresseerd is.
 
+In @vancalster2013 wordt dieper ingegaan op de link tussen de PA en UA en de implicaties ervan voor de schattingen van de totale oppervlakte van een landgebruik.
+Zo is, voor een bepaald landgebruik $A$:
+
+$$PA = P(\text{kaart} = A|\text{referentie} = A)$$ en
+
+$$UA = P(\text{referentie} = A|\text{kaart}= A)$$
+
+waarmee we PA en UA uitgedrukt hebben als conditionele kansen.
+
+Via de regel van Bayes hebben we dan dat:
+
+$$P(\text{kaart} = A|\text{referentie} = A) = \frac{P(\text{referentie} = A|\text{kaart}= A)P(\text{kaart}=A)}{P(\text{referentie} = A)}$$
+
+of
+
+$$P(\text{kaart}=A) = \frac{PA}{UA}P(\text{referentie} = A)$$
+
+en voor de variantie hierop hebben we, als we $PA/UA$ als constante beschouwen:
+
+$$\mathbf{Var}[P(\text{kaart}=A)] = \mathbf{Var}\bigg[\frac{PA}{UA}P(\text{referentie} = A)\bigg]=\frac{PA^2}{UA^2}\mathbf{Var}[P(\text{referentie} = A)]$$
+
+De volgende conclusies kunnen worden getrokken met betrekking tot de ecosysteemkaart:
+
+1.  Wanneer $PA=UA$, zullen de schattingen van de kaart vertekeningsvrij zijn en zal de variantie ervan gelijk zijn aan deze van de referentiedata.
+
+2.  Wanneer $PA \neq UA$, zullen de schattingen van de kaart vertekend zijn.
+
+    a.  $PA > UA$, resulteert in een positieve vertekening (overschatting) en een grotere variantie.
+    b.  $PA < UA$, resulteert in een negatieve vertekening (onderschatting) en een kleinere variantie.
+
+3.  Als PA en UA geschat kunnen worden, hebben we een manier om voor bias te corrigeren.
+    De voor bias gecorrigeerde schattingen kunnen als volgt worden berekend:
+
+    $$P(\text{referentie}=A) = \frac{UA}{PA}P(\text{kaart} = A)$$
+
+4.  Zelfs als PA en UA veel kleiner zijn dan 1, kunnen onvertekende schattingen worden verkregen; de geproduceerde ecosysteemkaarten zullen echter zeer grote ruimtelijke fouten vertonen wat betreft de ruimtelijke locatie van de ecosystemen en zullen daarom onbruikbaar zijn voor lokale interpretatie.
+
 ## Steekproefontwerp
 
 -   ecosysteemkaart
@@ -302,6 +339,6 @@ Stel bijvoorbeeld dat we als PSU een blok nemen van 9 x 9 pixels:
 
 -   bepalen van label op niveau van PSU voor referentiedata en kaart en vervolgens verwerken volgens formules in @olofsson2014
     -   hoe het label bepaald wordt, moeten we vastleggen in regels (bv volgens een meerderheidsregel of een binaire classificatie)
--   bepalen van label op deel van de PSU, bv de centrale 3 x 3 blok van pixels en vervolgens identief verwerken
+-   bepalen van label op deel van de PSU, bv de centrale 3 x 3 blok van pixels en vervolgens identiek verwerken
 -   alle informatie gebruiken (van alle pixels) en dus validatie op pixelniveau; in dat geval wellicht formules uit de model-assisted survey sampling literatuur en/of schatters voor cluster sampling nodig om de analyse te doen.
     -   ook hier kan nog een regel nodig zijn voor toekenning van labels in de referentiedata in geval een polygoon een pixel doorsnijdt
