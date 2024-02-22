@@ -166,7 +166,7 @@ De 14 klassen van niveau I zijn:
 
 ### Algemeen protocol
 
-@olofsson2014 en @stehman2019:
+@strahler2008; @olofsson2014; @haub2015 en @stehman2019:
 
 -   Keuzes in verband met het steekproefontwerp ("sampling design")
 
@@ -212,6 +212,8 @@ Ze berekenen UA en PA zowel op basis van overeenkomst met enkel het primaire lab
 -   systematische fouten tengevolge van incorrecte interpretatie van de informatie op de luchtfoto
 
 -   fouten tengevolge van variabiliteit op niveau van sub-samples binnen een steekproefeenheid
+
+@see2022 Geo Wiki voor crowd-sourcing referentiedata.
 
 ### Interpretatie van een confusion matrix
 
