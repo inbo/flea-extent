@@ -241,4 +241,44 @@ references:
   type: article-journal
   URL: "https://www.sciencedirect.com/science/article/pii/S0034425719302111"
   volume: 231
+- id: vancalster2013
+  author:
+    - family: Van Calster
+      given: H
+    - family: Verschelde
+      given: P
+    - family: Bauwens
+      given: B
+  citation-key: vancalster2013
+  collection-title: Alterra Report 2393 INBO Report INBO.R.2013.1
+  container-author:
+    - family: De Blust
+      given: G
+    - family: Laurijssens
+      given: G
+    - family: Van Calster
+      given: H
+    - family: Verschelde
+      given: P
+    - family: Bauwens
+      given: D
+    - family: De Vos
+      given: B
+    - family: Svensson
+      given: J
+    - family: Jongman
+      given: R H G
+  container-title: >-
+    Design of a monitoring system and its cost-effectiveness : optimization of
+    biodiversity monitoring through close collaboration of users and data
+    providers
+  event-place: Brussels
+  ISBN: 1566-7197
+  issued:
+    - year: 2013
+  publisher: Research Institute for Nature and Forest
+  publisher-place: Brussels
+  title: Cost-effective sampling design for biodiversity monitoring in Europe
+  type: chapter
+  URL: http://edepot.wur.nl/250347
 ...
