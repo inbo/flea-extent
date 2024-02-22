@@ -7,6 +7,7 @@
 *.mdb
 *.shp*
 *.shx
+*.tex
 *.xls*
 *_files
 .DS_Store
