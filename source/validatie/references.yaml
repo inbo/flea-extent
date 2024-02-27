@@ -315,4 +315,18 @@ references:
   title-short: Global Land Cover Validation
   type: article-journal
   volume: 25
+- id: cochran1977
+  author:
+  - family: Cochran
+    given: W G
+  ISSN: 0-471-16240-X
+  issued: 1977
+  key: VXS5RLCV
+  libraryID: 1
+  number-of-pages: 1-428
+  providerKey: Zotero
+  publisher: John Wiley and Sons
+  publisher-place: "New York : NY, USA"
+  title: Sampling techniques
+  type: book
 ...
