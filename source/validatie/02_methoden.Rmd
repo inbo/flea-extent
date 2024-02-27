@@ -225,7 +225,7 @@ Ze laat enerzijds toe om de accuraatheid in te schatten van de kaart, en, anderz
 In de praktijk zal het onhaalbaar zijn om de referentiedataset voor de volledige regio waarin men geïnteresseerd is te bepalen (de ROI of "region of interest" die normaal samenvalt met de kaart).
 Er zal dan ook een aselecte steekproef nodig zijn voor de referentiedataset en het is enkel voor deze steekproef dat onderlinge vergelijking tussen de kaart en de referentie mogelijk is.
 
-Een fictitief voorbeeld van een confusion matrix tonen we in tabel \@ref(tab: accuraatheidsmatrixvb).
+Een fictief voorbeeld van een confusion matrix tonen we in tabel \@ref(tab: accuraatheidsmatrixvb).
 Volgens de referentiedata, zijn er 5 boscellen, 2 water cellen en 3 urbane cellen.
 Volgens de kaart zijn er 4 cellen bos, 2 cellen water en 4 cellen urbaan.
 De *totale accuraatheid* (OA of "overall accuracy") is dan gelijk aan het percentage overeenkomst tussen beide sets: de som van de diagonaalelementen in de matrix, gedeeld door het totaal aantal cellen (10); $=\frac{4+1+3}{10}=80\%$ [@olofsson2014].
@@ -258,15 +258,6 @@ vb %>% kable(booktabs = TRUE,
   row_spec(3, hline_after = TRUE) %>%
   pack_rows("Kaartdata", 1, 3) 
 ```
-
-Voor het geval van wijzigingen tussen twee of meer kaarten, worden de problemen om waarmee men geconfronteerd wordt bij de keuzes die gemaakt moeten worden in verband met steekproefontwerp, response design en analyses nog eens versterkt omdat:
-
--   landgebruiksveranderingen vaak zeldzaam zijn
-
--   er meestal interesse is in vele types van landgebruiksverandering
-
-De volledige confusion matrix, voor een kaart die de veranderingen tussen twee tijdsstippen toont, wordt een $K^2*K^2$ matrix met $K$ klassen waar geen verandering is en $K*(K-1)$ mogelijke wijzigingen tussen klassen.
-Om het probleem enigszins behapbaar te houden zal het vaak nodig zijn om keuzes te maken door bijvoorbeeld te prioriteren in welke types van landgebruiksverandering men het meest geïnteresseerd is.
 
 In @vancalster2013 wordt dieper ingegaan op de link tussen de PA en UA en de implicaties ervan voor de schattingen van de totale oppervlakte van een landgebruik.
 Zo is, voor een bepaald landgebruik $A$:
@@ -305,6 +296,57 @@ De volgende conclusies kunnen worden getrokken met betrekking tot de ecosysteemk
 
 4.  Zelfs als PA en UA veel kleiner zijn dan 1, kunnen onvertekende schattingen worden verkregen; de geproduceerde ecosysteemkaarten zullen echter zeer grote ruimtelijke fouten vertonen wat betreft de ruimtelijke locatie van de ecosystemen en zullen daarom onbruikbaar zijn voor lokale interpretatie.
 
+### Wijzigingen tussen kaarten of tijdseries van kaarten
+
+Voor het geval van wijzigingen tussen twee of meer kaarten, worden de problemen waarmee men geconfronteerd wordt bij de keuzes in verband met steekproefontwerp, response design en analyses nog eens versterkt omdat:
+
+-   landgebruiksveranderingen vaak zeldzaam zijn
+
+-   er meestal interesse is in vele types van landgebruiksverandering
+
+De volledige confusion matrix, voor een kaart die de veranderingen tussen twee tijdsstippen toont, wordt een $K^2*K^2$ matrix met $K$ klassen waar geen verandering is en $K*(K-1)$ mogelijke wijzigingen tussen klassen.
+Om het probleem enigszins behapbaar te houden zal het vaak nodig zijn om keuzes te maken door bijvoorbeeld te prioriteren in welke types van landgebruiksverandering men het meest geïnteresseerd is.
+
+@tsendbazar2021 passen de volgende procedure toe voor validatie van jaarlijkse globale landgebruikskaarten:
+
+-   Voor het basisjaar (t0) een random gestratificeerde steekproef met strata volgens klimaatzones in elk continent met extra strata voor zeldzame landgebruiken (in totaal 149 strata; totale steekproefgrootte 21752)
+
+-   Voor daaropvolgende jaren:
+
+    -   Herbezoeken (continu, nog voor de publicatie van de kaart zelf)
+
+        -   gerichte herbezoeken van t0 set op basis van detectie van punten waar een hoge kans op landgebruiksverandering voorspeld wordt (bijvoorbeeld op basis van een tijdreeksanalyse voor wijzigingen in reflectantie) +
+
+        -   random herbezoeken van t0 set +
+
+        -   extra strata voor landgebruiksveranderingen met nieuwe punten
+
+        -   een deel van de t0 set wordt niet jaarlijks opnieuw bezocht, maar wel met lagere frequentie (vijfjaarlijks)
+
+    -   Wanneer de kaart gepubliceerd is en men wil voor bepaalde landgebruiksveranderingen een beter inzicht krijgen:
+
+        -   extra strata voor deze landgebruiksveranderingen met nieuwe punten
+
+@gong2023 gebruikten de volgende procedure voor de validatie van landgebruiksveranderingen in China op basis van drie landgebruikskaarten met een interval van tien jaar tussen de kaarten:
+
+-   voor elk landgebruik
+
+    -   Beschouw de unie van de drie periodes (elke pixel waar het landgebruik in minstens één van de drie periodes aanwezig was)
+
+    -   Beschouw stabiel en wijzigingen naar eender welk ander landgebruik (dus specifieke transities van landgebruik x naar landgebruik y worden buiten beschouwing gelaten).
+        Voor drie periodes, wordt stabiel gecodeerd als "111".
+        Alle mogelijke wijzigingen zijn: "001", "010", "100", "011", "110", "101".
+        Dit geeft maximaal 7 strata, maar onwaarschijnlijke wijzigingen worden weggelaten (zo wordt voor artificiële oppervlakken enkel "111" (stabiel), "011" (toename vanaf periode 2) en "001" (toename in periode 3) beschouwd).
+
+-   Stratificatie landgebruiken x maximaal 7 strata.
+    In het algemeen hebben we dan voor $K$ landgebruiken en $p$ periodes maximaal: $K \times (2^p-1)$ strata.
+
+```{=html}
+<!--
+validatie landgebruiksveranderingen nara 2020
+https://docs.google.com/document/d/1pOCGKCxiS4v1tsW6IqMUpdruOVhmwf8heuL98msDLs4/edit#heading=h.yylq3n3tvbtn
+-->
+```
 ## Steekproefontwerp
 
 -   ecosysteemkaart
@@ -326,6 +368,8 @@ Deze relatie kan gebruikt worden om de verschillende variantiecomponenten in fun
 Hiermee kan dan gekeken worden of er een optimale clustergrootte is in termen van enkel variantie (kosten zijn hier nog buiten beschouwing).
 
 ## Response design
+
+### Definitie ecosystemen
 
 ### Keuze steekproefeenheid
 

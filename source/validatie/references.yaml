@@ -329,4 +329,82 @@ references:
   publisher-place: "New York : NY, USA"
   title: Sampling techniques
   type: book
+- id: tsendbazar2021
+  accessed: "07:50:10"
+  author:
+  - family: Tsendbazar
+    given: N.
+  - family: Herold
+    given: M.
+  - family: Li
+    given: L.
+  - family: Tarko
+    given: A.
+  - family: Bruin
+    given: S.
+    non-dropping-particle: de
+  - family: Masiliunas
+    given: D.
+  - family: Lesiv
+    given: M.
+  - family: Fritz
+    given: S.
+  - family: Buchhorn
+    given: M.
+  - family: Smets
+    given: B.
+  - family: Van De Kerchove
+    given: R.
+  - family: Duerauer
+    given: M.
+  container-title: Remote Sensing of Environment
+  container-title-short: Remote Sensing of Environment
+  DOI: 10.1016/j.rse.2021.112686
+  ISSN: 0034-4257
+  issued: 2021-12-01
+  key: SLVHCL6X
+  libraryID: 1
+  page: 112686
+  providerKey: 2509FBBE-5BB0-44C4-B119-6083A81ED673
+  source: ScienceDirect
+  title: Towards operational validation of annual global land cover maps
+  type: article-journal
+  URL: "https://www.sciencedirect.com/science/article/pii/S0034425721004065"
+  volume: 266
+- id: gong2023
+  accessed: "07:30:43"
+  author:
+  - family: Gong
+    given: Yali
+  - family: Xie
+    given: Huan
+  - family: Liao
+    given: Shicheng
+  - family: Lu
+    given: Yao
+  - family: Jin
+    given: Yanmin
+  - family: Wei
+    given: Chao
+  - family: Tong
+    given: Xiaohua
+  container-title: Remote Sensing
+  DOI: 10.3390/rs15184593
+  ISSN: 2072-4292
+  issue: 18
+  issued: 2023-01
+  key: CNDDD4GR
+  language: en
+  libraryID: 1
+  Number: 18
+  page: 4593
+  providerKey: 2509FBBE-5BB0-44C4-B119-6083A81ED673
+  Publisher: Multidisciplinary
+  rights: "http://creativecommons.org/licenses/by/3.0/"
+  source: www.mdpi.com
+  title: Assessing the Accuracy of Multi-Temporal GlobeLand30 Products
+    in China Using a Spatiotemporal Stratified Sampling Method
+  type: article-journal
+  URL: "https://www.mdpi.com/2072-4292/15/18/4593"
+  volume: 15
 ...
