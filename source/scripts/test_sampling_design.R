@@ -142,6 +142,68 @@ join_levels <- cats(temporal_stratification)[[1]] %>%
 levels(temporal_stratification) <- join_levels
 coltab(temporal_stratification) <- NULL
 
+# all transitions
+
+df <- join_levels %>%
+  ggsankey::make_long(
+    lg2013, lg2016, lg2019,
+    value = count
+  )
+
+df2 <-  df %>%
+  group_by(x, node) %>%
+  summarise(n = sum(value))
+
+df3 <- df %>%
+  left_join(df2)
+
+p <- df3 %>%
+  ggplot(aes(x = x,
+             next_x = next_x,
+             node = node,
+             next_node = next_node,
+             fill = factor(node),
+             label = paste0(node,": n = ", n),
+             value = value)) +
+  geom_sankey(alpha = 0.5) +
+  geom_sankey_label(alpha = 0.5, colour = "black") +
+  theme_sankey() +
+  theme(legend.position = "none")
+
+p
+
+# only changes
+
+df <- join_levels %>%
+  filter(stable == "changed") %>%
+  ggsankey::make_long(
+    lg2013, lg2016, lg2019,
+    value = count
+  )
+
+df2 <-  df %>%
+  group_by(x, node) %>%
+  summarise(n = sum(value))
+
+df3 <- df %>%
+  left_join(df2)
+
+p <- df3 %>%
+  ggplot(aes(x = x,
+             next_x = next_x,
+             node = node,
+             next_node = next_node,
+             fill = factor(node),
+             label = paste0(node,": n = ", n),
+             value = value)) +
+  geom_sankey(alpha = 0.5) +
+  geom_sankey_label(alpha = 0.5, colour = "black") +
+  theme_sankey() +
+  theme(legend.position = "none")
+
+p
+
+
 
 # map showing stable (TRUE) vs changed (FALSE)
 activeCat(temporal_stratification) <- "stable"
