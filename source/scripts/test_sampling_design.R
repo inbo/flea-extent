@@ -43,6 +43,8 @@ library(terra)
 library(sf)
 library(dplyr)
 library(mapview)
+library(ggplot2)
+library(ggsankey)
 
 flea_data <- gsub(
   pattern = "flea-extent", replacement = "flea-data", x = here::here())
@@ -70,11 +72,13 @@ catstable <- xml2::xml_find_all(x = slyr, ".//pipe//rasterrenderer//colorPalette
     value = as.numeric(value),
     color = toupper(color))
 
-apply_cats <- function(x, cats = catstable, name) {
+apply_cats <- function(x, cats = catstable, name, coltab = TRUE) {
   xc <- as.factor(x)
   names(cats)[names(cats) == "label"] <- name
   levels(xc) <- cats
-  coltab(xc) <- cats |> dplyr::select(value, color) |> as.data.frame()
+  if (coltab) {
+    coltab(xc) <- cats |> dplyr::select(value, color) |> as.data.frame()
+  }
   names(xc) <- name
   return(xc)
 }
@@ -103,6 +107,7 @@ names(rasterstoplot) <- c("2013 original", "2013 stratification")
 plot(rasterstoplot)
 
 # combine the spatial strata into temporal strata
+##################################################
 
 temporal_stratification <- purrr::reduce(
   list(lg2013_stratification, lg2016_stratification, lg2019_stratification),
@@ -218,8 +223,12 @@ binary_levels <- data.frame(
     label = stringr::str_pad(value, side = "left", pad = "0", width = 3),
     label2 = c(
       "not present", "gained", "dynamic",
-      "gained", "lost", "dynamic", "lost", "stable"))
-
+      "gained", "lost", "dynamic", "lost", "stable"),
+    col = c("lightgrey", "lightblue", "orange1", "darkblue", "darkred",
+            "orange2", "red1",
+             "green"),
+    col2 = c("lightgrey", "blue", "orange", "blue", "red", "orange", "red",
+            "green"))
 
 ts <- terra::catalyze(temporal_stratification) %>%
   terra::subset(subset = lg) %>%
@@ -229,19 +238,220 @@ ts <- terra::catalyze(temporal_stratification) %>%
     names(cats)[names(cats) == "label"] <- nm
     levels(xc) <- cats
     names(xc) <- nm
+    coltab(xc) <- cats[, c("value", "col")]
     return(xc)
   })
 
 plot(ts)
 ts2 <- ts %>%
-  sapp(fun = function(x) {
+  sapp(fun = function(x, cats = binary_levels) {
     nm <- names(x)
     activeCat(x) <- "label2"
     names(x) <- nm
+    coltab(x) <- cats %>% select(value, col = col2)
     return(x)
   })
 plot(ts2)
 
+# repeat above steps with following differences:
+# create difference maps without applying focal filter on status maps
+# apply focal filter afterwards
+#####################################################
+
+
+temporal_maps <- purrr::reduce(
+  list(lg2013_selectie, lg2016_selectie, lg2019_selectie),
+  concats)
+
+tm_additional_levels <- freq(temporal_maps) %>%
+  as_tibble() %>%
+  tidyr::separate(
+    value, into = c("lg2013", "lg2016", "lg2019"),
+    sep = "_", remove = FALSE) %>%
+  binary_change(lg = lg) %>%
+  rowwise() %>%
+  mutate(stable = ifelse(
+    all(lg2013 == lg2016, lg2016 == lg2019),
+    "stable", "changed") %>%
+      as.factor()) %>%
+  ungroup()
+
+tm_join_levels <- cats(temporal_maps)[[1]] %>%
+  inner_join(
+    tm_additional_levels,
+    by = join_by("lg2013_lg2016_lg2019" == "value"))
+levels(temporal_maps) <- tm_join_levels
+coltab(temporal_maps) <- NULL
+
+# all transitions
+
+tm_df <- tm_join_levels %>%
+  ggsankey::make_long(
+    lg2013, lg2016, lg2019,
+    value = count
+  )
+
+tm_df2 <-  tm_df %>%
+  group_by(x, node) %>%
+  summarise(n = sum(value))
+
+tm_df3 <- tm_df %>%
+  left_join(tm_df2)
+
+p <- tm_df3 %>%
+  ggplot(aes(x = x,
+             next_x = next_x,
+             node = node,
+             next_node = next_node,
+             fill = factor(node),
+             label = paste0(node,": n = ", n),
+             value = value)) +
+  geom_sankey(alpha = 0.5) +
+  geom_sankey_label(alpha = 0.5, colour = "black") +
+  theme_sankey() +
+  theme(legend.position = "none")
+
+p
+
+# only changes
+
+tm_df <- tm_join_levels %>%
+  filter(stable == "changed") %>%
+  ggsankey::make_long(
+    lg2013, lg2016, lg2019,
+    value = count
+  )
+
+tm_df2 <-  tm_df %>%
+  group_by(x, node) %>%
+  summarise(n = sum(value))
+
+tm_df3 <- tm_df %>%
+  left_join(tm_df2)
+
+p <- tm_df3 %>%
+  ggplot(aes(x = x,
+             next_x = next_x,
+             node = node,
+             next_node = next_node,
+             fill = factor(node),
+             label = paste0(node,": n = ", n),
+             value = value)) +
+  geom_sankey(alpha = 0.5) +
+  geom_sankey_label(alpha = 0.5, colour = "black") +
+  theme_sankey() +
+  theme(legend.position = "none")
+
+p
+
+
+
+# map showing stable (TRUE) vs changed (FALSE)
+activeCat(temporal_maps) <- "stable"
+plot(temporal_maps)
+tm_additional_levels %>%
+  group_by(stable) %>%
+  summarise(n_pixels = sum(count))
+
+tm_binary_levels <- data.frame(
+  value = c(0,1,10,11,100,101,110,111)) %>%
+  mutate(
+    label = stringr::str_pad(value, side = "left", pad = "0", width = 3),
+    label2 = c(
+      "not present", "gained", "dynamic",
+      "gained", "lost", "dynamic", "lost", "stable"),
+    col = c("lightgrey", "lightblue", "orange1", "darkblue", "darkred",
+            "orange2", "red1",
+            "green"),
+    col2 = c("lightgrey", "blue", "orange", "blue", "red", "orange", "red",
+             "green"))
+
+tm_ts <- terra::catalyze(temporal_maps) %>%
+  terra::subset(subset = lg) %>%
+  sapp(fun = function(x, cats = tm_binary_levels) {
+    nm <- names(x)
+    xc <- as.factor(x)
+    names(cats)[names(cats) == "label"] <- nm
+    levels(xc) <- cats
+    names(xc) <- nm
+    coltab(xc) <- cats[, c("value", "col")]
+    return(xc)
+  })
+plot(tm_ts)
+
+tm_ts2 <- tm_ts %>%
+  sapp(fun = function(x, cats = tm_binary_levels) {
+    nm <- names(x)
+    activeCat(x) <- "label2"
+    names(x) <- nm
+    coltab(x) <- cats %>% select(value, col = col2)
+    return(x)
+  })
+plot(tm_ts2)
+
+# apply majority filter, use 3 by 3 block
+activeCat(temporal_maps) <- "lg2013_lg2016_lg2019"
+temporal_maps_majority <- focal(
+  temporal_maps, w = 3, fun = "modal") %>%
+  apply_cats(cats = tm_join_levels,
+             name = "lg2013_lg2016_lg2019",
+             coltab = FALSE)
+temporal_maps_majority_twice <- focal(
+  temporal_maps, w = 3, fun = "modal") %>%
+  focal(w = 3, fun = "modal") %>%
+  apply_cats(cats = tm_join_levels,
+             name = "lg2013_lg2016_lg2019",
+             coltab = FALSE)
+
+# map showing stable (TRUE) vs changed (FALSE)
+activeCat(temporal_maps_majority) <- "stable"
+plot(temporal_maps_majority)
+activeCat(temporal_maps_majority_twice) <- "stable"
+plot(temporal_maps_majority_twice)
+
+
+tm_tsm <- terra::catalyze(temporal_maps_majority) %>%
+  terra::subset(subset = lg) %>%
+  sapp(fun = function(x, cats = tm_binary_levels) {
+    nm <- names(x)
+    xc <- as.factor(x)
+    names(cats)[names(cats) == "label"] <- nm
+    levels(xc) <- cats
+    names(xc) <- nm
+    coltab(xc) <- cats[, c("value", "col")]
+    return(xc)
+  })
+plot(tm_tsm)
+tm_tsm2 <- tm_tsm %>%
+  sapp(fun = function(x, cats = tm_binary_levels) {
+    nm <- names(x)
+    activeCat(x) <- "label2"
+    names(x) <- nm
+    coltab(x) <- cats %>% select(value, col = col2)
+    return(x)
+  })
+plot(tm_tsm2)
+
+# Vergelijking
+##############
+activeCat(temporal_maps) <- "stable"
+rasterstoplot <- c(
+  temporal_stratification,
+  temporal_maps,
+  temporal_maps_majority,
+  temporal_maps_majority_twice)
+names(rasterstoplot) <- c(
+  "majority filter 9x9 on input maps",
+  "no filter",
+  "majority filter 3x3 on change maps",
+  "majority filter 3x3 on change maps\napplied twice"
+  )
+plot(rasterstoplot)
+
+
+
+# Sample selection
+##################
 
 # lazy conversion to points
 lg2013_strat_points <- as.points(lg2013_stratification)
