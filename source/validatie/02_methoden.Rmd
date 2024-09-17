@@ -4,7 +4,9 @@ bibliography: [references.yaml, references.bib]
 
 # Materiaal en methoden
 
-## Landgebruiksbestand en landgebruikskaart Vlaanderen
+## Typologie van landgebruik
+
+### Landgebruiksbestand en landgebruikskaart Vlaanderen
 
 @poelmans2019landgebruik en @poelmans2021 beschrijven de gebruikte databronnen en de methodes die werden gebruikt om de landgebruikskaarten te produceren.
 De verschillende databronnen worden samengevoegd in een **landgebruiksbestand**.
@@ -46,7 +48,7 @@ Er moet enkel op toegezien worden dat dezelfde methode wordt gebruikt wanneer la
 De landgebruikskaarten zelf, die op basis van het landgebruiksbestand worden gemaakt door de afdeling VPO van het departement Omgeving, staan op [Geopunt](https://www.vlaanderen.be/datavindplaats/catalogus/landgebruik-vlaanderen-toestand-2022).
 Maar voor FLEA gaan we ecosysteemkaarten maken op basis van een ecosysteem extent-classificatie die afwijkt van de klassen van die landgebruikskaart.
 
-## Ecosysteemkaarten Vlaanderen
+### Ecosysteemkaarten Vlaanderen NARA 2020
 
 Voor het Natuurrapport 2020 zijn er twee "ecosysteemkaarten" (één voor 2013 en één voor 2016) gemaakt [@schneiders2020], die een andere methodiek gebruiken dan de landgebruikskaart die @poelmans2019landgebruik en @poelmans2021 bespreken.
 Voor de analyses in @schneiders2020 werd een classificatie in tien ecosystemen (landgebruiken) gebruikt en hiervoor werd de bodembedekkingslaag van het Landgebruiksbestand Vlaanderen als volgt aangepast:
@@ -92,9 +94,7 @@ nara2020_aanpassingen %>%
 ```
 
 Een later project, dat hierop verder bouwde [@jocque2022], had tot doel om in een pilootproject verschillende verbeteropties voor deze landgebruikskaart te bekijken en na te gaan of de verbeterde kaarten effectief bijdroegen aan een hogere accuraatheid.
-Er werden vier verschillende verbeteropties uitgetest en hiervan werd de accuraatheid geëvalueerd en vergeleken ten opzichte van de basiskaart die hierboven beschreven is en gebruikt werd in @schneiders2020.
-De accuraatheid van de basiskaart werd reeds onder de loep genomen door middel van een validatiedataset van 3815 punten in [deze studie](https://www.vlaanderen.be/inbo/backgroundindicatoren/landgebruiksverandering-validatie).
-Dezelfde validatieset werd gebruikt om de nieuwe kaarten met de volgende verbeteringen te evalueren:
+Er werden vier verschillende verbeteropties uitgetest en hiervan werd de accuraatheid geëvalueerd en vergeleken ten opzichte van de basiskaart die hierboven beschreven is en gebruikt werd in @schneiders2020:
 
 -   Basiskaart + bos: Voor deze kaart werd de basiskaart verbeterd door gebruik te maken van de Boswijzer (beschikbaar voor 2009, 2015, 2018).
     Praktisch zou dit willen zeggen dat er een stap wordt toegevoegd in de bos-laag via de Digitale Boswijzer waarbij bossen voorrang krijgen op andere terrestrische klassen (bv. overig laag groen).
@@ -109,7 +109,9 @@ Dezelfde validatieset werd gebruikt om de nieuwe kaarten met de volgende verbete
 
 -   Basiskaart + bos + gras + bak: Combinatie van de drie voorgaande kaarten.
 
-Tevens wordt in @jocque2022 de link gelegd tussen deze landgebruikskaarten en de mogelijkheden die ze bieden om te rapporteren over ecosystem extent accounts volgens de richtlijnen die "The System of Environmental-Economic Accounting—Ecosystem Accounting (SEEA EA)" [@seea2021] meegeeft.
+### SEEA EA
+
+In @jocque2022 wordt de link gelegd tussen deze landgebruikskaarten en de mogelijkheden die ze bieden om te rapporteren over ecosystem extent accounts volgens de richtlijnen die "The System of Environmental-Economic Accounting—Ecosystem Accounting (SEEA EA)" [@seea2021] meegeeft.
 Het SEEA EA kader geeft de basis voor het opstellen van verschillende ecosysteemrekeningen met de volgende vijf belangrijkste ecosysteemrekeningen:
 
 -   rekening voor de omvang van ecosystemen ("ecosystem extent account")
@@ -161,6 +163,56 @@ De 14 klassen van niveau I zijn:
 13. Inland water bodies
 
 14. Coastal water bodies and inter-tidal areas
+
+### Huidige aanpak
+
+TODO
+
+## Validatie ecosysteemkaarten Vlaanderen NARA 2020
+
+### Aanpak
+
+```{r}
+validatiepunten <- git2rdata::read_vc(
+  "validatiepunten",
+  here::here("../../data")
+) |>
+  as_tibble()
+  
+```
+
+De accuraatheid van de basiskaart werd reeds onder de loep genomen door middel van een validatiedataset van 3815 punten in [deze studie](https://www.vlaanderen.be/inbo/backgroundindicatoren/landgebruiksverandering-validatie).
+Dezelfde validatieset werd gebruikt om de verbeteropties uit @jocque2022, die verder bouwen op de basiskaart uit te testen.
+
+-   *typologie*: de originele 25 landgebruiksklassen werden gegroepeerd in negen validatieklassen
+
+-   *steekproefgrootte*: Op basis van een schatting van de betrouwbaarheid per veranderingsklasse en de proportie van elk van de veranderingsklassen in de totale oppervlakte, werd een steekproefgrootte van 3815 punten vastgelegd, waarvan 900 volgens de kaart niet van landgebruik veranderen
+
+-   *steekproefeenheid*: rastercel van 10 m x 10 m
+
+-   *steekproefontwerp*:
+
+    -   gestratificeerde aselecte steekproef
+
+    -   proportioneel volgens hun oppervlakteaandeel verdeeld over de veranderingsklassen, met een minimum van 40 punten voor de klassen met de kleinste oppervlakte [@olofsson2014]
+
+-   *response design*:
+
+    -   De punten werden gevalideerd door tien evaluatoren op basis van luchtfoto’s en extra informatie uit de attributentabellen van de landbouwgebruikspercelendatabank en de Biologische Waarderingskaart (BWK).
+
+    -   Voor elk punt noteerde de evaluator of het landgebruik tussen 2013 en 2016 veranderde en wat het landgebruik in beide jaren was.
+
+    -   Per evaluator werden telkens 30 punten ook door een tweede evaluator gecontroleerd om zicht te krijgen op de variatie tussen de evaluatoren.
+
+### Belangrijkste conclusies
+
+-   Toestand:
+
+    -   User en producer accuracy:
+
+-   Veranderingen (2013 -\> 2016):
+
+    -   User en producer accuracy:
 
 ## Schatting van de oppervlakte en accuraatheid van landgebruiken
 
