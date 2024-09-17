@@ -37,7 +37,7 @@ point_to_gridcell <- function(
 
 
 
-
+# TODO? convert this to a targets pipeline and make use of geotargets package??
 
 library(terra)
 library(sf)
@@ -86,6 +86,19 @@ apply_cats <- function(x, cats = catstable, name, coltab = TRUE) {
 lg2013 <- apply_cats(lg2013, name = "lg2013")
 lg2016 <- apply_cats(lg2016, name = "lg2016")
 lg2019 <- apply_cats(lg2019, name = "lg2019")
+
+#qgisprocess::qgis_show_help("grass:r.neighbors")
+microbenchmark::microbenchmark(
+  {qgisprocess::qgis_run_algorithm(
+    "grass:r.neighbors",
+    input = lg2013,
+    method = "mode",
+    size = 9,
+    output = file.path(flea_data, "data", "2013", "LG2013_mode_filter_9x9.tif"),
+    .quiet = FALSE)
+  },
+  times = 1
+)
 
 
 lg2013_selectie <- crop(lg2013, ext(200000, 205000, 200000, 205000))
@@ -451,7 +464,9 @@ plot(rasterstoplot)
 
 
 # Sample selection
-##################
+# first test on a single status map
+###################################
+
 
 # lazy conversion to points
 lg2013_strat_points <- as.points(lg2013_stratification)
@@ -532,8 +547,34 @@ mapview(lg2013_selectie, alpha.regions = 0.3, maxpixels = 1e6) +
   mapview(
     lg2013_sample_strat_sf_block,
     zcol = "lg2013",
-    alpha.regions = 0.5,
+    alpha.regions = 0.8,
     color = palette_inbo(catstable$label),
     col.regions = palette_inbo(catstable$label))
 
+# Sample selection
+# second test on a temporal difference maps
+###################################
 
+# for each land use, draw a spatially balanced ordered sample
+# within each of the temporal classes
+# possibly exclude some strata that are rare such as "urban - lost"
+# sample sizes? Equal? Or less in stable, dynamic more in gained, lost?
+# or alternatively, use a stepwise approach that avoids duplicates?
+
+# starting from change map majority 3x3
+res(tm_tsm2) # each pixel indicates mode in 3x3 block
+# thus, the response design should also report the mode in 3x3 block
+plot(tm_tsm2)
+# or start from change map without focal filter?
+res(tm_ts2) # each pixelvalue now represents only the pixel itself
+plot(tm_ts2)
+
+
+
+
+
+# merge the samples,check if locations were sampled > 1
+# deduplicate them, keeping all metadata
+
+
+# convert sampling locations to square polygons of size 9 x 9
