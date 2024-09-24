@@ -10,14 +10,14 @@ bibliography: [references.yaml, references.bib]
 
 @poelmans2019landgebruik en @poelmans2021 beschrijven de gebruikte databronnen en de methodes die werden gebruikt om de landgebruikskaarten te produceren.
 De verschillende databronnen worden samengevoegd in een **landgebruiksbestand**.
-Dit bestand bestaat uit een combinatie van zowel GIS-lagen (vector- en rasterbestanden) en andere (ruimtelijke) databanken.
+Dit bestand bestaat uit een combinatie van zowel GIS-lagen (vector - en rasterbestanden) en andere (ruimtelijke) databanken.
 Dit landgebruiksbestand en de databronnen die erin zitten, worden om de drie jaar geactualiseerd.
 Het eerste jaar waarvoor dit beschikbaar is, is 2013.
 De toestand van een landgebruiksbestand in een bepaald jaar, zal niet noodzakelijk overal een juiste weerspiegeling zijn van de toestand in dat jaar.
 Het is de laatst gekende -- en dus mogelijk gedateerde -- toestand volgens een bepaalde databron.
 
 De **landgebruikskaarten** zijn afgeleide (raster) producten op basis van de informatie in de landgebruiksbestanden.
-De gegevens zijn volgens een bepaalde volgorde samengevoegd in een geodatabase met 4 rasterlagen met een 10m-resolutie (1 are):
+De gegevens zijn volgens een bepaalde volgorde samengevoegd in een geodatabank met 4 rasterlagen met een 10 m resolutie (1 are):
 
 -   niveau 1 bodembedekking (22 klassen)
 
@@ -100,19 +100,21 @@ Een later project, dat hierop verder bouwde [@jocque2022], had tot doel om in ee
 Er werden vier verschillende verbeteropties uitgetest en hiervan werd de accuraatheid geëvalueerd en vergeleken ten opzichte van de basiskaart die hierboven beschreven is en gebruikt werd in @schneiders2020:
 
 -   Basiskaart + bos: Voor deze kaart werd de basiskaart verbeterd door gebruik te maken van de Boswijzer (beschikbaar voor 2009, 2015, 2018).
-    Praktisch zou dit willen zeggen dat er een stap wordt toegevoegd in de bos-laag via de Digitale Boswijzer waarbij bossen voorrang krijgen op andere terrestrische klassen (bv. overig laag groen).
+    Praktisch zou dit willen zeggen dat er een stap wordt toegevoegd in de bos laag via de Digitale Boswijzer waarbij bossen voorrang krijgen op andere terrestrische klassen (bv. overig laag groen).
 
 -   Basiskaart + gras: Door verkleuring van de vegetatie in droge jaren wordt laag groen vaak als overig geïdentificeerd.
     Blijvend grasland in landbouwgebruik wordt geïdentificeerd op basis van vijf opeenvolgende landbouwaangiftes.
     De aangifte geeft echter geen uitsluitsel of het grasland al dan niet omgeploegd wordt.
-    Beide landgebruikstypes zouden beter in kaart gebracht kunnen worden via de analyse van kortetermijn tijdreeksen van satellietbeelden, zoals dat gebeurt voor de controle van het scheuren van poldergraslanden.
+    Beide landgebruikstypes zouden beter in kaart gebracht kunnen worden via de analyse van korte termijn tijdreeksen van satellietbeelden, zoals dat gebeurt voor de controle van het scheuren van poldergraslanden.
 
--   Basiskaart + bak: De bodemafdekkingskaart (BAK) heeft een resolutie van 5x5m en kan gebruikt worden om de verharde oppervlakte te identificeren binnen de klasse overig van de landgebruikskaart.
+-   Basiskaart + bak: De bodemafdekkingskaart (BAK) heeft een resolutie van 5 m x 5 m en kan gebruikt worden om de verharde oppervlakte te identificeren binnen de klasse overig van de landgebruikskaart.
     Cellen overig die overlappen met de BAK blijven overig en de andere cellen worden laag groen.
 
 -   Basiskaart + bos + gras + bak: Combinatie van de drie voorgaande kaarten.
 
-### SEEA EA
+### Europese richtlijnen
+
+<!-- spell-check: ignore:start -->
 
 In @jocque2022 wordt de link gelegd tussen deze landgebruikskaarten en de mogelijkheden die ze bieden om te rapporteren over ecosystem extent accounts volgens de richtlijnen die "The System of Environmental-Economic Accounting—Ecosystem Accounting (SEEA EA)" [@seea2021] meegeeft.
 Het SEEA EA kader geeft de basis voor het opstellen van verschillende ecosysteemrekeningen met de volgende vijf belangrijkste ecosysteemrekeningen:
@@ -127,8 +129,10 @@ Het SEEA EA kader geeft de basis voor het opstellen van verschillende ecosysteem
 
 -   monetaire rekening ecosysteemactiva ("monetary ecosystem asset account")
 
+<!-- spell-check: ignore:end -->
+
 De rekening voor de omvang van ecosystemen vormt de basis voor alle daaropvolgende ecosysteemrekeningen en is daarom van groot belang.
-Een rekening voor de omvang van ecosystemen meet de lokatie en oppervlakte van de verschillende ecosysteemtypes voor een bepaalde regio.
+Een rekening voor de omvang van ecosystemen meet de locatie en oppervlakte van de verschillende ecosysteemtypes voor een bepaalde regio.
 Een ecosysteemrekening slaat gewoonlijk op een bepaalde periode.
 Voor deze periode geeft de rekening voor de omvang van ecosystemen de toestand weer aan het begin en het einde van deze periode, evenals de oppervlaktewijzigingen tussen ecosystemen over deze periode (wat is veranderd en wat is hetzelfde gebleven?).
 
@@ -138,6 +142,8 @@ De rekeningen van niveau II zorgen voor een verdere onderverdeling van de ecosys
 De rekeningen van niveau III voegen nog meer resolutie toe, delen de rekeningen van niveau II verder op en omvatten 30 ecosysteemtypen.
 
 De 14 klassen van niveau I zijn:
+
+<!-- spell-check: ignore:start -->
 
 1.  Artificial surfaces (including urban and associated areas)
 
@@ -166,6 +172,8 @@ De 14 klassen van niveau I zijn:
 13. Inland water bodies
 
 14. Coastal water bodies and inter-tidal areas
+
+<!-- spell-check: ignore:end -->
 
 ## Validatie ecosysteemkaarten Vlaanderen NARA 2020
 
@@ -301,7 +309,7 @@ validatiepunten %>%
 
     -   User en producer accuracy:
 
--   Veranderingen (2013 -\> 2016):
+-   Veranderingen (2013 naar 2016):
 
     -   User en producer accuracy:
 
@@ -367,7 +375,7 @@ In het eerste geval kennen we slechts één label toe aan de blok van pixels, te
 @wickham2021 gebruiken voor het protocol om labels toe te kennen aan de referentieset zowel een primair als een alternatief referentielabel.
 Ze berekenen UA en PA zowel op basis van overeenkomst met enkel het primaire label als overeenkomst met het primaire of het alternatieve label.
 
-@radoux2020 werken het idee uit om een map-pixel te valideren op basis van een subsample uit referentiedata met veel hogere resolutie waarbij de grootte van de subsample niet op voorhand wordt vastgelegd, maar telkens meer en meer subsamples te evalueren tot dat het betrouwbaarheidsinterval uitsluitsel geeft over het toe te kennen label (bv in het geval van een binaire classificatie waarbij je zegt dat de kaartpixel bos is indien meer dan 50% van de pixeloppervlakte bos is, moet het betrouwbaarheidsinterval volledig boven 50% liggen).
+@radoux2020 werken het idee uit om een kaartpixel te valideren op basis van een subsample uit referentiedata met veel hogere resolutie waarbij de grootte van de subsample niet op voorhand wordt vastgelegd, maar telkens meer en meer subsamples te evalueren tot dat het betrouwbaarheidsinterval uitsluitsel geeft over het toe te kennen label (bv in het geval van een binaire classificatie waarbij je zegt dat de kaartpixel bos is indien meer dan 50% van de pixeloppervlakte bos is, moet het betrouwbaarheidsinterval volledig boven 50% liggen).
 
 @radoux2017 en @radoux2020 geven aan dat er verschillende types van labeling zijn waarop legendes van een kaart steunen:
 
@@ -385,40 +393,40 @@ Ze berekenen UA en PA zowel op basis van overeenkomst met enkel het primaire lab
 
 @radoux2020 geven de volgende mogelijke foutenbronnen voor referentiedata die bepaald worden op basis van interpretatie van luchtfoto's:
 
--   fouten tengevolge van verslappende aandacht
+-   fouten ten gevolge van verslappende aandacht
 
--   systematische fouten tengevolge van incorrecte interpretatie van de informatie op de luchtfoto
+-   systematische fouten ten gevolge van incorrecte interpretatie van de informatie op de luchtfoto
 
--   fouten tengevolge van variabiliteit op niveau van sub-samples binnen een steekproefeenheid
+-   fouten ten gevolge van variabiliteit op niveau van sub-samples binnen een steekproefeenheid
 
 @see2022 Geo Wiki voor crowd-sourcing referentiedata.
 
-### Interpretatie van een confusion matrix
+### Interpretatie van een confusiematrix
 
-Een confusion matrix is een $K*K$ kruistabel waarmee twee classificaties, die een identieke set van $K$ classificatielabels gebruiken, met elkaar vergeleken worden.
+Een confusiematrix is een $K*K$ kruistabel waarmee twee classificaties, die een identieke set van $K$ classificatielabels gebruiken, met elkaar vergeleken worden.
 In de context van validatie en accuraatheidsschatting van een landgebruikskaart is de ene set de landgebruikskaart zelf en de andere set een referentiedataset waarvan kan aangenomen worden dat de foutenlast van de referentiedataset verwaarloosbaar is ten opzichte van deze van de landgebruikskaart.
 Deze matrix dient een dubbel doel.
 Ze laat enerzijds toe om de accuraatheid in te schatten van de kaart, en, anderzijds, om een onvertekende schatting te maken van de oppervlakte (totalen en de onzekerheid hierop) voor elk van de klassen.
 
-In de praktijk zal het onhaalbaar zijn om de referentiedataset voor de volledige regio waarin men geïnteresseerd is te bepalen (de ROI of "region of interest" die normaal samenvalt met de kaart).
+In de praktijk zal het onhaalbaar zijn om de referentiedataset voor de volledige regio waarin men geïnteresseerd is te bepalen (de ROI of `region of interest` die normaal samenvalt met de kaart).
 Er zal dan ook een aselecte steekproef nodig zijn voor de referentiedataset en het is enkel voor deze steekproef dat onderlinge vergelijking tussen de kaart en de referentie mogelijk is.
 
-Een fictief voorbeeld van een confusion matrix tonen we in tabel \@ref(tab: accuraatheidsmatrixvb).
+Een fictief voorbeeld van een confusiematrix tonen we in tabel \@ref(tab: accuraatheidsmatrixvb).
 Volgens de referentiedata, zijn er 5 boscellen, 2 water cellen en 3 urbane cellen.
 Volgens de kaart zijn er 4 cellen bos, 2 cellen water en 4 cellen urbaan.
-De *totale accuraatheid* (OA of "overall accuracy") is dan gelijk aan het percentage overeenkomst tussen beide sets: de som van de diagonaalelementen in de matrix, gedeeld door het totaal aantal cellen (10); $=\frac{4+1+3}{10}=80\%$ [@olofsson2014].
-Gebruikersaccuraatheid (UA of "user's accuracy") is gelijk aan $1-$ commission error.
+De *totale accuraatheid* (OA of `overall accuracy`) is dan gelijk aan het percentage overeenkomst tussen beide sets: de som van de diagonaalelementen in de matrix, gedeeld door het totaal aantal cellen (10); $=\frac{4+1+3}{10}=80\%$ [@olofsson2014].
+Gebruikersaccuraatheid (UA of `user's accuracy`) is gelijk aan $1-$ commission error.
 Het is een maat voor de juistheid van de kaart en het is de kans dat een klasse op de kaart correct is volgens de referentiedata[@olofsson2014]:
 
--   Voor bos is UA $\frac{4}{4}=100\%$ en commission error is $\frac{0}{4}=0\%$.
--   Voor water is UA $\frac{1}{2}=50\%$ en commission error is $\frac{1}{2}=50\%$.
--   Voor urbaan is UA $\frac{3}{4}=75\%$ and commission error is $\frac{1}{4}=25\%$.
+-   Voor bos is UA $\frac{4}{4}=100\%$ en commissiefout is $\frac{0}{4}=0\%$.
+-   Voor water is UA $\frac{1}{2}=50\%$ en commissiefout is $\frac{1}{2}=50\%$.
+-   Voor urbaan is UA $\frac{3}{4}=75\%$ and commissiefout is $\frac{1}{4}=25\%$.
 
 De producentenaccuraatheid (PA of "producers accuracy") is gelijk aan $1-$ omission error en is een maat voor de volledigheid van de kaart omdat het voor een klasse aangeeft welke proportie ervan op de kaart getoond wordt [@olofsson2014]:
 
--   Voor bos is de PA $\frac{4}{5}=80\%$ en omission error is $\frac{1}{5}=20\%$.
--   Voor water is PA $\frac{1}{2}=50\%$ en omission error is $\frac{1}{2}=50\%$.
--   Voor urbaan is PA $\frac{3}{3}=100\%$ en omission error is $\frac{0}{3}=0\%$.
+-   Voor bos is de PA $\frac{4}{5}=80\%$ en omissiefout is $\frac{1}{5}=20\%$.
+-   Voor water is PA $\frac{1}{2}=50\%$ en omissiefout is $\frac{1}{2}=50\%$.
+-   Voor urbaan is PA $\frac{3}{3}=100\%$ en omissiefout is $\frac{0}{3}=0\%$.
 
 ```{r , include = TRUE}
 vb <- data.frame(
@@ -486,24 +494,24 @@ Voor het geval van wijzigingen tussen twee of meer kaarten, worden de problemen 
 
 -   er meestal interesse is in vele types van landgebruiksverandering
 
-De volledige confusion matrix, voor een kaart die de veranderingen tussen twee tijdsstippen toont, wordt een $K^2*K^2$ matrix met $K$ klassen waar geen verandering is en $K*(K-1)$ mogelijke wijzigingen tussen klassen.
+De volledige confusiematrix, voor een kaart die de veranderingen tussen twee tijdstippen toont, wordt een $K^2*K^2$ matrix met $K$ klassen waar geen verandering is en $K*(K-1)$ mogelijke wijzigingen tussen klassen.
 Om het probleem enigszins behapbaar te houden zal het vaak nodig zijn om keuzes te maken door bijvoorbeeld te prioriteren in welke types van landgebruiksverandering men het meest geïnteresseerd is.
 
 @tsendbazar2021 passen de volgende procedure toe voor validatie van jaarlijkse globale landgebruikskaarten:
 
--   Voor het basisjaar (t0) een random gestratificeerde steekproef met strata volgens klimaatzones in elk continent met extra strata voor zeldzame landgebruiken (in totaal 149 strata; totale steekproefgrootte 21752)
+-   Voor het basisjaar (`t0`) een random gestratificeerde steekproef met strata volgens klimaatzones in elk continent met extra strata voor zeldzame landgebruiken (in totaal 149 strata; totale steekproefgrootte 21752)
 
 -   Voor daaropvolgende jaren:
 
     -   Herbezoeken (continu, nog voor de publicatie van de kaart zelf)
 
-        -   gerichte herbezoeken van t0 set op basis van detectie van punten waar een hoge kans op landgebruiksverandering voorspeld wordt (bijvoorbeeld op basis van een tijdreeksanalyse voor wijzigingen in reflectantie) +
+        -   gerichte herbezoeken van `t0` set op basis van detectie van punten waar een hoge kans op landgebruiksverandering voorspeld wordt (bijvoorbeeld op basis van een tijdreeksanalyse voor wijzigingen in reflectantie) plus
 
-        -   random herbezoeken van t0 set +
+        -   random herbezoeken van `t0` set plus
 
         -   extra strata voor landgebruiksveranderingen met nieuwe punten
 
-        -   een deel van de t0 set wordt niet jaarlijks opnieuw bezocht, maar wel met lagere frequentie (vijfjaarlijks)
+        -   een deel van de `t0` set wordt niet jaarlijks opnieuw bezocht, maar wel met lagere frequentie (vijfjaarlijks)
 
     -   Wanneer de kaart gepubliceerd is en men wil voor bepaalde landgebruiksveranderingen een beter inzicht krijgen:
 

@@ -14,8 +14,8 @@ TODO
     -   bereken mode klasse in blok
     -   dit geeft stratificatie per klasse
         -   eventueel strata samenvoegen
-        -   binnen elk stratum ruimtelijk gebalanceerde steekproef van $n$ clusters (= blok van pixels = primary sampling unit of PSU)
-        -   binnen elk blok (PSU) wordt elk van $M$ secundary sampling units (SSU) bekeken (= pixels)
+        -   binnen elk stratum ruimtelijk gebalanceerde steekproef van $n$ clusters (= blok van pixels = `primary sampling unit` of PSU)
+        -   binnen elk blok (PSU) wordt elk van $M$ `secundary sampling units` (SSU) bekeken (= pixels)
 
 In @cochran1977 vinden we de formule om te bepalen wat het effect van de grootte van een cluster is bij cluster sampling voor het schatten van een proportie:
 
