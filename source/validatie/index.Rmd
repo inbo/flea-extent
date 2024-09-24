@@ -82,8 +82,7 @@ library(kableExtra)
 if (interactive()) {
   theme_set(theme_inbo(base_size = 10))
 } else {
-  switch(
-    opts_knit$get("rmarkdown.pandoc.to"),
+  switch(opts_knit$get("rmarkdown.pandoc.to"),
     html = {
       opts_chunk$set(dev = "png", dpi = 72)
       theme_set(theme_inbo(base_size = 12))

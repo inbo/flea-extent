@@ -80,17 +80,20 @@ nara2020_aanpassingen <- git2rdata::read_vc(
   here::here("../../data")
 ) %>%
   mutate(
-    across(everything(),
-           ~ factor(
-             .x,
-             levels = stringr::str_sort(.x, numeric = TRUE) %>% unique())
+    across(
+      everything(),
+      ~ factor(
+        .x,
+        levels = stringr::str_sort(.x, numeric = TRUE) %>% unique()
+      )
     )
   ) %>%
   arrange(aangepaste_bodembedekkingskaart)
 
 nara2020_aanpassingen %>%
   kable(
-    caption = "Aanpassingen doorgevoerd voor NARA 2020 aan landgebruikskaart")
+    caption = "Aanpassingen doorgevoerd voor NARA 2020 aan landgebruikskaart"
+  )
 ```
 
 Een later project, dat hierop verder bouwde [@jocque2022], had tot doel om in een pilootproject verschillende verbeteropties voor deze landgebruikskaart te bekijken en na te gaan of de verbeterde kaarten effectief bijdroegen aan een hogere accuraatheid.
@@ -206,7 +209,8 @@ validatiepunten <- git2rdata::read_vc(
   dplyr::filter(value != "<Null>") %>%
   pivot_wider(
     names_from = name,
-    values_from = value) %>%
+    values_from = value
+  ) %>%
   rename(
     map_2013 = change2013,
     map_2016 = change2016,
@@ -218,16 +222,20 @@ validatiepunten <- git2rdata::read_vc(
   droplevels() %>%
   mutate(
     map_change = ifelse(
-      map_2013 == map_2016, "niet gewijzigd", "gewijzigd") |> factor(),
+      map_2013 == map_2016, "niet gewijzigd", "gewijzigd"
+    ) |> factor(),
     ref_change = ifelse(
-      ref_2013 == ref_2016, "niet gewijzigd", "gewijzigd") |> factor(),
+      ref_2013 == ref_2016, "niet gewijzigd", "gewijzigd"
+    ) |> factor(),
     ref_2013 = forcats::fct_relevel(ref_2013, levels(validatieklassen$klasse)),
     ref_2016 = forcats::fct_relevel(ref_2016, levels(validatieklassen$klasse)),
     map_2013 = forcats::fct_recode(
       factor(map_2013),
-      !!!validatieklassen_namedvec[validatieklassen_namedvec != "8"]),
+      !!!validatieklassen_namedvec[validatieklassen_namedvec != "8"]
+    ),
     map_2016 = forcats::fct_recode(
-      factor(map_2016), !!!validatieklassen_namedvec)
+      factor(map_2016), !!!validatieklassen_namedvec
+    )
   ) %>%
   select(
     objectid,
@@ -237,7 +245,6 @@ validatiepunten <- git2rdata::read_vc(
     starts_with("point")
   ) %>%
   dplyr::filter(complete.cases(.))
-
 ```
 
 De accuraatheid van de basiskaart werd reeds onder de loep genomen door middel van een validatiedataset van 3815 punten in [deze studie](https://www.vlaanderen.be/inbo/backgroundindicatoren/landgebruiksverandering-validatie).
@@ -278,7 +285,8 @@ validatiepunten %>%
   ) %>%
   gt::grand_summary_rows(
     columns = c(aantal_validaties, aantal_validator_controles),
-    fns = list(totaal ~ sum(.)))
+    fns = list(totaal ~ sum(.))
+  )
 ```
 
 -   *response design*:
@@ -302,12 +310,12 @@ library(caret)
 
 validatiepunten <- validatiepunten %>%
   mutate(
-    map_2013_2016  =
+    map_2013_2016 =
       paste(abbreviate(map_2013), abbreviate(map_2016), sep = "-") |>
-      factor(),
-    ref_2013_2016  =
+        factor(),
+    ref_2013_2016 =
       paste(abbreviate(ref_2013), abbreviate(ref_2016), sep = "-") |>
-      factor(levels = levels(map_2013_2016))
+        factor(levels = levels(map_2013_2016))
   )
 
 # Create confusion matrix
@@ -413,20 +421,24 @@ De producentenaccuraatheid (PA of "producers accuracy") is gelijk aan $1-$ omiss
 -   Voor urbaan is PA $\frac{3}{3}=100\%$ en omission error is $\frac{0}{3}=0\%$.
 
 ```{r , include = TRUE}
-vb <- data.frame(rows = c("Bos", "Water","Urbaan","Totaal"),
-                 forest = c(4,1,0,5),
-                 water = c(0,1,1,2),
-                 urban = c(0,0,3,3),
-                 total = c(4,2,4,10)
-                 ) 
-vb %>% kable(booktabs = TRUE,
-             caption = "Fictief voorbeeld van een confusion matrix.",
-             col.names = c("","Bos", "Water","Urbaan","Totaal")) %>%
-  add_header_above(c(" ", "Referentiedata" = 3,""), bold = T) %>%
+vb <- data.frame(
+  rows = c("Bos", "Water", "Urbaan", "Totaal"),
+  forest = c(4, 1, 0, 5),
+  water = c(0, 1, 1, 2),
+  urban = c(0, 0, 3, 3),
+  total = c(4, 2, 4, 10)
+)
+vb %>%
+  kable(
+    booktabs = TRUE,
+    caption = "Fictief voorbeeld van een confusion matrix.",
+    col.names = c("", "Bos", "Water", "Urbaan", "Totaal")
+  ) %>%
+  add_header_above(c(" ", "Referentiedata" = 3, ""), bold = T) %>%
   column_spec(1, bold = T, border_right = T) %>%
   column_spec(4, border_right = T) %>%
   row_spec(3, hline_after = TRUE) %>%
-  pack_rows("Kaartdata", 1, 3) 
+  pack_rows("Kaartdata", 1, 3)
 ```
 
 In @vancalster2013 wordt dieper ingegaan op de link tussen de PA en UA en de implicaties ervan voor de schattingen van de totale oppervlakte van een landgebruik.
