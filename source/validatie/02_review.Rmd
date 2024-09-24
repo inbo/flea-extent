@@ -169,20 +169,85 @@ De 14 klassen van niveau I zijn:
 ### Aanpak
 
 ```{r}
+validatieklassen <-
+  tibble(
+    nummer = 1:9,
+    klasse = c(
+      "Open natuur",
+      "Bos",
+      "Grasland",
+      "Akker",
+      "Urbaan",
+      "Laag groen",
+      "Hoog groen",
+      "Water",
+      "Overig"
+    ) |> forcats::fct_inorder()
+  )
+validatieklassen_namedvec <- as.character(validatieklassen$nummer)
+names(validatieklassen_namedvec) <- validatieklassen$klasse
 validatiepunten <- git2rdata::read_vc(
   "validatiepunten",
   here::here("../../data")
 ) |>
-  as_tibble()
-  
+  as_tibble() %>%
+  janitor::clean_names() %>%
+  rename(
+    x2013_0 = x2013,
+    x2016_0 = x2016,
+    change_0 = change
+  ) %>%
+  pivot_longer(
+    cols = matches("^x|^change_"),
+    names_prefix = "x",
+    names_to = c("name", "validator"),
+    names_sep = "_"
+  ) %>%
+  dplyr::filter(value != "<Null>") %>%
+  pivot_wider(
+    names_from = name,
+    values_from = value) %>%
+  rename(
+    map_2013 = change2013,
+    map_2016 = change2016,
+    map_change = type,
+    ref_2013 = `2013`,
+    ref_2016 = `2016`,
+    ref_change = change
+  ) %>%
+  droplevels() %>%
+  mutate(
+    map_change = ifelse(
+      map_2013 == map_2016, "niet gewijzigd", "gewijzigd") |> factor(),
+    ref_change = ifelse(
+      ref_2013 == ref_2016, "niet gewijzigd", "gewijzigd") |> factor(),
+    ref_2013 = forcats::fct_relevel(ref_2013, levels(validatieklassen$klasse)),
+    ref_2016 = forcats::fct_relevel(ref_2016, levels(validatieklassen$klasse)),
+    map_2013 = forcats::fct_recode(
+      factor(map_2013),
+      !!!validatieklassen_namedvec[validatieklassen_namedvec != "8"]),
+    map_2016 = forcats::fct_recode(
+      factor(map_2016), !!!validatieklassen_namedvec)
+  ) %>%
+  select(
+    objectid,
+    validatorid = validator,
+    map_2013, map_2016, map_change,
+    starts_with("ref"),
+    starts_with("point")
+  ) %>%
+  dplyr::filter(complete.cases(.))
+
 ```
 
 De accuraatheid van de basiskaart werd reeds onder de loep genomen door middel van een validatiedataset van 3815 punten in [deze studie](https://www.vlaanderen.be/inbo/backgroundindicatoren/landgebruiksverandering-validatie).
 Dezelfde validatieset werd gebruikt om de verbeteropties uit @jocque2022, die verder bouwen op de basiskaart uit te testen.
 
--   *typologie*: de originele 25 landgebruiksklassen werden gegroepeerd in negen validatieklassen
+-   *typologie*: de originele 25 landgebruiksklassen werden gegroepeerd in negen validatieklassen, maar in de uiteindelijke validatieset zit water niet in
 
--   *steekproefgrootte*: Op basis van een schatting van de betrouwbaarheid per veranderingsklasse en de proportie van elk van de veranderingsklassen in de totale oppervlakte, werd een steekproefgrootte van 3815 punten vastgelegd, waarvan 900 volgens de kaart niet van landgebruik veranderen
+```{r}
+kable(validatieklassen)
+```
 
 -   *steekproefeenheid*: rastercel van 10 m x 10 m
 
@@ -192,13 +257,35 @@ Dezelfde validatieset werd gebruikt om de verbeteropties uit @jocque2022, die ve
 
     -   proportioneel volgens hun oppervlakteaandeel verdeeld over de veranderingsklassen, met een minimum van 40 punten voor de klassen met de kleinste oppervlakte [@olofsson2014]
 
+-   *steekproefgrootte*: Op basis van een schatting van de betrouwbaarheid per veranderingsklasse en de proportie van elk van de veranderingsklassen in de totale oppervlakte, werd een steekproefgrootte van 3815 punten vastgelegd (3802 gerealiseerd), waarvan 900 volgens de kaart niet van landgebruik veranderen (898 gerealiseerd).
+    Daarbovenop, werden per evaluator telkens 30 punten ook door een tweede evaluator gecontroleerd om zicht te krijgen op de variatie tussen de evaluatoren (samen 300, maar er werden 304 controles gerealiseerd).
+
+```{r}
+validatiepunten %>%
+  select(objectid, starts_with("map")) %>%
+  group_by(map_change, map_2013, map_2016) %>%
+  summarize(
+    aantal_validaties = n_distinct(objectid),
+    aantal_validator_controles = n() - n_distinct(objectid)
+  ) %>%
+  arrange(map_change, desc(aantal_validaties)) %>%
+  gt::gt(
+    groupname_col = "map_change"
+  ) %>%
+  gt::summary_rows(
+    columns = c(aantal_validaties, aantal_validator_controles),
+    fns = list(subtotaal ~ sum(.))
+  ) %>%
+  gt::grand_summary_rows(
+    columns = c(aantal_validaties, aantal_validator_controles),
+    fns = list(totaal ~ sum(.)))
+```
+
 -   *response design*:
 
     -   De punten werden gevalideerd door tien evaluatoren op basis van luchtfoto’s en extra informatie uit de attributentabellen van de landbouwgebruikspercelendatabank en de Biologische Waarderingskaart (BWK).
 
     -   Voor elk punt noteerde de evaluator of het landgebruik tussen 2013 en 2016 veranderde en wat het landgebruik in beide jaren was.
-
-    -   Per evaluator werden telkens 30 punten ook door een tweede evaluator gecontroleerd om zicht te krijgen op de variatie tussen de evaluatoren.
 
 ### Belangrijkste conclusies
 
@@ -209,6 +296,41 @@ Dezelfde validatieset werd gebruikt om de verbeteropties uit @jocque2022, die ve
 -   Veranderingen (2013 -\> 2016):
 
     -   User en producer accuracy:
+
+```{r eval=FALSE}
+library(caret)
+
+validatiepunten <- validatiepunten %>%
+  mutate(
+    map_2013_2016  =
+      paste(abbreviate(map_2013), abbreviate(map_2016), sep = "-") |>
+      factor(),
+    ref_2013_2016  =
+      paste(abbreviate(ref_2013), abbreviate(ref_2016), sep = "-") |>
+      factor(levels = levels(map_2013_2016))
+  )
+
+# Create confusion matrix
+cm_2013 <- confusionMatrix(validatiepunten$map_2013, validatiepunten$ref_2013)
+cm_2016 <- confusionMatrix(validatiepunten$map_2016, validatiepunten$ref_2016)
+cm_2013_2016 <- confusionMatrix(
+  validatiepunten$map_2013_2016,
+  validatiepunten$ref_2013_2016
+)
+# View the confusion matrix
+print(cm_2013$table)
+print(cm_2016$table)
+print(cm_2013_2016$table)
+
+# Calculate user's accuracy (precision)
+ua_2013 <- cm_2013$byClass[, "Precision"]
+ua_2013_2016 <- cm_2013_2016$byClass[, "Precision"]
+# Calculate producer's accuracy (recall)
+pa_2013 <- cm_2013$byClass[, "Recall"]
+
+ua_2013
+pa_2013
+```
 
 ## Schatting van de oppervlakte en accuraatheid van landgebruiken
 
