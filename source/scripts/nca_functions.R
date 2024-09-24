@@ -54,7 +54,7 @@ Cleanchangeareadata <- function(file, tbltrans, type){
 #mapdata <- nara13$valid
 #refdata <- as.factor(points_id$lu13oord)
 #both arrays need to be factor variables with the same levels.
-CalculateAccuracy <- function(mapdata, refdata){
+calculate_accuracy <- function(mapdata, refdata){
   assert_that(length(mapdata) == length(refdata),
               msg = "Length of the arrays is not equal")
   assert_that(nlevels(mapdata) == nlevels(refdata) &
@@ -67,11 +67,7 @@ CalculateAccuracy <- function(mapdata, refdata){
   return(conf)
 }
 
-
-#maparea is the surface area of each change class
-#ma is the confusion matrix for the change classes
-Validationuncertainty <- function(ma, maparea, pixelsize) {
-  dyn <- rownames(ma)
+confusion_matrix <- function(maparea, ma) {
   aoi <- sum(maparea) # calculate the area proportions for each map class
   propmaparea <- maparea / aoi
 
@@ -79,6 +75,132 @@ Validationuncertainty <- function(ma, maparea, pixelsize) {
   ni <- rowSums(ma) # number of reference points per map class
   propma <- as.matrix(ma / ni * propmaparea)
   propma[is.nan(propma)] <- 0 # for classes with ni. = 0
+  return(propma)
+}
+
+
+
+calc_oa <- function(maparea, ma, propma = NULL) {
+  if (is.null(propma)) {
+    propma <- confusion_matrix(maparea = maparea, ma = ma)
+  }
+  # overall accuracy (Eq. 1 in Olofsson et al. 2014)
+  oa <- sum(diag(propma))
+
+  # variance of overall accuracy (Eq. 5 in Olofsson et al. 2014)
+  ni <- rowSums(ma) # number of reference points per map class
+  aoi <- sum(maparea) # calculate the area proportions for each map class
+  propmaparea <- maparea / aoi
+  ua <- diag(propma) / rowSums(propma)
+  v_oa <- sum(propmaparea^2 * ua * (1 - ua) / (ni - 1), na.rm = TRUE)
+  me_oa <- 1.96 * sqrt(v_oa)
+  oa_low = oa - me_oa
+  oa_high = oa + me_oa
+  return(
+    data.frame(oa_est = oa, oa_var = v_oa, oa_low = oa_low, oa_high = oa_high)
+  )
+}
+
+calc_ua_pa <- function(maparea, ma, propma = NULL) {
+  if (is.null(propma)) {
+    propma <- confusion_matrix(maparea = maparea, ma = ma)
+  }
+  dyn <- rownames(ma)
+  aoi <- sum(maparea) # calculate the area proportions for each map class
+  propmaparea <- maparea / aoi
+  ni <- rowSums(ma) # number of reference points per map class
+
+  # estimate the accuracies
+  # user's accuracy (Eq. 2 in Olofsson et al. 2014)
+  # producer's accuracy (Eq. 3 in Olofsson et al. 2014)
+  pa <- diag(propma) / colSums(propma)
+  ua <- diag(propma) / rowSums(propma)
+
+  # estimate confidence intervals for the accuracies
+  # variance of user's accuracy (Eq. 6 in Olofsson et al. 2014)
+  # variance of producer's accuracy (Eq. 7 in Olofsson et al. 2014)
+  v_ua <- ua * (1 - ua) / (ni - 1)
+  n_j <- vector(mode = "numeric", length = length(dyn))
+  aftersumsign <- vector(mode = "numeric", length = length(dyn))
+  for (cj in seq_len(length(dyn))) {
+    n_j[cj] <- sum(maparea / ni * ma[, cj], na.rm = TRUE)
+    aftersumsign[cj] <- sum(maparea[-cj]^2 * ma[-cj, cj] / ni[-cj] *
+                              (1 - ma[-cj, cj] / ni[-cj]) /
+                              (ni[-cj] - 1), na.rm = TRUE)
+  }
+  v_pa <- 1 / n_j^2 * (maparea^2 * (1 - pa)^2 * ua * (1 - ua) / (ni - 1) +
+                         pa^2 * aftersumsign)
+  v_pa[is.nan(v_pa)] <- 0
+
+  ua_me <- 1.96 * sqrt(v_ua)
+  pa_me <- 1.96 * sqrt(v_pa)
+  ua_low <- ua - ua_me
+  ua_high <- ua + ua_me
+  pa_low <- pa - pa_me
+  pa_high <- pa + pa_me
+
+
+  return(tibble::tibble(
+    class = dyn,
+    ua_est = ua,
+    ua_var = v_ua,
+    ua_low = ua_low,
+    ua_high = ua_high,
+    pa_est = pa,
+    pa_var = v_pa,
+    pa_low = pa_low,
+    pa_high = pa_high))
+}
+
+calc_areas <- function(maparea, ma, pixelsize = 10, propma = NULL) {
+  if (is.null(propma)) {
+    propma <- confusion_matrix(maparea = maparea, ma = ma)
+  }
+  # Estimate area
+  # proportional area estimation
+  # proportion of area (Eq. 8 and 9 in Olofsson et al. 2014)
+  propareaest <- colSums(propma)
+
+  # standard errors of the area estimation (Eq. 10 in Olofsson et al. 2014)
+  dyn <- rownames(ma)
+  ni <- rowSums(ma)
+  aoi <- sum(maparea) # calculate the area proportions for each map class
+  propmaparea <- maparea / aoi
+  v_propareaest <- vector(mode = "numeric", length = length(dyn))
+  for (cj in seq_len(length(dyn))) {
+    v_propareaest[cj] <- sum((propmaparea * propma[, cj] - propma[, cj]^2) /
+                               (ni + 0.001 - 1))
+    # + 0.001 voor klassen met maar 1 punt
+  }
+  v_propareaest[is.na(v_propareaest)] <- 0
+  me_propareaest <- 1.96 * sqrt(v_propareaest)
+
+  out <- tibble::tibble(
+    class = dyn,
+    n_points = ni,
+    prop_est = propareaest,
+    prop_var = v_propareaest) |>
+    mutate(
+      prop_low = prop_est - me_propareaest,
+      prop_high = prop_est + me_propareaest,
+      prop_map_unadjusted = propmaparea,
+      area_pixelcount_ha = maparea * pixelsize, # in ha
+      area_est_ha = prop_est * aoi * pixelsize, # in ha
+      area_low_ha = area_est_ha - me_propareaest * aoi * pixelsize, # in ha
+      area_high_ha = area_est_ha + me_propareaest * aoi * pixelsize # in ha
+  )
+  return(out)
+}
+
+
+#maparea is the surface area of each change class
+#ma is the n_{ij} confusion matrix for the change classes
+validation_uncertainty <- function(ma, maparea, pixelsize) {
+  dyn <- rownames(ma)
+  aoi <- sum(maparea) # calculate the area proportions for each map class
+  propmaparea <- maparea / aoi
+  ni <- rowSums(ma) # number of reference points per map class
+  propma <- confusion_matrix(maparea = maparea, ma = ma)
 
    pa <- diag(propma) / colSums(propma)
  # estimate the accuracies
@@ -146,7 +268,7 @@ Validationuncertainty <- function(ma, maparea, pixelsize) {
 }
 
 
-PlotValidationData <- function(ov){
+plot_validation_data <- function(ov){
   plot_val <- ov %>%
     dplyr::select(class, area_ha, adj_area, ci_adj_area, ua, pa) %>%
     mutate(conf.low = adj_area - ci_adj_area, conf.high = adj_area +
@@ -196,9 +318,14 @@ PlotValidationData <- function(ov){
   return(bar)
 }
 
-validationData <- function(){
-  punten <- read_vc("validatiepunten", root = sprintf("%s/data/",here())) # Gevalideerde punten
-  combine <- read_vc("combine", root = sprintf("%s/data/",here())) # Combine van de validatieklassenkaart van 2013
+validation_data <- function(data_root){
+  punten <- read_vc(
+    "validatiepunten",
+    root = file.path(data_root, "data")) # Gevalideerde punten
+  combine <- read_vc(
+    "combine",
+    root = file.path(data_root, "data"))
+  # Combine van de validatieklassenkaart van 2013
   # en 2016 -> geeft de oppervlakte van de landgebruiksveranderingen en
   # van de stabiele klassen
   # Omzettingstabel landgebruiken
@@ -251,12 +378,14 @@ validationData <- function(){
 
   # 1. Puntenset -----
   points <- punten %>%
-    na_if("<Null>") %>%
+    mutate(
+      across(where(is.factor), \(x) as.character(x) |> na_if("<Null>"))
+    ) %>%
     # Alle <Null> omzetten in NA
     gather(key = klasse, value = oordeel, X2013:change.9) %>%
     # Van breed formaat naar lang formaat
     separate(col = klasse, into = c("klasse", "eval"), sep = "\\.") %>%
-    replace_na(list(eval = 0)) %>%
+    replace_na(list(eval = "0")) %>%
     # Voeg evaluator toe
     drop_na() %>%
     # Alle NA laten vallen
