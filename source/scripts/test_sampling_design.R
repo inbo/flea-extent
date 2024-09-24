@@ -45,9 +45,10 @@ library(dplyr)
 library(mapview)
 library(ggplot2)
 library(ggsankey)
+git_root <- rprojroot::find_root(rprojroot::is_git_root)
 
 flea_data <- gsub(
-  pattern = "flea-extent", replacement = "flea-data", x = here::here())
+  pattern = "flea-extent", replacement = "flea-data", x = git_root)
 
 lg2013 <- rast(file.path(flea_data, "data", "2013", "LG2013_finaal_update.tif"))
 lg2016 <- rast(file.path(flea_data, "data", "2016", "LG2016_finaal_update.tif"))
