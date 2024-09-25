@@ -165,6 +165,10 @@ plot_validation_data(ov)
 ##############################################################################
 ##############################################################################
 
+# this function calculates the map-relevant version of error matrix
+# map-relevant means that each p_ij is weighted by area proportions for each
+# stratum (map class)
+# so this is different from default caret::confusionMatrix
 cm <- confusion_matrix(
   maparea = maparea$area,
   ma = as.data.frame.matrix(reschange1$table)
@@ -185,7 +189,13 @@ ua_pa_df <- calc_ua_pa(
 ua_pa_df
 
 ua_pa_df %>%
-  ggplot(aes(x = pa_est, y = ua_est)) +
+  separate(
+    class,
+    c("class_p1", "class_p2"),
+    sep = "-",
+    remove = FALSE) %>%
+  mutate(change = class_p1 != class_p2) %>%
+  ggplot(aes(x = pa_est, y = ua_est, colour = change)) +
   geom_abline(alpha = 0.5) +
   geom_point() +
   ggrepel::geom_text_repel(aes(label = class), size = 2) +
@@ -195,11 +205,18 @@ ua_pa_df %>%
 
 areas_df <- calc_areas(
   maparea = maparea$area,
-  ma = as.data.frame.matrix(reschange1$table)
+  ma = as.data.frame.matrix(reschange1$table),
+  pixelsize = 0.01 #each cell is 100 square meters = 0.01ha
 )
 areas_df
 
 areas_df %>%
+  separate(
+    class,
+    c("class_p1", "class_p2"),
+    sep = "-",
+    remove = FALSE) %>%
+  mutate(change = class_p1 != class_p2) %>%
   mutate(
     class = reorder(class, area_est_ha)) %>%
   ggplot() +
@@ -212,5 +229,6 @@ areas_df %>%
       colour  = area_low_ha < 0
     )) +
   scale_y_log10() +
-  coord_flip()
+  coord_flip() +
+  facet_grid(change ~ ., scales = "free", space = "free")
 

@@ -152,7 +152,7 @@ calc_ua_pa <- function(maparea, ma, propma = NULL) {
     pa_high = pa_high))
 }
 
-calc_areas <- function(maparea, ma, pixelsize = 10, propma = NULL) {
+calc_areas <- function(maparea, ma, pixelsize = 0.01, propma = NULL) {
   if (is.null(propma)) {
     propma <- confusion_matrix(maparea = maparea, ma = ma)
   }
