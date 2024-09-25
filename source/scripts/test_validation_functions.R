@@ -230,5 +230,73 @@ areas_df %>%
     )) +
   scale_y_log10() +
   coord_flip() +
-  facet_grid(change ~ ., scales = "free", space = "free")
+  facet_grid(paste0("Change: ", change) ~ ., scales = "free", space = "free")
+
+# relative margins of error larger than 1 result in
+# negative lower bound of design-based confidence interval
+areas_df %>%
+  separate(
+    class,
+    c("class_p1", "class_p2"),
+    sep = "-",
+    remove = FALSE) %>%
+  mutate(change = class_p1 != class_p2) %>%
+  mutate(
+    class = reorder(class, area_rme),
+    fprop_map_rbias = cut(
+      prop_map_rbias,
+      breaks = c(min(prop_map_rbias)-0.01,
+                 -0.1,
+                 0.1,
+                 1,
+                 max(prop_map_rbias)+0.01),
+      labels = c("Underestimation\nmore than 10%",
+                 "Relative bias\nbetween -10% and 10%",
+                 "Overestimation\nbetween 10% and 100%",
+                 "Overestimation\nmore than 100%")
+      )) %>%
+  ggplot() +
+  geom_point(
+    aes(
+      x = class,
+      colour  = fprop_map_rbias,
+      y = area_rme,
+      size = abs(prop_map_rbias)
+    )) +
+  scale_y_continuous(
+    name = "Relative margin of error",
+    labels = scales::percent) +
+  coord_flip() +
+  facet_grid(paste0("Change: ", change) ~ ., scales = "free", space = "free")
+
+# bias - variance tradeoff is always in favor of area estimation via sample
+# except for field-field, which is better estimated from pixel counting
+# as judged by mean squared error = variance + bias^2
+# and assuming variance is zero for the map and bias is zero for the sample
+areas_df %>%
+  separate(
+    class,
+    c("class_p1", "class_p2"),
+    sep = "-",
+    remove = FALSE) %>%
+  mutate(change = class_p1 != class_p2) %>%
+  mutate(
+    class = reorder(class, prop_map_bias)) %>%
+  ggplot() +
+  geom_point(
+    aes(
+      x = class,
+      y = prop_map_bias,
+      size = area_rme,
+      colour = prop_mse_map < prop_mse_sample
+    ), alpha = 0.3) +
+  geom_hline(yintercept = 0) +
+  scale_y_continuous(
+    "Under (-) or over (+) estimation\nPercentage of area of interest",
+    labels = scales::percent
+  ) +
+#  scale_colour_gradient2(midpoint = 0, mid = "white") +
+  coord_flip() +
+  facet_grid(paste0("Change: ", change) ~ ., scales = "free", space = "free")
+
 

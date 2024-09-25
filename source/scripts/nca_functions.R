@@ -184,10 +184,17 @@ calc_areas <- function(maparea, ma, pixelsize = 0.01, propma = NULL) {
       prop_low = prop_est - me_propareaest,
       prop_high = prop_est + me_propareaest,
       prop_map_unadjusted = propmaparea,
+      prop_map_bias = prop_map_unadjusted - prop_est,
+      prop_map_rbias = prop_map_bias / prop_est,
       area_pixelcount_ha = maparea * pixelsize, # in ha
       area_est_ha = prop_est * aoi * pixelsize, # in ha
       area_low_ha = area_est_ha - me_propareaest * aoi * pixelsize, # in ha
-      area_high_ha = area_est_ha + me_propareaest * aoi * pixelsize # in ha
+      area_high_ha = area_est_ha + me_propareaest * aoi * pixelsize, # in ha
+      area_bias_ha = area_pixelcount_ha - area_est_ha,
+      area_rbias_ha = area_bias_ha / area_est_ha,
+      area_rme = me_propareaest * aoi * pixelsize / area_est_ha,
+      prop_mse_map = prop_map_bias^2,
+      prop_mse_sample = v_propareaest
   )
   return(out)
 }
