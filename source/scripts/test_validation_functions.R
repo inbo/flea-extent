@@ -62,6 +62,9 @@ area <- ls %>% map(function(x)
 )
 rm(ls)
 
+# note area$area is not yet an area, but the count of pixels
+# and each pixel is 0.01 ha
+
 ttl <- list(nara = "the original land use map")
 
 this_map <- "nara"
@@ -72,6 +75,8 @@ refdata1 <- as.factor(points_id$lu13oord_eng)
 mapdata2 <- data[[str_c(this_map, "2016")]]$valid_eng
 refdata2 <- as.factor(points_id$lu16oord_eng)
 maparea <- area[[this_map]]
+# note maparea$area is not yet an area, but the count of pixels
+# and each pixel is 0.01 ha
 
 # calculations
 ##############
