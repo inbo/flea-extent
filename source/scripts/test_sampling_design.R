@@ -465,8 +465,8 @@ plot(rasterstoplot)
 
 
 # Sample selection
-# first test on a single status map
-###################################
+# first test on a single status map using lpm2_kdtree
+#####################################################
 
 
 # lazy conversion to points
@@ -553,7 +553,80 @@ mapview(lg2013_selectie, alpha.regions = 0.3, maxpixels = 1e6) +
     col.regions = palette_inbo(catstable$label))
 
 # Sample selection
-# second test on a temporal difference maps
+# second test on status map using c-mon grts
+############################################
+
+mybbox <- terra::ext(lg2013_stratification)
+mycats <- terra::cats(lg2013_stratification)
+size_pop <- global(terra::not.na(lg2013_stratification), sum)$sum
+sample_size <- 100
+minimum_n_strat <- 5
+lg2013_sample_strat <- vector(
+  "list",
+  length = nrow(mycats[[1]]))
+lg2013_sample_strat <- setNames(
+  lg2013_sample_strat,
+  nm = mycats[[1]]$lg2013)
+library(grtsdb)
+for (i in mycats[[1]]$lg2013) {
+  # cell numbers that match values
+  ivalue <- mycats[[1]]$value[mycats[[1]]$lg2013 == i]
+  icells <- cells(lg2013_stratification, ivalue)
+  lg <- lg2013_stratification == i
+  size_strat <- freq(lg, value = 1)$count
+  n_strat <- max(minimum_n_strat, round(size_strat / size_pop * sample_size))
+  lgbb <- terra::ext(lg, cells = icells$lg2013)
+  lgbb <- as.matrix(lgbb)
+  rownames(lgbb) <- c("x", "y")
+  oversamplefactor <- 3 * round((size_pop / size_strat))
+  con <- connect_db(file.path(flea_data, "data/c-mon/grts.sqlite"))
+  test_10m <- extract_sample(
+    grtsdb = con,
+    samplesize = n_strat * oversamplefactor,
+    bbox = lgbb,
+    cellsize = 10)
+  dbDisconnect(con)
+
+
+
+}
+
+lg2013_sample_strat <- bind_rows(lg2013_sample_strat)
+
+lg2013_sample_strat_sf <- st_as_sf(
+  lg2013_sample_strat, coords = c("X", "Y"),
+  crs = st_crs(lg2013_strat_points_sf))
+
+lg2013_sample_strat_vect <- vect(lg2013_sample_strat_sf)
+
+testje <- terra::crop(
+  lg2013_stratification,
+  lg2013_sample_strat_vect[1] %>% buffer(5))
+plot(testje)
+points(lg2013_sample_strat_vect[1])
+polys(lg2013_sample_strat_vect[1] %>% buffer(5))
+
+lg2013_sample_strat_sf_block <- lg2013_sample_strat_sf %>%
+  point_to_gridcell(cell_width_m = 90, crs = 31370) %>%
+  mutate(lg2013 = factor(lg2013, levels = catstable$label))
+
+testje2 <- terra::crop(
+  lg2013_stratification,
+  lg2013_sample_strat_vect[1] %>% buffer(45 + 10))
+plot(testje2)
+points(lg2013_sample_strat_vect[1])
+polys(lg2013_sample_strat_vect[1] %>% buffer(45))
+polys(vect(lg2013_sample_strat_sf_block)[1])
+
+
+
+plot(lg2013_stratification)
+points(lg2013_sample_strat_vect)
+
+
+
+# Sample selection
+# test on a temporal difference maps
 ###################################
 
 # for each land use, draw a spatially balanced ordered sample
