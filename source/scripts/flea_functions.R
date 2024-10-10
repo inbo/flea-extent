@@ -2,7 +2,7 @@
 #'
 #' @param xy an object of class POINT
 #' @param cell_width_m cell width in meter, default 500
-#' @param point_position default center of grid cell
+#' @param point_position default centre of grid cell
 #' @param crs default EPSG code 31370
 #'
 #' @return
@@ -41,7 +41,8 @@ point_to_gridcell <- function(
 #' This function extracts a specified number of points from a raster,
 #' selecting the lowest values after sorting.
 #'
-#' @param rast A raster object (terra SpatRaster) containing GRTS rank numbers
+#' @param rast A raster object (`terra` `SpatRaster`) containing GRTS rank
+#' numbers
 #' @param n The number of points to extract
 #'
 #' @return An sf object containing the extracted points with their values,

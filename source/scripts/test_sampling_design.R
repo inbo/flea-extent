@@ -1,42 +1,3 @@
-#' Convert a single point location to a grid cell polygon
-#'
-#' @param xy an object of class POINT
-#' @param cell_width_m cell width in meter, default 500
-#' @param point_position default center of grid cell
-#' @param crs default EPSG code 31370
-#'
-#' @return
-#' @export
-#'
-#' @examples
-point_to_gridcell <- function(
-    xy,
-    cell_width_m = 500,
-    point_position = c("center", "lowerleft", "upperleft", "lowerright", "upperright"),
-    crs = 31370) {
-  point_position <- match.arg(point_position)
-
-  if (point_position != "center") stop(point_position, " not yet implemented")
-
-  stopifnot(sf::st_is(xy, "POINT"))
-  xy_df <- sf::st_drop_geometry(xy)
-  xy <- sf::st_geometry(xy)
-
-  # buffer with 1 point per quandrant
-  halflength <- cell_width_m / 2
-  xy_buffer <- sf::st_buffer(x = xy,
-                             dist = sqrt(2 * halflength^2),
-                             nQuadSegs = 1)
-
-  # rotate 45 degrees around centroid
-  rot <- function(a) matrix(c(cos(a), sin(a), -sin(a), cos(a)), 2, 2)
-  pl <- (xy_buffer - xy) * rot(pi/4) + xy
-  pl <- sf::st_sf(data.frame(xy_df, pl), crs = crs)
-  return(pl)
-}
-
-
-
 # TODO? convert this to a targets pipeline and make use of geotargets package??
 
 library(terra)
@@ -46,6 +7,7 @@ library(mapview)
 library(ggplot2)
 library(ggsankey)
 git_root <- rprojroot::find_root(rprojroot::is_git_root)
+source(file.path(git_root, "source/scripts/flea_functions.R"))
 
 flea_data <- gsub(
   pattern = "flea-extent", replacement = "flea-data", x = git_root)
