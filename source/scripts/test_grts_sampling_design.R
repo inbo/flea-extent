@@ -35,7 +35,9 @@ slyr <- xml2::read_xml(
   file.path(flea_data, "data", "2013", "LG2013_finaal_update.qml")
 )
 
-catstable <- xml2::xml_find_all(x = slyr, ".//pipe//rasterrenderer//colorPalette") |>
+catstable <- xml2::xml_find_all(
+  x = slyr, ".//pipe//rasterrenderer//colorPalette"
+  ) |>
   xml2::xml_contents() |>
   purrr::map(xml2::xml_attrs) |>
   purrr::map_df(~ as.list(.)) |>
@@ -51,7 +53,7 @@ apply_cats <- function(x, cats = catstable, name, coltab = TRUE) {
   levels(xc) <- cats
   if (coltab) {
     coltab(xc) <- cats |>
-      dplyr::select(value, color) |>
+      dplyr::select(value, color) |> # nolint
       as.data.frame()
   }
   names(xc) <- name
@@ -62,7 +64,8 @@ lg2013 <- apply_cats(lg2013, name = "lg2013")
 lg2016 <- apply_cats(lg2016, name = "lg2016")
 lg2019 <- apply_cats(lg2019, name = "lg2019")
 
-lg2013 <- resample(lg2013, fleagrts) # needed because of slightly different origin
+# resampling needed because of slightly different origin
+lg2013 <- resample(lg2013, fleagrts)
 lg2016 <- resample(lg2016, fleagrts)
 lg2019 <- resample(lg2019, fleagrts)
 
@@ -108,16 +111,16 @@ if (file.exists(
     bind_cols(data, binary)
   }
 
-  categorize_land_use_change <- function(B, simple = TRUE) {
+  categorize_land_use_change <- function(b, simple = TRUE) {
     if (simple) {
       case_when(
         # Stable conditions
-        grepl("^0+$", B) ~ "Stable absence",
-        grepl("^1+$", B) ~ "Stable presence",
+        grepl("^0+$", b) ~ "Stable absence",
+        grepl("^1+$", b) ~ "Stable presence",
 
         # Simple changes
-        grepl("^0+1+$", B) ~ "Gain",
-        grepl("^1+0+$", B) ~ "Loss",
+        grepl("^0+1+$", b) ~ "Gain",
+        grepl("^1+0+$", b) ~ "Loss",
 
         # Default case
         TRUE ~ "Other complex pattern"
@@ -125,26 +128,26 @@ if (file.exists(
     } else {
       case_when(
         # Stable conditions
-        grepl("^0+$", B) ~ "Stable absence",
-        grepl("^1+$", B) ~ "Stable presence",
+        grepl("^0+$", b) ~ "Stable absence",
+        grepl("^1+$", b) ~ "Stable presence",
 
         # Simple changes
-        grepl("^0+1+$", B) ~ "Gain",
-        grepl("^1+0+$", B) ~ "Loss",
+        grepl("^0+1+$", b) ~ "Gain",
+        grepl("^1+0+$", b) ~ "Loss",
 
         # Complex changes
-        grepl("^0+1+0+$", B) ~ "Temporary gain",
-        grepl("^1+0+1+$", B) ~ "Temporary loss",
-        grepl("^0+1+0+1+$", B) ~ "Intermittent presence (starting absent)",
-        grepl("^1+0+1+0+$", B) ~ "Intermittent presence (starting present)",
+        grepl("^0+1+0+$", b) ~ "Temporary gain",
+        grepl("^1+0+1+$", b) ~ "Temporary loss",
+        grepl("^0+1+0+1+$", b) ~ "Intermittent presence (starting absent)",
+        grepl("^1+0+1+0+$", b) ~ "Intermittent presence (starting present)",
 
         # Oscillating changes
-        grepl("^(01)+0?$", B) ~ "Oscillating (starting absent)",
-        grepl("^(10)+1?$", B) ~ "Oscillating (starting present)",
+        grepl("^(01)+0?$", b) ~ "Oscillating (starting absent)",
+        grepl("^(10)+1?$", b) ~ "Oscillating (starting present)",
 
         # Other complex patterns
-        grepl("01.*1$", B) & !grepl("^0+1+$", B) ~ "Complex gain",
-        grepl("10.*0$", B) & !grepl("^1+0+$", B) ~ "Complex loss",
+        grepl("01.*1$", b) & !grepl("^0+1+$", b) ~ "Complex gain",
+        grepl("10.*0$", b) & !grepl("^1+0+$", b) ~ "Complex loss",
 
         # Default case
         TRUE ~ "Other complex pattern"
@@ -216,7 +219,9 @@ if (file.exists(
   writeRaster(
     x = temporal_stratification,
     filename =
-      file.path(flea_data, "data/2013_2016_2019", "temporal_stratification.tif"),
+      file.path(
+        flea_data, "data/2013_2016_2019", "temporal_stratification.tif"
+      ),
     overwrite = FALSE
   )
 }
@@ -227,7 +232,8 @@ plot(`activeCat<-`(temporal_stratification, "Urbaan"))
 plot(`activeCat<-`(temporal_stratification, "Urbaan_changecat"))
 
 
-# calculate for each pixel the dominant temporal stratum inside a 9x9 block centered
+# calculate for each pixel the dominant temporal stratum inside a 9x9 block
+# centered
 # on the focal pixel
 temporal_stratification_modal9 <- focal(
   temporal_stratification,
@@ -239,11 +245,11 @@ temporal_stratification_modal9 <- focal(
 library(Rcpp)
 sourceCpp(here::here("source/scripts/unique-landuse-count.cpp"))
 # Then use it with focalCpp
-temporal_stratification_countunique9 <- terra::focalCpp(
+ts_countunique9 <- terra::focalCpp(
   x = temporal_stratification, w = 9, count_unique_landuse
 )
-hist(temporal_stratification_countunique9, maxcell = 1e7)
-plot(temporal_stratification_countunique9)
+hist(ts_countunique9, maxcell = 1e7)
+plot(ts_countunique9)
 
 jointable <- cats(temporal_stratification)[[1]] |>
   as_tibble() |>
@@ -414,7 +420,7 @@ all.equal(t1, t2)
 all_samples_collapsed <- all_samples_collapsed |>
   bind_cols(t2)
 
-all_samples_collapsed_sample_sizes <- all_samples_collapsed |>
+all_samples_collapsed_n <- all_samples_collapsed |>
   st_drop_geometry() |>
   inner_join(
     catstable_ts |>

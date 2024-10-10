@@ -9,7 +9,9 @@ flea_data <- gsub(
 )
 
 
-temporal_stratification <- rast(file.path(flea_data, "data/2013_2016_2019", "temporal_stratification.tif"))
+temporal_stratification <- rast(
+  file.path(flea_data, "data/2013_2016_2019", "temporal_stratification.tif")
+)
 
 changes_df <- cats(temporal_stratification)[[1]] |> as_tibble()
 

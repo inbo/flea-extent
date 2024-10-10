@@ -61,8 +61,8 @@ point_to_gridcell <- function(
 extract_sample_helper <- function(
     rast,
     n) {
-  require(terra)
-  require(sf)
+  require("terra")
+  require("sf")
 
   # Extract values, exclude NA
   extracted <- terra::extract(
@@ -116,9 +116,9 @@ extract_sample <- function(
     ntot,
     nmin,
     min_stratum_size) {
-  require(terra)
-  require(dplyr)
-  require(tibble)
+  require("terra")
+  require("dplyr")
+  require("tibble")
 
   # assertions
   assertthat::assert_that(!missing(stratum_raster))
@@ -184,7 +184,7 @@ extract_sample <- function(
   # remaining allocate proportional to stratum size
   allocation <- popsize |>
     mutate(
-      n_h = nmin + round((ntot - nmin * n()) * (notNA / sum(notNA)))
+      n_h = nmin + round((ntot - nmin * n()) * (notNA / sum(notNA))) # nolint
     )
 
   sample_ts2 <- vector(mode = "list", length = nlyr(fleagrts_ts2))

@@ -15,7 +15,7 @@ conflicted::conflicts_prefer(dplyr::filter)
 
 # load validation.Rdata
 # this file was produced by
-# validation_data(data_root = flea_data)
+# validation_data function with data_root = flea_data
 # but it is currently not working, probably due to different package versions
 # anyway, not really needed for this script
 load(
@@ -162,9 +162,9 @@ reschange2 <- calculate_accuracy(
   observed_changes$mapchange, observed_changes$refchange
 )
 
-A <- reschange1$byClass[, c(1, 2, 5, 6)]
-rownames(A) <- str_remove(rownames(A), "Class: ")
-A |>
+a <- reschange1$byClass[, c(1, 2, 5, 6)]
+rownames(a) <- str_remove(rownames(a), "Class: ")
+a |>
   round(digits = 2) |>
   knitr::kable(
     caption = str_c(

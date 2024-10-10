@@ -1,5 +1,5 @@
 # copy of NCA_functions.R in project NCA_validatingextent
-
+# nolint start
 library(assertthat)
 library(caret) # Confusion matrix maken
 
@@ -486,7 +486,8 @@ validation_data <- function(data_root) {
         "nochange", "change"
       ), oordeelval
     )) %>%
-    # Aanpassen beoordeling "verandering" -> als de validatieklasse 2 x hetzelfde
+    # Aanpassen beoordeling "verandering" ->
+    # als de validatieklasse 2 x hetzelfde
     # is per evaluator, dan "nochange"
     rowwise() %>%
     mutate(
@@ -636,3 +637,4 @@ validation_data <- function(data_root) {
     droplevels() %>%
     mutate(area = count / sum(count))
 }
+# nolint end

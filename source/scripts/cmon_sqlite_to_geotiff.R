@@ -9,10 +9,6 @@ flea_data <- gsub(
   pattern = "flea-extent", replacement = "flea-data", x = git_root
 )
 
-# lg2013 <- rast(file.path(flea_data, "data", "2013", "LG2013_finaal_update.tif"))
-# ext(lg2013)
-# plot(lg2013)
-# polys(ext(lg2013))
 flea_bbox <- rbind(x = c(20000, 259000), y = c(153000, 250000))
 flea_ext <- ext(as.numeric(flea_bbox), xy = TRUE)
 
@@ -53,7 +49,10 @@ dbDisconnect(con)
 class(allcells)
 head(allcells)
 # S4 method for class 'data.frame'
-# If the value is "xyz", the matrix or data.frame x must have at least two columns, the first with x (or longitude) and the second with y (or latitude) coordinates that represent the centers of raster cells. The additional columns are the values associated with the raster cells
+# If the value is "xyz", the matrix or data.frame x must have at least two
+# columns, the first with x (or longitude) and the second with y (or latitude)
+# coordinates that represent the centers of raster cells.
+# The additional columns are the values associated with the raster cells
 rast(
   x = allcells,
   type = "xyz",

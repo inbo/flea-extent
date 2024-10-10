@@ -29,7 +29,9 @@ slyr <- xml2::read_xml(
   file.path(flea_data, "data", "2013", "LG2013_finaal_update.qml")
 )
 
-catstable <- xml2::xml_find_all(x = slyr, ".//pipe//rasterrenderer//colorPalette") |>
+catstable <- xml2::xml_find_all(
+  x = slyr, ".//pipe//rasterrenderer//colorPalette"
+  ) |>
   xml2::xml_contents() |>
   purrr::map(xml2::xml_attrs) |>
   purrr::map_df(~ as.list(.)) |>
@@ -45,7 +47,7 @@ apply_cats <- function(x, cats = catstable, name, coltab = TRUE) {
   levels(xc) <- cats
   if (coltab) {
     coltab(xc) <- cats |>
-      dplyr::select(value, color) |>
+      dplyr::select(value, color) |> # nolint
       as.data.frame()
   }
   names(xc) <- name
@@ -56,7 +58,7 @@ lg2013 <- apply_cats(lg2013, name = "lg2013")
 lg2016 <- apply_cats(lg2016, name = "lg2016")
 lg2019 <- apply_cats(lg2019, name = "lg2019")
 
-# qgisprocess::qgis_show_help("grass:r.neighbors")
+# see qgisprocess qgis_show_help for "grass:r.neighbors"
 microbenchmark::microbenchmark(
   {
     qgisprocess::qgis_run_algorithm(
@@ -64,7 +66,8 @@ microbenchmark::microbenchmark(
       input = lg2013,
       method = "mode",
       size = 9,
-      output = file.path(flea_data, "data", "2013", "LG2013_mode_filter_9x9.tif"),
+      output =
+        file.path(flea_data, "data", "2013", "LG2013_mode_filter_9x9.tif"),
       .quiet = FALSE
     )
   },
@@ -516,7 +519,7 @@ for (i in unique(lg2013_strat_points_df$lg2013)) {
   )
   lg2013_sample_strat[[i]] <- df %>%
     slice(rowindex) %>%
-    mutate(order = 1:n())
+    mutate(order = seq_len(n()))
 }
 
 lg2013_sample_strat <- bind_rows(lg2013_sample_strat)
