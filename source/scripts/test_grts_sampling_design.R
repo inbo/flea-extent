@@ -1,11 +1,15 @@
 # setup
 
-library(grtsdb)
 library(ggplot2)
 library(dplyr)
 library(sf)
 library(terra)
 git_root <- rprojroot::find_root(rprojroot::is_git_root)
+source(
+  file.path(
+    git_root, "source/scripts/flea_functions.R"
+  )
+)
 flea_data <- gsub(
   pattern = "flea-extent", replacement = "flea-data", x = git_root)
 
@@ -245,7 +249,21 @@ plot(`activeCat<-`(temporal_stratification_modal9, "Urbaan_changecat"))
 
 # sample extraction
 # for each land use category
+sample_open_natuur <- extract_sample(
+  stratum_raster = temporal_stratification,
+  fleagrts = fleagrts,
+  stratum_name = "Open natuur_changecat",
+  ntot = 100,
+  nmin = 10)
 
+sample_open_natuur_combined <- bind_rows(sample_open_natuur)
+sample_open_natuur_90m <- sample_open_natuur_combined |>
+  point_to_gridcell(cell_width_m = 90)
+sample_open_natuur_combined |>
+  mapview::mapview(zcol = "stratum_name") +
+  mapview::mapview(x = sample_open_natuur_90m)
+
+# step by step breakdown of what the above function does
 # 1. Set the active category to the desired factor
 lu <- "Open natuur_changecat"
 ts1 <- `activeCat<-`(temporal_stratification, lu)
@@ -277,25 +295,29 @@ names(fleagrts_ts2) <- levels(as.factor(levelvec))
 plot(fleagrts_ts2)
 
 
-extract_sample <- function(rast, n) {
-  # Extract values, exclude NA
-  extracted <- terra::extract(
-    x = rast,
-    y = as.points(rast, na.rm = TRUE),
-    cells = TRUE,
-    xy = TRUE,
-    ID = FALSE)
+ntot <- 100
+nmin <- 10
+popsize <- global(fleagrts_ts2, fun = "notNA") |>
+  as_tibble(rownames = "layername")
+allocation <- popsize |>
+  mutate(
+    n_h = nmin + round((ntot - nmin * n()) * (notNA / sum(notNA)))
+  )
+sum(allocation$n_h)
 
-  # Sort and select the lowest n
-  sorted_indices <- order(extracted[[1]])[1:n]
-  selected <- extracted[sorted_indices, ]
-
-  return(selected)
+sample_ts2 <- vector(mode = "list", length = nlyr(fleagrts_ts2))
+sample_ts2 <- setNames(sample_ts2, names(fleagrts_ts2))
+for (i in names(sample_ts2)) {
+  sample_ts2[[i]] <- extract_sample_helper(
+    fleagrts_ts2[[i]],
+    allocation$n_h[allocation$layername == i]
+  )
 }
-sample20 <- lapply(fleagrts_ts2, extract_sample, n = 20)
-gain <- st_as_sf(sample20[[1]], coords = c("x", "y"), crs = 31370)
-plot(fleagrts_ts2[[1]])
+
+gain <- sample_ts2[["Gain"]]
+plot(fleagrts_ts2[["Gain"]])
 points(vect(gain))
+
 
 one_point <- gain %>%
   slice(4) %>%
@@ -306,3 +328,78 @@ one_cell <- one_point %>%
 plot(one_cell)
 points(one_point)
 polys(one_point %>% buffer(5))
+
+# repeat for all land use cats
+if (file.exists(
+  file.path(git_root, "source/scripts/all_samples.rds")
+)) {
+  all_samples <- readRDS(file.path(git_root, "source/scripts/all_samples.rds"))
+} else {
+  changecat_columns <- names(cats(temporal_stratification)[[1]])
+  changecat_columns <- changecat_columns[
+    stringr::str_detect(changecat_columns, "_changecat$")]
+
+  all_samples <- vector(mode = "list", length = length(changecat_columns))
+  all_samples <- setNames(all_samples, changecat_columns)
+  for (i in changecat_columns) {
+    all_samples[[i]] <- extract_sample(
+      stratum_raster = temporal_stratification,
+      fleagrts = fleagrts,
+      stratum_name = i,
+      ntot = 40 * 4 * 4,
+      nmin = 40,
+      min_stratum_size = 1000 # 10 ha
+    )
+  }
+  saveRDS(all_samples,
+          file = file.path(git_root, "source/scripts/all_samples.rds"))
+}
+
+# explore all_samples
+all_samples <- lapply(all_samples, bind_rows)
+# Function to add the list name as a column to each data frame
+add_list_name <- function(df_list, column_name) {
+  lapply(names(df_list), function(name) {
+    df <- df_list[[name]]
+    df[[column_name]] <- name
+    return(df)
+  })
+}
+all_samples <- add_list_name(all_samples, "land_use")
+all_samples <- bind_rows(all_samples)
+all_samples$land_use <- gsub(
+  pattern = "_changecat$", replacement = "", x = all_samples$land_use)
+all_samples_samplesizes <- all_samples |>
+  st_drop_geometry() |>
+  count(land_use, stratum_name)
+all_samples_multiple_selected <- all_samples |>
+  st_drop_geometry() |>
+  count(grts_rank)  |>
+  filter(n > 1)
+
+all_samples_collapsed <- all_samples |>
+  group_by(grts_rank, cell) |>
+  summarise(
+    strata = paste(land_use, stratum_name, collapse = "-"),
+    .groups = "drop"
+  )
+
+t1 <- extract(temporal_stratification, vect(all_samples_collapsed), ID = FALSE)
+t2 <- temporal_stratification[all_samples_collapsed$cell]
+catstable_ts <- cats(temporal_stratification)[[1]] |> as_tibble()
+all.equal(t1, t2)
+all_samples_collapsed <- all_samples_collapsed |>
+  bind_cols(t2)
+
+all_samples_collapsed_sample_sizes <- all_samples_collapsed |>
+  st_drop_geometry() |>
+  inner_join(
+    catstable_ts |>
+      select(label, stable, pixelcount = count),
+    by = join_by(label)
+  ) |>
+  mutate(
+    reuse = grepl(pattern = "^.+-.+$", x = strata)
+  ) |>
+  count(stable, reuse)
+
