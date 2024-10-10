@@ -1,0 +1,410 @@
+---
+references:
+- id: poelmans2021
+  accessed: "08:03:10"
+  author:
+  - family: Poelmans
+    given: Lien
+  - family: Janssen
+    given: Liliane
+  - family: Hambsch
+    given: Lorenz
+  issued: 2021
+  key: 6FW9KJHY
+  libraryID: 1
+  note: uitgevoerd in opdracht van het Vlaams Planbureau voor Omgeving
+  number: 2021/RMA/R/2458
+  providerKey: 2509FBBE-5BB0-44C4-B119-6083A81ED673
+  publisher: VITO
+  title: Landgebruik en ruimtebeslag in Vlaanderen, toestand 2019
+  type: report
+  URL: "https://archief-algemeen.omgeving.vlaanderen.be/xmlui/bitstream/handle/acd/449392/Landgebruik_en_Ruimtebeslag_2019_def_correctie.pdf?sequence=1&isAllowed=y"
+- id: wickham2021
+  author:
+  - family: Wickham
+    given: James D.
+  - family: Stehman
+    given: Stephen V.
+  - family: Sorenson
+    given: Daniel G.
+  - family: Gass
+    given: Leila
+  - family: Dewitz
+    given: Jon
+  container-title: Remote Sensing of Environment
+  DOI: 10.1016/j.rse.2021.112357
+  issued: 2021
+  key: GCRW3N4N
+  libraryID: 1
+  MAG ID: 3131122836
+  note: "MAG ID: 3131122836"
+  page: 112357
+  providerKey: Zotero
+  title: Thematic accuracy assessment of the NLCD 2016 land cover for
+    the conterminous United States
+  type: article-journal
+  volume: 257
+- id: radoux2020
+  accessed: "07:16:26"
+  author:
+  - family: Radoux
+    given: Julien
+  - family: Waldner
+    given: François
+  - family: Bogaert
+    given: Patrick
+  container-title: Remote Sensing
+  DOI: 10.3390/rs12020257
+  ISSN: 2072-4292
+  issue: 2
+  issued: 2020-01
+  key: 6ISVPME8
+  language: en
+  libraryID: 1
+  Number: 2
+  page: 257
+  providerKey: Zotero
+  Publisher: Multidisciplinary
+  rights: "http://creativecommons.org/licenses/by/3.0/"
+  source: www.mdpi.com
+  title: How Response Designs and Class Proportions Affect the Accuracy
+    of Validation Data
+  type: article-journal
+  URL: "https://www.mdpi.com/2072-4292/12/2/257"
+  volume: 12
+- id: stehman2011
+  accessed: "07:12:21"
+  author:
+  - family: Stehman
+    given: Stephen V.
+  - family: Wickham
+    given: James D.
+  container-title: Remote Sensing of Environment
+  container-title-short: Remote Sensing of Environment
+  DOI: 10.1016/j.rse.2011.06.007
+  ISSN: 0034-4257
+  issue: 12
+  issued: 2011-12-15
+  key: HLHDA6SA
+  libraryID: 1
+  page: 3044-3055
+  providerKey: Zotero
+  source: ScienceDirect
+  title: "Pixels, blocks of pixels, and polygons: Choosing a spatial
+    unit for thematic accuracy assessment"
+  title-short: Pixels, blocks of pixels, and polygons
+  type: article-journal
+  URL: "https://www.sciencedirect.com/science/article/pii/S0034425711002318"
+  volume: 115
+- id: magnussen2021
+  accessed: "07:26:38"
+  author:
+  - family: Magnussen
+    given: Steen
+  container-title: Open Journal of Forestry
+  container-title-short: OJF
+  DOI: 10.4236/ojf.2021.111002
+  ISSN: 2163-0429, 2163-0437
+  issue: 01
+  issued: 2021
+  key: BBD4JLEG
+  libraryID: 1
+  page: 14-36
+  providerKey: Zotero
+  source: DOI.org (Crossref)
+  title: Calibration of a Confidence Interval for a Classification
+    Accuracy
+  type: article-journal
+  URL: "https://www.scirp.org/journal/doi.aspx?doi=10.4236/ojf.2021.111002"
+  volume: 11
+- id: gu2020
+  accessed: "07:30:47"
+  author:
+  - family: Gu
+    given: Jianyu
+  - family: Congalton
+    given: Russell G.
+  container-title: Remote Sensing
+  container-title-short: Remote Sensing
+  DOI: 10.3390/rs12244093
+  ISSN: 2072-4292
+  issue: 24
+  issued: 2020-12-15
+  key: YBNR7ZB7
+  language: en
+  libraryID: 1
+  page: 4093
+  providerKey: Zotero
+  source: DOI.org (Crossref)
+  title: Analysis of the Impact of Positional Accuracy When Using a
+    Single Pixel for Thematic Accuracy Assessment
+  type: article-journal
+  URL: "https://www.mdpi.com/2072-4292/12/24/4093"
+  volume: 12
+- id: gu2021
+  accessed: "07:37:42"
+  author:
+  - family: Gu
+    given: Jianyu
+  - family: Congalton
+    given: Russell G.
+  container-title: Geographies
+  container-title-short: Geographies
+  DOI: 10.3390/geographies1020009
+  ISSN: 2673-7086
+  issue: 2
+  issued: 2021-09-18
+  key: VVECWZI6
+  language: en
+  libraryID: 1
+  page: 143-165
+  providerKey: Zotero
+  source: DOI.org (Crossref)
+  title: Analysis of the Impact of Positional Accuracy When Using a
+    Block of Pixels for Thematic Accuracy Assessment
+  type: article-journal
+  URL: "https://www.mdpi.com/2673-7086/1/2/9"
+  volume: 1
+- id: radoux2017
+  accessed: "10:14:06"
+  author:
+  - family: Radoux
+    given: Julien
+  - family: Bogaert
+    given: Patrick
+  container-title: Remote Sensing
+  DOI: 10.3390/rs9070646
+  ISSN: 2072-4292
+  issue: 7
+  issued: 2017-07
+  key: YARKBYJN
+  language: en
+  libraryID: 1
+  Number: 7
+  page: 646
+  providerKey: Zotero
+  Publisher: Multidisciplinary
+  rights: "http://creativecommons.org/licenses/by/3.0/"
+  source: www.mdpi.com
+  title: Good Practices for Object-Based Accuracy Assessment
+  type: article-journal
+  URL: "https://www.mdpi.com/2072-4292/9/7/646"
+  volume: 9
+- id: olofsson2014
+  accessed: 2017-11-29
+  author:
+  - family: Olofsson
+    given: Pontus
+  - family: Foody
+    given: Giles M.
+  - family: Herold
+    given: Martin
+  - family: Stehman
+    given: Stephen V.
+  - family: Woodcock
+    given: Curtis E.
+  - family: Wulder
+    given: Michael A.
+  container-title: Remote Sensing of Environment
+  DOI: 10.1016/j.rse.2014.02.015
+  ISSN: 00344257
+  issued: 2014-05-25
+  key: 2LLRBWYL
+  libraryID: 1
+  page: 42-57
+  providerKey: Zotero
+  Publisher: Elsevier
+  title: Good practices for estimating area and assessing accuracy of
+    land change
+  type: article-journal
+  URL: "https://www.sciencedirect.com/science/article/pii/S0034425714000704?via%3Dihub"
+  volume: 148
+- id: stehman2019
+  accessed: "07:45:24"
+  author:
+  - family: Stehman
+    given: Stephen V.
+  - family: Foody
+    given: Giles M.
+  container-title: Remote Sensing of Environment
+  container-title-short: Remote Sensing of Environment
+  DOI: 10.1016/j.rse.2019.05.018
+  ISSN: 0034-4257
+  issued: 2019-09-15
+  key: I5ZLL8UG
+  libraryID: 1
+  page: 111199
+  providerKey: Zotero
+  source: ScienceDirect
+  title: Key issues in rigorous accuracy assessment of land cover
+    products
+  type: article-journal
+  URL: "https://www.sciencedirect.com/science/article/pii/S0034425719302111"
+  volume: 231
+- id: vancalster2013
+  author:
+    - family: Van Calster
+      given: H
+    - family: Verschelde
+      given: P
+    - family: Bauwens
+      given: B
+  citation-key: vancalster2013
+  collection-title: Alterra Report 2393 INBO Report INBO.R.2013.1
+  container-author:
+    - family: De Blust
+      given: G
+    - family: Laurijssens
+      given: G
+    - family: Van Calster
+      given: H
+    - family: Verschelde
+      given: P
+    - family: Bauwens
+      given: D
+    - family: De Vos
+      given: B
+    - family: Svensson
+      given: J
+    - family: Jongman
+      given: R H G
+  container-title: >-
+    Design of a monitoring system and its cost-effectiveness : optimization of
+    biodiversity monitoring through close collaboration of users and data
+    providers
+  event-place: Brussels
+  ISBN: 1566-7197
+  issued:
+    - year: 2013
+  publisher: Research Institute for Nature and Forest
+  publisher-place: Brussels
+  title: Cost-effective sampling design for biodiversity monitoring in Europe
+  type: chapter
+  URL: http://edepot.wur.nl/250347
+- id: strahler2008
+  author:
+  - family: Strahler
+    given: Alan
+  - family: Boschetti
+    given: Luigi
+  - family: Foody
+    given: Giles
+  - family: Friedl
+    given: Mark
+  - family: Hansen
+    given: Matthew
+  - family: Herold
+    given: Martin
+  - family: Mayaux
+    given: Philippe
+  - family: Morisette
+    given: Jeffrey
+  - family: Stehman
+    given: Stephen
+  - family: Woodcock
+    given: Curtis
+  container-title: European Communities, Luxembourg
+  container-title-short: European Communities, Luxembourg
+  issued: 2008-07-01
+  key: PIANWUB7
+  libraryID: 1
+  providerKey: 2509FBBE-5BB0-44C4-B119-6083A81ED673
+  source: ResearchGate
+  title: "Global Land Cover Validation: Recommendations for Evaluation
+    and Accuracy Assessment of Global Land Cover Maps"
+  title-short: Global Land Cover Validation
+  type: article-journal
+  volume: 25
+- id: cochran1977
+  author:
+  - family: Cochran
+    given: W G
+  ISSN: 0-471-16240-X
+  issued: 1977
+  key: VXS5RLCV
+  libraryID: 1
+  number-of-pages: 1-428
+  providerKey: Zotero
+  publisher: John Wiley and Sons
+  publisher-place: "New York : NY, USA"
+  title: Sampling techniques
+  type: book
+- id: tsendbazar2021
+  accessed: "07:50:10"
+  author:
+  - family: Tsendbazar
+    given: N.
+  - family: Herold
+    given: M.
+  - family: Li
+    given: L.
+  - family: Tarko
+    given: A.
+  - family: Bruin
+    given: S.
+    non-dropping-particle: de
+  - family: Masiliunas
+    given: D.
+  - family: Lesiv
+    given: M.
+  - family: Fritz
+    given: S.
+  - family: Buchhorn
+    given: M.
+  - family: Smets
+    given: B.
+  - family: Van De Kerchove
+    given: R.
+  - family: Duerauer
+    given: M.
+  container-title: Remote Sensing of Environment
+  container-title-short: Remote Sensing of Environment
+  DOI: 10.1016/j.rse.2021.112686
+  ISSN: 0034-4257
+  issued: 2021-12-01
+  key: SLVHCL6X
+  libraryID: 1
+  page: 112686
+  providerKey: 2509FBBE-5BB0-44C4-B119-6083A81ED673
+  source: ScienceDirect
+  title: Towards operational validation of annual global land cover maps
+  type: article-journal
+  URL: "https://www.sciencedirect.com/science/article/pii/S0034425721004065"
+  volume: 266
+- id: gong2023
+  accessed: "07:30:43"
+  author:
+  - family: Gong
+    given: Yali
+  - family: Xie
+    given: Huan
+  - family: Liao
+    given: Shicheng
+  - family: Lu
+    given: Yao
+  - family: Jin
+    given: Yanmin
+  - family: Wei
+    given: Chao
+  - family: Tong
+    given: Xiaohua
+  container-title: Remote Sensing
+  DOI: 10.3390/rs15184593
+  ISSN: 2072-4292
+  issue: 18
+  issued: 2023-01
+  key: CNDDD4GR
+  language: en
+  libraryID: 1
+  Number: 18
+  page: 4593
+  providerKey: 2509FBBE-5BB0-44C4-B119-6083A81ED673
+  Publisher: Multidisciplinary
+  rights: "http://creativecommons.org/licenses/by/3.0/"
+  source: www.mdpi.com
+  title: Assessing the Accuracy of Multi-Temporal GlobeLand30 Products
+    in China Using a Spatiotemporal Stratified Sampling Method
+  type: article-journal
+  URL: "https://www.mdpi.com/2072-4292/15/18/4593"
+  volume: 15
+...
