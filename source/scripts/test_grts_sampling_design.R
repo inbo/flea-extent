@@ -11,7 +11,8 @@ source(
   )
 )
 flea_data <- gsub(
-  pattern = "flea-extent", replacement = "flea-data", x = git_root)
+  pattern = "flea-extent", replacement = "flea-data", x = git_root
+)
 
 # read data
 
@@ -27,26 +28,31 @@ qgisprocess::qgis_show_help("slyr:lyrtoqml")
 qgisprocess::qgis_run_algorithm(
   "slyr:lyrtoqml",
   INPUT = file.path(flea_data, "data", "2013", "LG2013_finaal_update.lyr"),
-  OUTPUT = file.path(flea_data, "data", "2013", "LG2013_finaal_update.qml"))
+  OUTPUT = file.path(flea_data, "data", "2013", "LG2013_finaal_update.qml")
+)
 
 slyr <- xml2::read_xml(
-  file.path(flea_data, "data", "2013", "LG2013_finaal_update.qml"))
+  file.path(flea_data, "data", "2013", "LG2013_finaal_update.qml")
+)
 
 catstable <- xml2::xml_find_all(x = slyr, ".//pipe//rasterrenderer//colorPalette") |>
   xml2::xml_contents() |>
   purrr::map(xml2::xml_attrs) |>
-  purrr::map_df(~as.list(.)) |>
+  purrr::map_df(~ as.list(.)) |>
   dplyr::relocate(value, label) |>
   dplyr::mutate(
     value = as.numeric(value),
-    color = toupper(color))
+    color = toupper(color)
+  )
 
 apply_cats <- function(x, cats = catstable, name, coltab = TRUE) {
   xc <- as.factor(x)
   names(cats)[names(cats) == "label"] <- name
   levels(xc) <- cats
   if (coltab) {
-    coltab(xc) <- cats |> dplyr::select(value, color) |> as.data.frame()
+    coltab(xc) <- cats |>
+      dplyr::select(value, color) |>
+      as.data.frame()
   }
   names(xc) <- name
   return(xc)
@@ -69,14 +75,15 @@ datatype(lg2013) # integers 0 to 255 INT1U
 # unique(c(), as.raster = TRUE) of numeric layers is safer than concats()
 
 if (file.exists(
-  file.path(flea_data, "data/2013_2016_2019", "temporal_stratification.tif"))
-  ) {
+  file.path(flea_data, "data/2013_2016_2019", "temporal_stratification.tif")
+)
+) {
   temporal_stratification <-
     rast(
       file.path(
         flea_data, "data/2013_2016_2019", "temporal_stratification.tif"
-        )
       )
+    )
 } else {
   temporal_stratification <- unique(
     c(lg2013, lg2016, lg2019) * 1,
@@ -95,7 +102,8 @@ if (file.exists(
       binary[[i]] <- paste0(
         stringr::str_detect(data$lg2013_label, i) %>% as.numeric(),
         stringr::str_detect(data$lg2016_label, i) %>% as.numeric(),
-        stringr::str_detect(data$lg2019_label, i) %>% as.numeric())
+        stringr::str_detect(data$lg2019_label, i) %>% as.numeric()
+      )
     }
     bind_cols(data, binary)
   }
@@ -112,7 +120,8 @@ if (file.exists(
         grepl("^1+0+$", B) ~ "Loss",
 
         # Default case
-        TRUE ~ "Other complex pattern")
+        TRUE ~ "Other complex pattern"
+      )
     } else {
       case_when(
         # Stable conditions
@@ -148,38 +157,44 @@ if (file.exists(
   additional_levels <- freq(temporal_stratification) %>%
     as_tibble() %>%
     tidyr::separate(
-      value, into = c("lg2013", "lg2016", "lg2019"),
-      sep = "_", remove = FALSE) %>%
+      value,
+      into = c("lg2013", "lg2016", "lg2019"),
+      sep = "_", remove = FALSE
+    ) %>%
     left_join(
       catstable %>%
         mutate(
           value = as.character(value),
           lg2013_label = label,
           .keep = "none"
-        ) ,
-      by = join_by(lg2013 == value)) %>%
+        ),
+      by = join_by(lg2013 == value)
+    ) %>%
     left_join(
       catstable %>%
         mutate(
           value = as.character(value),
           lg2016_label = label,
           .keep = "none"
-        ) ,
-      by = join_by(lg2016 == value)) %>%
+        ),
+      by = join_by(lg2016 == value)
+    ) %>%
     left_join(
       catstable %>%
         mutate(
           value = as.character(value),
           lg2019_label = label,
           .keep = "none"
-        ) ,
-      by = join_by(lg2019 == value)) %>%
+        ),
+      by = join_by(lg2019 == value)
+    ) %>%
     binary_change(lg = lg) %>%
     rowwise() %>%
     mutate(stable = ifelse(
       all(lg2013 == lg2016, lg2016 == lg2019),
-      "stable", "changed") %>%
-        as.factor()) %>%
+      "stable", "changed"
+    ) %>%
+      as.factor()) %>%
     ungroup() %>%
     mutate(
       across(
@@ -193,7 +208,8 @@ if (file.exists(
     mutate(across(starts_with("lg"), as.character)) %>%
     inner_join(
       additional_levels,
-      by = join_by(lg2013, lg2016, lg2019, label == value))
+      by = join_by(lg2013, lg2016, lg2019, label == value)
+    )
   levels(temporal_stratification) <- join_levels
   coltab(temporal_stratification) <- NULL
 
@@ -214,7 +230,9 @@ plot(`activeCat<-`(temporal_stratification, "Urbaan_changecat"))
 # calculate for each pixel the dominant temporal stratum inside a 9x9 block centered
 # on the focal pixel
 temporal_stratification_modal9 <- focal(
-  temporal_stratification, w = 9, fun = "modal")
+  temporal_stratification,
+  w = 9, fun = "modal"
+)
 
 
 # Source C++ function to count unique values in window
@@ -222,7 +240,8 @@ library(Rcpp)
 sourceCpp(here::here("source/scripts/unique-landuse-count.cpp"))
 # Then use it with focalCpp
 temporal_stratification_countunique9 <- terra::focalCpp(
-  x = temporal_stratification, w = 9, count_unique_landuse)
+  x = temporal_stratification, w = 9, count_unique_landuse
+)
 hist(temporal_stratification_countunique9, maxcell = 1e7)
 plot(temporal_stratification_countunique9)
 
@@ -254,7 +273,8 @@ sample_open_natuur <- extract_sample(
   fleagrts = fleagrts,
   stratum_name = "Open natuur_changecat",
   ntot = 100,
-  nmin = 10)
+  nmin = 10
+)
 
 sample_open_natuur_combined <- bind_rows(sample_open_natuur)
 sample_open_natuur_90m <- sample_open_natuur_combined |>
@@ -337,7 +357,8 @@ if (file.exists(
 } else {
   changecat_columns <- names(cats(temporal_stratification)[[1]])
   changecat_columns <- changecat_columns[
-    stringr::str_detect(changecat_columns, "_changecat$")]
+    stringr::str_detect(changecat_columns, "_changecat$")
+  ]
 
   all_samples <- vector(mode = "list", length = length(changecat_columns))
   all_samples <- setNames(all_samples, changecat_columns)
@@ -352,7 +373,8 @@ if (file.exists(
     )
   }
   saveRDS(all_samples,
-          file = file.path(git_root, "source/scripts/all_samples.rds"))
+    file = file.path(git_root, "source/scripts/all_samples.rds")
+  )
 }
 
 # explore all_samples
@@ -368,13 +390,14 @@ add_list_name <- function(df_list, column_name) {
 all_samples <- add_list_name(all_samples, "land_use")
 all_samples <- bind_rows(all_samples)
 all_samples$land_use <- gsub(
-  pattern = "_changecat$", replacement = "", x = all_samples$land_use)
+  pattern = "_changecat$", replacement = "", x = all_samples$land_use
+)
 all_samples_samplesizes <- all_samples |>
   st_drop_geometry() |>
   count(land_use, stratum_name)
 all_samples_multiple_selected <- all_samples |>
   st_drop_geometry() |>
-  count(grts_rank)  |>
+  count(grts_rank) |>
   filter(n > 1)
 
 all_samples_collapsed <- all_samples |>
@@ -402,4 +425,3 @@ all_samples_collapsed_sample_sizes <- all_samples_collapsed |>
     reuse = grepl(pattern = "^.+-.+$", x = strata)
   ) |>
   count(stable, reuse)
-

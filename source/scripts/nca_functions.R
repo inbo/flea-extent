@@ -4,66 +4,88 @@ library(assertthat)
 library(caret) # Confusion matrix maken
 
 
-cleanmapdata <- function(data = data, points_id, tbltrans, type, year){
-  maps <- terra::extract(x = data,
-                 y = terra::vect(
-                   st_as_sf(x = points_id[, c('POINT_X','POINT_Y')],
-                            coords = c("POINT_X", "POINT_Y"),
-                            crs = "EPSG:31370"))
-  )  #extract de waardes van de referentiedata
+cleanmapdata <- function(data = data, points_id, tbltrans, type, year) {
+  maps <- terra::extract(
+    x = data,
+    y = terra::vect(
+      st_as_sf(
+        x = points_id[, c("POINT_X", "POINT_Y")],
+        coords = c("POINT_X", "POINT_Y"),
+        crs = "EPSG:31370"
+      )
+    )
+  ) # extract de waardes van de referentiedata
   names(maps)[2] <- "landgebruik"
   maps <- maps %>%
-    mutate(x = points_id[, 'POINT_X'],
-           y = points_id[, 'POINT_X'],
-           code = as.factor(landgebruik),
-           landgebruik = recode_factor(code, "1" = "Open natuur", "2" = "Bos",
-                                       "3" = "Grasland", "4" = "Akker",
-                                       "5" = "Urbaan", "6" = "Laag groen",
-                                       "7" = "Hoog groen", "8" = "Water",
-                                       "9" = "Overig"),
-           type = type,
-           year = year) %>%
-    left_join(tbltrans[,-1], by = c("code" = "lucode")) %>% droplevels()
+    mutate(
+      x = points_id[, "POINT_X"],
+      y = points_id[, "POINT_X"],
+      code = as.factor(landgebruik),
+      landgebruik = recode_factor(code,
+        "1" = "Open natuur", "2" = "Bos",
+        "3" = "Grasland", "4" = "Akker",
+        "5" = "Urbaan", "6" = "Laag groen",
+        "7" = "Hoog groen", "8" = "Water",
+        "9" = "Overig"
+      ),
+      type = type,
+      year = year
+    ) %>%
+    left_join(tbltrans[, -1], by = c("code" = "lucode")) %>%
+    droplevels()
   rm(data)
   return(maps)
 }
 
-Cleanchangeareadata <- function(file, tbltrans, type){
+Cleanchangeareadata <- function(file, tbltrans, type) {
   maparea <- read_csv2(file = file)
-  maparea %>% mutate(LG2013 = as.factor(LG2013),
-                     LG2016 = as.factor(LG2016),
-                     type = type)  %>%
-    left_join(tbltrans[,c("lucode", "valid_eng")],
-              by = c('LG2013' = "lucode")) %>%
+  maparea %>%
+    mutate(
+      LG2013 = as.factor(LG2013),
+      LG2016 = as.factor(LG2016),
+      type = type
+    ) %>%
+    left_join(tbltrans[, c("lucode", "valid_eng")],
+      by = c("LG2013" = "lucode")
+    ) %>%
     dplyr::select(-LG2013) %>%
     rename(LG2013 = valid_eng) %>%
-    left_join(tbltrans[,c("lucode", "valid_eng")],
-              by = c('LG2016' = "lucode")) %>%
+    left_join(tbltrans[, c("lucode", "valid_eng")],
+      by = c("LG2016" = "lucode")
+    ) %>%
     dplyr::select(-LG2016) %>%
     rename(LG2016 = valid_eng) %>%
     filter(LG2013 != "Water" &
-             LG2016 != "Water") %>%
-    mutate(changecat = as.factor(str_c(LG2013, LG2016, sep = "-")),
-           changebool = as.factor(ifelse(LG2013 == LG2016,
-                                         "No change", "Change"))) %>%
+      LG2016 != "Water") %>%
+    mutate(
+      changecat = as.factor(str_c(LG2013, LG2016, sep = "-")),
+      changebool = as.factor(ifelse(LG2013 == LG2016,
+        "No change", "Change"
+      ))
+    ) %>%
     group_by(changecat, changebool, type) %>%
     summarize(area = sum(Count)) %>%
     ungroup() %>%
     arrange(changecat)
 }
-#mapdata <- nara13$valid
-#refdata <- as.factor(points_id$lu13oord)
-#both arrays need to be factor variables with the same levels.
-calculate_accuracy <- function(mapdata, refdata){
+# mapdata <- nara13$valid
+# refdata <- as.factor(points_id$lu13oord)
+# both arrays need to be factor variables with the same levels.
+calculate_accuracy <- function(mapdata, refdata) {
   assert_that(length(mapdata) == length(refdata),
-              msg = "Length of the arrays is not equal")
-  assert_that(nlevels(mapdata) == nlevels(refdata) &
-                all(levels(mapdata) %in% levels(refdata)),
-              msg = "The data are not factors or don't have the same levels.")
-  conf <- confusionMatrix(data = mapdata,
-                          reference = refdata)
-  #overall accuracy
-  #sum(diag(conf$table))/sum(conf$table)
+    msg = "Length of the arrays is not equal"
+  )
+  assert_that(
+    nlevels(mapdata) == nlevels(refdata) &
+      all(levels(mapdata) %in% levels(refdata)),
+    msg = "The data are not factors or don't have the same levels."
+  )
+  conf <- confusionMatrix(
+    data = mapdata,
+    reference = refdata
+  )
+  # overall accuracy
+  # sum(diag(conf$table))/sum(conf$table)
   return(conf)
 }
 
@@ -94,8 +116,8 @@ calc_oa <- function(maparea, ma, propma = NULL) {
   ua <- diag(propma) / rowSums(propma)
   v_oa <- sum(propmaparea^2 * ua * (1 - ua) / (ni - 1), na.rm = TRUE)
   me_oa <- 1.96 * sqrt(v_oa)
-  oa_low = oa - me_oa
-  oa_high = oa + me_oa
+  oa_low <- oa - me_oa
+  oa_high <- oa + me_oa
   return(
     data.frame(oa_est = oa, oa_var = v_oa, oa_low = oa_low, oa_high = oa_high)
   )
@@ -125,11 +147,11 @@ calc_ua_pa <- function(maparea, ma, propma = NULL) {
   for (cj in seq_len(length(dyn))) {
     n_j[cj] <- sum(maparea / ni * ma[, cj], na.rm = TRUE)
     aftersumsign[cj] <- sum(maparea[-cj]^2 * ma[-cj, cj] / ni[-cj] *
-                              (1 - ma[-cj, cj] / ni[-cj]) /
-                              (ni[-cj] - 1), na.rm = TRUE)
+      (1 - ma[-cj, cj] / ni[-cj]) /
+      (ni[-cj] - 1), na.rm = TRUE)
   }
   v_pa <- 1 / n_j^2 * (maparea^2 * (1 - pa)^2 * ua * (1 - ua) / (ni - 1) +
-                         pa^2 * aftersumsign)
+    pa^2 * aftersumsign)
   v_pa[is.nan(v_pa)] <- 0
 
   ua_me <- 1.96 * sqrt(v_ua)
@@ -149,7 +171,8 @@ calc_ua_pa <- function(maparea, ma, propma = NULL) {
     pa_est = pa,
     pa_var = v_pa,
     pa_low = pa_low,
-    pa_high = pa_high))
+    pa_high = pa_high
+  ))
 }
 
 calc_areas <- function(maparea, ma, pixelsize = 0.01, propma = NULL) {
@@ -169,7 +192,7 @@ calc_areas <- function(maparea, ma, pixelsize = 0.01, propma = NULL) {
   v_propareaest <- vector(mode = "numeric", length = length(dyn))
   for (cj in seq_len(length(dyn))) {
     v_propareaest[cj] <- sum((propmaparea * propma[, cj] - propma[, cj]^2) /
-                               (ni + 0.001 - 1))
+      (ni + 0.001 - 1))
     # + 0.001 voor klassen met maar 1 punt
   }
   v_propareaest[is.na(v_propareaest)] <- 0
@@ -179,7 +202,8 @@ calc_areas <- function(maparea, ma, pixelsize = 0.01, propma = NULL) {
     class = dyn,
     n_points = ni,
     prop_est = propareaest,
-    prop_var = v_propareaest) |>
+    prop_var = v_propareaest
+  ) |>
     mutate(
       prop_low = prop_est - me_propareaest,
       prop_high = prop_est + me_propareaest,
@@ -195,13 +219,13 @@ calc_areas <- function(maparea, ma, pixelsize = 0.01, propma = NULL) {
       area_rme = me_propareaest * aoi * pixelsize / area_est_ha,
       prop_mse_map = prop_map_bias^2,
       prop_mse_sample = v_propareaest
-  )
+    )
   return(out)
 }
 
 
-#maparea is the surface area of each change class
-#ma is the n_{ij} confusion matrix for the change classes
+# maparea is the surface area of each change class
+# ma is the n_{ij} confusion matrix for the change classes
 validation_uncertainty <- function(ma, maparea, pixelsize) {
   dyn <- rownames(ma)
   aoi <- sum(maparea) # calculate the area proportions for each map class
@@ -209,8 +233,8 @@ validation_uncertainty <- function(ma, maparea, pixelsize) {
   ni <- rowSums(ma) # number of reference points per map class
   propma <- confusion_matrix(maparea = maparea, ma = ma)
 
-   pa <- diag(propma) / colSums(propma)
- # estimate the accuracies
+  pa <- diag(propma) / colSums(propma)
+  # estimate the accuracies
   oa <- sum(diag(propma))
   # overall accuracy (Eq. 1 in Olofsson et al. 2014)
   ua <- diag(propma) / rowSums(propma)
@@ -230,11 +254,11 @@ validation_uncertainty <- function(ma, maparea, pixelsize) {
   for (cj in seq_len(length(dyn))) {
     n_j[cj] <- sum(maparea / ni * ma[, cj], na.rm = TRUE)
     aftersumsign[cj] <- sum(maparea[-cj]^2 * ma[-cj, cj] / ni[-cj] *
-                              (1 - ma[-cj, cj] / ni[-cj]) /
-                              (ni[-cj] - 1), na.rm = TRUE)
+      (1 - ma[-cj, cj] / ni[-cj]) /
+      (ni[-cj] - 1), na.rm = TRUE)
   }
   v_pa <- 1 / n_j^2 * (maparea^2 * (1 - pa)^2 * ua * (1 - ua) / (ni - 1) +
-                         pa^2 * aftersumsign)
+    pa^2 * aftersumsign)
   v_pa[is.nan(v_pa)] <- 0
 
   ### Estimate area
@@ -247,7 +271,7 @@ validation_uncertainty <- function(ma, maparea, pixelsize) {
   v_propareaest <- array(0, dim = length(dyn))
   for (cj in seq_len(length(dyn))) {
     v_propareaest[cj] <- sum((propmaparea * propma[, cj] - propma[, cj]^2) /
-                               (rowSums(ma) + 0.001 - 1)) # + 0.001 voor klassen met maar 1 punt
+      (rowSums(ma) + 0.001 - 1)) # + 0.001 voor klassen met maar 1 punt
   }
   v_propareaest[is.na(v_propareaest)] <- 0
 
@@ -275,11 +299,11 @@ validation_uncertainty <- function(ma, maparea, pixelsize) {
 }
 
 
-plot_validation_data <- function(ov){
+plot_validation_data <- function(ov) {
   plot_val <- ov %>%
     dplyr::select(class, area_ha, adj_area, ci_adj_area, ua, pa) %>%
     mutate(conf.low = adj_area - ci_adj_area, conf.high = adj_area +
-             ci_adj_area) %>%
+      ci_adj_area) %>%
     mutate(signif0 = ifelse(conf.low <= 0, "", "*")) %>%
     separate(class, c("lu13", "lu16"), sep = "-", remove = FALSE) %>%
     unite("classfull", lu13:lu16, sep = " > ", remove = FALSE) %>%
@@ -289,7 +313,7 @@ plot_validation_data <- function(ov){
   options(scipen = 999)
 
   bar <- ggplot(
-    plot_val %>% filter(lu13!=lu16),
+    plot_val %>% filter(lu13 != lu16),
     aes(x = classfull, y = adj_area, text = paste(
       "PA:", paperc, " - UA:", uaperc,
       "\nValidated area:", round(adj_area), " ha",
@@ -298,12 +322,12 @@ plot_validation_data <- function(ov){
     ))
   ) +
     geom_bar(aes(fill = lu13),
-             stat = "identity", position = "dodge",
-             width = 0.7
+      stat = "identity", position = "dodge",
+      width = 0.7
     ) +
     geom_errorbar(aes(ymin = conf.low, ymax = conf.high),
-                  width = 0.2,
-                  colour = "black", position = position_dodge(width = 0.7)
+      width = 0.2,
+      colour = "black", position = position_dodge(width = 0.7)
     ) +
     geom_point(aes(y = area_ha), colour = "black") +
     labs(y = "Area (ha)", fill = "Class 2013") +
@@ -325,13 +349,15 @@ plot_validation_data <- function(ov){
   return(bar)
 }
 
-validation_data <- function(data_root){
+validation_data <- function(data_root) {
   punten <- read_vc(
     "validatiepunten",
-    root = file.path(data_root, "data")) # Gevalideerde punten
+    root = file.path(data_root, "data")
+  ) # Gevalideerde punten
   combine <- read_vc(
     "combine",
-    root = file.path(data_root, "data"))
+    root = file.path(data_root, "data")
+  )
   # Combine van de validatieklassenkaart van 2013
   # en 2016 -> geeft de oppervlakte van de landgebruiksveranderingen en
   # van de stabiele klassen
@@ -351,26 +377,35 @@ validation_data <- function(data_root){
   )
   validcode <- c(1, 2, 1, 4, 5, 1, 2, 8, 9)
   tbltrans2 <- data.frame(lu, lucode, valid, valid_eng, validcode)
-  tbltrans <- tbltrans2 %>% mutate(valid = as.factor(valid),
-           valid_eng = as.factor(valid_eng),
-           lucode = as.factor(lucode),
-           validcode = as.factor(validcode),
-           lu = as.factor(lu))
+  tbltrans <- tbltrans2 %>% mutate(
+    valid = as.factor(valid),
+    valid_eng = as.factor(valid_eng),
+    lucode = as.factor(lucode),
+    validcode = as.factor(validcode),
+    lu = as.factor(lu)
+  )
 
   combine <- combine %>%
-    mutate(LG2013_ChangeCla = as.factor(LG2013_ChangeCla),
-                     LG2016_ChangeCla = as.factor(LG2016_ChangeCla)) %>%
-    left_join(tbltrans[,c("lucode", "valid_eng")],
-              by = c('LG2013_ChangeCla' = "lucode")) %>%
+    mutate(
+      LG2013_ChangeCla = as.factor(LG2013_ChangeCla),
+      LG2016_ChangeCla = as.factor(LG2016_ChangeCla)
+    ) %>%
+    left_join(tbltrans[, c("lucode", "valid_eng")],
+      by = c("LG2013_ChangeCla" = "lucode")
+    ) %>%
     rename(LG2013 = valid_eng) %>%
-    left_join(tbltrans[,c("lucode", "valid_eng")],
-              by = c('LG2016_ChangeCla' = "lucode")) %>%
+    left_join(tbltrans[, c("lucode", "valid_eng")],
+      by = c("LG2016_ChangeCla" = "lucode")
+    ) %>%
     rename(LG2016 = valid_eng) %>%
     filter(LG2013 != "Water" &
-                    LG2016 != "Water") %>%
-    mutate(changecat = as.factor(str_c(LG2013, LG2016, sep = "-")),
-           changebool = as.factor(ifelse(LG2013 == LG2016,
-                                          "No change", "Change"))) %>%
+      LG2016 != "Water") %>%
+    mutate(
+      changecat = as.factor(str_c(LG2013, LG2016, sep = "-")),
+      changebool = as.factor(ifelse(LG2013 == LG2016,
+        "No change", "Change"
+      ))
+    ) %>%
     group_by(changecat, changebool) %>%
     summarize(area = sum(Count)) %>%
     ungroup()
@@ -404,30 +439,30 @@ validation_data <- function(data_root){
     mutate(klasse = gsub("\\..*", "", klasse)) %>%
     # Alles na "." weglaten -> \\.. definieert . en * betekent "alles na"
     mutate(klasse = recode(klasse,
-                           X2013 = "lu2013", X2016 = "lu2016",
-                           change = "verandering"
+      X2013 = "lu2013", X2016 = "lu2016",
+      change = "verandering"
     )) %>%
     mutate(lu2013 = recode(lu2013,
-                           "1" = "Open natuur", "2" = "Bos", "3" = "Grasland", "4" = "Akker",
-                           "5" = "Urbaan",
-                           "6" = "Laag groen", "7" = "Hoog groen", "8" = "Water", "9" = "Overig"
+      "1" = "Open natuur", "2" = "Bos", "3" = "Grasland", "4" = "Akker",
+      "5" = "Urbaan",
+      "6" = "Laag groen", "7" = "Hoog groen", "8" = "Water", "9" = "Overig"
     )) %>%
     # codes naar tekst
     mutate(lu2016 = recode(lu2016,
-                           "1" = "Open natuur", "2" = "Bos", "3" = "Grasland",
-                           "4" = "Akker", "5" = "Urbaan", "6" = "Laag groen",
-                           "7" = "Hoog groen", "8" = "Water", "9" = "Overig"
+      "1" = "Open natuur", "2" = "Bos", "3" = "Grasland",
+      "4" = "Akker", "5" = "Urbaan", "6" = "Laag groen",
+      "7" = "Hoog groen", "8" = "Water", "9" = "Overig"
     )) %>%
     # codes naar tekst
     rowwise() %>%
     mutate(lu_c = ifelse(klasse == "lu2013" & lu2013 == oordeel,
-                         1, ifelse(klasse == "lu2016" & lu2016 == oordeel,
-                                   1, 0
-                         )
+      1, ifelse(klasse == "lu2016" & lu2016 == oordeel,
+        1, 0
+      )
     )) %>%
     # Check of de gevalideerde landgebruiken overeenkomen met de LG van de kaart
     mutate(change_c = ifelse(verandering == oordeel,
-                             1, 0
+      1, 0
     )) %>%
     # Check of de beoordeling "change/nochange" overeenkomt met die van de
     # LG-kaart
@@ -447,19 +482,23 @@ validation_data <- function(data_root){
     rename(oordeelval = valid) %>%
     group_by(objectid, eval) %>%
     mutate(oordeelval = ifelse(is.na(oordeelval),
-                               ifelse(identical(oordeelval[1], oordeelval[2]),
-                                      "nochange", "change"
-                               ), oordeelval
+      ifelse(identical(oordeelval[1], oordeelval[2]),
+        "nochange", "change"
+      ), oordeelval
     )) %>%
     # Aanpassen beoordeling "verandering" -> als de validatieklasse 2 x hetzelfde
     # is per evaluator, dan "nochange"
     rowwise() %>%
-    mutate(veranderingval =
-             ifelse(luval13 == luval16, "nochange", "change")) %>%
-    mutate(luval_c =
-             ifelse(klasse == "lu2013" & luval13 == oordeelval, 1,
-                    ifelse(klasse == "lu2016" & luval16 == oordeelval, 1, 0)
-    )) %>%
+    mutate(
+      veranderingval =
+        ifelse(luval13 == luval16, "nochange", "change")
+    ) %>%
+    mutate(
+      luval_c =
+        ifelse(klasse == "lu2013" & luval13 == oordeelval, 1,
+          ifelse(klasse == "lu2016" & luval16 == oordeelval, 1, 0)
+        )
+    ) %>%
     # Check of de gevalideerde landgebruiken overeenkomen met de LG van de kaart
     mutate(changeval_c = ifelse(veranderingval == oordeelval, 1, 0)) %>%
     # Check of de beoordeling "change/nochange" overeenkomt met die van
@@ -478,20 +517,20 @@ validation_data <- function(data_root){
       verandoord = first(na.omit(verandering))
     ) %>%
     group_by(objectid) %>%
-    sample_n(1) %>% #1 random classificatie w gekozen bij conflict tss experten
+    sample_n(1) %>% # 1 random classificatie w gekozen bij conflict tss experten
     na.omit() %>%
     mutate(codeval13 = gsub("\\b(\\pL)\\pL{2,}|.", "\\U\\1", luval13,
-                            perl = TRUE
+      perl = TRUE
     )) %>%
     mutate(codeval16 = gsub("\\b(\\pL)\\pL{2,}|.", "\\U\\1", luval16,
-                            perl = TRUE
+      perl = TRUE
     )) %>%
     unite(changeclass, codeval13, codeval16, sep = "_") %>%
     mutate(codeval13 = gsub("\\b(\\pL)\\pL{2,}|.", "\\U\\1", lu13oord,
-                            perl = TRUE
+      perl = TRUE
     )) %>%
     mutate(codeval16 = gsub("\\b(\\pL)\\pL{2,}|.", "\\U\\1", lu16oord,
-                            perl = TRUE
+      perl = TRUE
     )) %>%
     unite(changeclassref, codeval13, codeval16, sep = "_") %>%
     as.data.frame() %>%
@@ -499,22 +538,25 @@ validation_data <- function(data_root){
       changeclass = as.factor(changeclass),
       changeclassref = as.factor(changeclassref)
     ) %>%
-    filter(#No water classes
+    filter( # No water classes
       !changeclass %in% c("W_W", "ON_W", "O_W"),
       !changeclassref %in% c("W_W", "ON_W", "O_W")
     ) %>%
     droplevels() %>%
-    left_join(punten[, c('objectid', 'POINT_X', 'POINT_Y')],
-              by = c("objectid" = "objectid"))  %>%
+    left_join(punten[, c("objectid", "POINT_X", "POINT_Y")],
+      by = c("objectid" = "objectid")
+    ) %>%
     # left_join(unique(tbltrans[,c("valid", "valid_eng")]),
     #           by = c("lu13oord" = "valid")) %>%
     # rename(valid_eng = lu13oord) %>%
-    left_join(unique(tbltrans2[,c("valid", "valid_eng")]),
-              by = c("lu13oord" = "valid")) %>%
+    left_join(unique(tbltrans2[, c("valid", "valid_eng")]),
+      by = c("lu13oord" = "valid")
+    ) %>%
     rename(lu13oord_eng = valid_eng) %>%
-    left_join(unique(tbltrans2[,c("valid", "valid_eng")]),
-              by = c("lu16oord" = "valid")) %>%
-    rename(lu16oord_eng = valid_eng )
+    left_join(unique(tbltrans2[, c("valid", "valid_eng")]),
+      by = c("lu16oord" = "valid")
+    ) %>%
+    rename(lu16oord_eng = valid_eng)
   save(points_id, tbltrans, combine, file = "data/validation.Rdata")
 
   ############################# Get areas #################################
@@ -524,21 +566,23 @@ validation_data <- function(data_root){
       lu2013 = LG2013_ChangeCla, lu2016 = LG2016_ChangeCla,
       count = Count
     ) %>%
-    mutate(lu2013 = as.factor(lu2013),
-           lu2016 = as.factor(lu2016)) %>%
+    mutate(
+      lu2013 = as.factor(lu2013),
+      lu2016 = as.factor(lu2016)
+    ) %>%
     left_join(dplyr::select(tbltrans, valid, lucode),
-              by = c("lu2013" = "lucode")
+      by = c("lu2013" = "lucode")
     ) %>%
     rename(val2013 = valid) %>%
     left_join(dplyr::select(tbltrans, valid, lucode),
-              by = c("lu2016" = "lucode")
+      by = c("lu2016" = "lucode")
     ) %>%
     rename(val2016 = valid) %>%
     mutate(codeval13 = gsub("\\b(\\pL)\\pL{2,}|.", "\\U\\1", val2013,
-                            perl = TRUE
+      perl = TRUE
     )) %>%
     mutate(codeval16 = gsub("\\b(\\pL)\\pL{2,}|.", "\\U\\1", val2016,
-                            perl = TRUE
+      perl = TRUE
     )) %>%
     unite(class, codeval13, codeval16, sep = "_") %>%
     dplyr::select(class, count) %>%
@@ -549,10 +593,10 @@ validation_data <- function(data_root){
     droplevels() %>%
     mutate(area = count / sum(count))
 
-  #change-no change
+  # change-no change
   lgarea_change <- lgarea %>%
     mutate(change = ifelse(!class %in% c("A_A", "HG_HG", "O_O", "ON_ON", "U_U"),
-                           "change", "nochange"
+      "change", "nochange"
     )) %>%
     group_by(change) %>%
     summarise(count = sum(count), area = sum(area))
@@ -565,21 +609,23 @@ validation_data <- function(data_root){
       lu2013code = LG2013_ChangeCla, lu2016code = LG2016_ChangeCla,
       count = Count
     ) %>%
-    mutate(lu2013code = as.factor(lu2013code),
-           lu2016code = as.factor(lu2016code)) %>%
+    mutate(
+      lu2013code = as.factor(lu2013code),
+      lu2016code = as.factor(lu2016code)
+    ) %>%
     left_join(dplyr::select(tbltrans, lucode, lu),
-              by = c("lu2013code" = "lucode")
+      by = c("lu2013code" = "lucode")
     ) %>%
     rename(lu2013 = lu) %>%
     left_join(dplyr::select(tbltrans, lucode, lu),
-              by = c("lu2016code" = "lucode")
+      by = c("lu2016code" = "lucode")
     ) %>%
     rename(lu2016 = lu) %>%
     mutate(code13 = gsub("\\b(\\pL)\\pL{2,}|.", "\\U\\1", lu2013,
-                         perl = TRUE
+      perl = TRUE
     )) %>%
     mutate(code16 = gsub("\\b(\\pL)\\pL{2,}|.", "\\U\\1", lu2016,
-                         perl = TRUE
+      perl = TRUE
     )) %>%
     unite(class, code13, code16, sep = "_") %>%
     dplyr::select(class, count) %>%

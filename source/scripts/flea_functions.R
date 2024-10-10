@@ -25,13 +25,15 @@ point_to_gridcell <- function(
 
   # buffer with 1 point per quandrant
   halflength <- cell_width_m / 2
-  xy_buffer <- sf::st_buffer(x = xy,
-                             dist = sqrt(2 * halflength^2),
-                             nQuadSegs = 1)
+  xy_buffer <- sf::st_buffer(
+    x = xy,
+    dist = sqrt(2 * halflength^2),
+    nQuadSegs = 1
+  )
 
   # rotate 45 degrees around centroid
   rot <- function(a) matrix(c(cos(a), sin(a), -sin(a), cos(a)), 2, 2)
-  pl <- (xy_buffer - xy) * rot(pi/4) + xy
+  pl <- (xy_buffer - xy) * rot(pi / 4) + xy
   pl <- sf::st_sf(data.frame(xy_df, pl), crs = crs)
   return(pl)
 }
@@ -68,7 +70,8 @@ extract_sample_helper <- function(
     y = as.points(rast, na.rm = TRUE),
     cells = TRUE,
     xy = TRUE,
-    ID = FALSE)
+    ID = FALSE
+  )
 
   # Sort and select the lowest n
   sorted_indices <- order(extracted[[1]])[1:n]
@@ -195,5 +198,3 @@ extract_sample <- function(
 
   return(sample_ts2)
 }
-
-
