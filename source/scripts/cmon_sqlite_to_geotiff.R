@@ -70,3 +70,49 @@ fleagrts
 plot(fleagrts)
 origin(fleagrts)
 ext(fleagrts)
+
+# convert to base 4 fractional representation
+# adapted from n2khab:::convert_dec_to_base4frac
+convert_dec_to_base4frac <- function(x, levels = 15) {
+  sapply(x, function(x) {
+    ifelse(
+      is.na(x),
+      NA,
+      as.double(
+        ifelse(
+          x > 0,
+          {
+            d <- floor(log(x, 4) + 1)
+            paste(c("0", "1", "2", "3")[
+              as.integer(
+                abs(
+                  diff(
+                    x %% 4^seq(d, 0)
+                    )
+                  ) %/% 4^seq(d - 1, 0) + 1)
+              ],
+              collapse = "")
+          },
+          "0")
+      ) / 10^levels
+    )
+  })
+}
+
+sprintf("%.15f", convert_dec_to_base4frac(0:10))
+# digits are ordered from deepest nested split level (first digit after decimal
+# point = level 15) to first split level (level 1 on the right)
+
+testset <- terra::spatSample(fleagrts, 100, xy = TRUE) |>
+  mutate(
+    base4frac = sprintf("%.15f", convert_dec_to_base4frac(ranking)),
+    level1 = stringr::str_extract(base4frac, "\\d$")
+  )
+
+testset |>
+  st_as_sf(coords = c("x", "y"), crs = 31370) |>
+  ggplot() +
+  geom_sf(aes(colour = level1))
+
+
+
