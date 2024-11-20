@@ -446,10 +446,141 @@ n_est |>
 ###############################################################################
 # recode into gain, loss, stable presence
 
+binary_change <- function(
+    data,
+    lg,
+    year1 = "lg2013_label",
+    year2 = "lg2016_label") {
+  binary <- vector("list", length = length(lg))
+  binary <- setNames(binary, lg)
+  for (i in lg) {
+    binary[[i]] <- paste0(
+      stringr::str_detect(data[[year1]], i) %>% as.numeric(),
+      stringr::str_detect(data[[year2]], i) %>% as.numeric()
+    )
+  }
+  bind_cols(data, binary)
+}
 
+categorize_land_use_change <- function(b) {
+    case_when(
+      # Stable conditions
+      grepl("^0+$", b) ~ "Stable absence",
+      grepl("^1+$", b) ~ "Stable presence",
 
+      # Simple changes
+      grepl("^0+1+$", b) ~ "Gain",
+      grepl("^1+0+$", b) ~ "Loss",
 
+      # Default case
+      TRUE ~ "Other complex pattern"
+    )
+}
 
+lg <- c("Field", "Urban", "High green", "Open nature", "Other")
 
+simplechange <- c("Stable presence", "Stable absence", "Loss", "Gain")
+
+mapdata <- maparea |>
+  select(changecat, area, n) |>
+  separate(
+    changecat,
+    c("lg2013_label", "lg2016_label"),
+    sep = "-",
+    remove = FALSE
+  ) |>
+  binary_change(lg = lg) %>%
+  rowwise() %>%
+  mutate(stable = ifelse(
+    lg2013_label == lg2016_label,
+    "stable", "changed"
+  ) %>%
+    as.factor()) %>%
+  ungroup() %>%
+  mutate(
+    across(
+      all_of(lg),
+      \(x) categorize_land_use_change(x),
+      .names = "{.col}_changecat"
+    ),
+    across(
+      ends_with("_changecat"),
+      \(x) factor(x, levels = simplechange)
+    )
+  )
+
+# prepare validation data for simplified change cats
+validationdata <- observed_changes |>
+  as_tibble() |>
+  select(map, ref) |>
+  separate(
+    map,
+    c("lg2013_map", "lg2016_map"),
+    sep = "-",
+    remove = FALSE
+  ) |>
+  separate(
+    ref,
+    c("lg2013_ref", "lg2016_ref"),
+    sep = "-",
+    remove = FALSE
+  ) |>
+  binary_change(lg = lg, year1 = "lg2013_map", year2 = "lg2016_map") |>
+  rename_with(.fn = ~paste0(.x, "_map"), .cols = all_of(lg)) |>
+  binary_change(lg = lg, year1 = "lg2013_ref", year2 = "lg2016_ref") |>
+  rename_with(.fn = ~paste0(.x, "_ref"), .cols = all_of(lg)) |>
+  mutate(
+    across(
+      all_of(paste0(lg, "_map")),
+      \(x) categorize_land_use_change(x),
+      .names = "{.col}_changecat"
+    ),
+    across(
+      all_of(paste0(lg, "_ref")),
+      \(x) categorize_land_use_change(x),
+      .names = "{.col}_changecat"
+    ),
+    across(
+      ends_with("_changecat"),
+      \(x) factor(x, levels = simplechange)
+    )
+  )
+# Field strata info for simplified change cats
+mapfield <- mapdata |>
+  summarise(
+    across(
+      c(area, n),
+      sum
+      ),
+    .by = Field_changecat
+  ) |>
+  mutate(
+    ips = n / area
+)
+
+# calculate accuracies for field
+aa_field <- mapac::aa_card(
+  data = validationdata[, c("Field_ref_changecat", "Field_map_changecat")] |>
+    as.data.frame(),
+  w = (mapfield$area/sum(mapfield$area))[order(mapfield$Field_changecat)],
+  strata = simplechange,
+  area = sum(mapfield$area),
+  confusion_matrix = FALSE,
+  olofsson = TRUE
+)
+
+mapac::aa_confusion_matrix_flextable(aa_field)
+mapac::aa_class_accuracy_plot(aa_field)
+
+aa_field2 <- mapac::aa_stratified(
+  stratum = validationdata$map,
+  reference = validationdata$Field_ref_changecat,
+  map = validationdata$Field_map_changecat,
+  h = levels(validationdata$map),
+  N_h = (maparea$n)[order(maparea$changecat)]
+)
+
+mapac::aa_confusion_matrix_flextable(aa_field2)
+mapac::aa_class_accuracy_plot(aa_field2)
 
 
