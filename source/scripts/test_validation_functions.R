@@ -1,4 +1,5 @@
-# code rmd NCA_validatingextent adapted, test only for nara map
+# BEGIN code rmd NCA_validatingextent/src/_evaluation.Rmd
+# adapted, test only for nara map
 git_root <- rprojroot::find_root(rprojroot::is_git_root)
 source(file.path(git_root, "source/scripts/nca_functions.R"))
 flea_data <- gsub(
@@ -201,14 +202,20 @@ ov
 
 plot_validation_data(ov)
 
+# END code rmd NCA_validatingextent/src/_evaluation.Rmd
 
 ##############################################################################
 ##############################################################################
 
-# this function calculates the map-relevant version of error matrix
+# function confusion_matrix() calculates the map-relevant version of error
+# matrix
 # map-relevant means that each p_ij is weighted by area proportions for each
 # stratum (map class)
-# so this is different from default caret::confusionMatrix
+# so this is different from default caret::confusionMatrix which was used in
+# function calculate_accuracy()
+# see https://pages.cms.hu-berlin.de/EOL/gcg_eo/06_accuracy_assessment.html
+
+# TODO check results against mapac R package
 cm <- confusion_matrix(
   maparea = maparea$area,
   ma = as.data.frame.matrix(reschange1$table)
@@ -216,17 +223,50 @@ cm <- confusion_matrix(
 dim(cm)
 cm |> round(digits = 4)
 
+# note maparea$area is not yet an area, but the count of pixels
+# and each pixel is 0.01 ha
+n_h <- observed_changes |>
+  count(map)
+maparea <- maparea |>
+  left_join(n_h, by = join_by(changecat == map)) |>
+  mutate(
+    ips = n / area
+  )
+observed_changes <- observed_changes |>
+  left_join(maparea, by = join_by(map == changecat))
+aa <- mapac::aa_card(
+  data = observed_changes[, c("ref", "map")],
+  w = maparea$area/sum(maparea$area),
+  strata = levels(observed_changes$ref),
+  area = sum(maparea$area),
+  confusion_matrix = FALSE,
+  olofsson = TRUE
+)
+
+waldo::compare(
+  x = cm,
+  y = aa$cmp,
+  tolerance = 1e-10
+) #OK
+
 oa_df <- calc_oa(
   maparea = maparea$area,
   ma = as.data.frame.matrix(reschange1$table)
 )
 oa_df
+waldo::compare(oa_df$oa_est, aa$accuracy[1])
+waldo::compare(sqrt(oa_df$oa_var), aa$accuracy[2])
 
 ua_pa_df <- calc_ua_pa(
   maparea = maparea$area,
   ma = as.data.frame.matrix(reschange1$table)
 )
 ua_pa_df
+waldo::compare(unname(ua_pa_df$ua_est), aa$stats$ua, tolerance = 1e-10)
+waldo::compare(unname(sqrt(ua_pa_df$ua_var)), aa$stats$ua_se, tolerance = 1e-3)
+waldo::compare(unname(ua_pa_df$pa_est), aa$stats$pa, tolerance = 1e-10)
+waldo::compare(unname(sqrt(ua_pa_df$pa_var)), aa$stats$pa_se, tolerance = 1e-3)
+
 
 ua_pa_df %>%
   separate(
@@ -244,12 +284,34 @@ ua_pa_df %>%
   geom_errorbarh(aes(xmin = pa_low, xmax = pa_high), alpha = 0.3) +
   coord_equal(xlim = c(0, 1), ylim = c(0, 1))
 
+mapac::aa_class_accuracy_plot(aa)
+mapac::aa_confusion_matrix_flextable(
+  aa,
+  proportion = TRUE,
+  diagonal = TRUE,
+  format.body = "%.2f",
+  format.accuracy = "%.3f"
+  )
+
 areas_df <- calc_areas(
   maparea = maparea$area,
   ma = as.data.frame.matrix(reschange1$table),
   pixelsize = 0.01 # each cell is 100 square meters = 0.01ha
 )
 areas_df
+waldo::compare(unname(areas_df$prop_est), aa$stats$p_i, tolerance = 1e-10)
+waldo::compare(unname(areas_df$prop_est), aa$area$proportion, tolerance = 1e-10)
+waldo::compare(
+  unname(areas_df$area_est_ha),
+  aa$area$area * 0.01,
+  tolerance = 1e-10
+)
+waldo::compare(
+  unname(areas_df$area_rme * areas_df$area_est_ha),
+  aa$area$area_ci * 0.01,
+  tolerance = 1e-5
+)
+
 
 areas_df %>%
   separate(
@@ -354,3 +416,40 @@ areas_df %>%
   #  scale_colour_gradient2(midpoint = 0, mid = "white") +
   coord_flip() +
   facet_grid(paste0("Change: ", change) ~ ., scales = "free", space = "free")
+
+# estimate total sample size for stratified random sampling
+
+n_est <- data.frame(oa_ses = seq(0.001, 0.01, 0.001)) |>
+  mutate(
+    n_tot = mapac::sample_size(
+      oa_se = oa_ses,
+      w = maparea$area / sum(maparea$area),
+      ua = aa$stats$ua
+    )
+  )
+n_est |>
+  ggplot() +
+  geom_point(
+    aes(x = oa_ses, y = n_tot)
+  ) +
+  scale_y_log10() +
+  labs(
+    x = "Standard error overall accuracy",
+    y = "Total sample size (stratified sampling)"
+  )
+
+
+# Allocation strategy: first allocate between 50 and 100 to the change classes
+# allocate remainder proportional to the area of the stable classes
+
+###############################################################################
+###############################################################################
+# recode into gain, loss, stable presence
+
+
+
+
+
+
+
+
