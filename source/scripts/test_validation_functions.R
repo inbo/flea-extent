@@ -257,10 +257,12 @@ oa_df
 waldo::compare(oa_df$oa_est, aa$accuracy[1])
 waldo::compare(sqrt(oa_df$oa_var), aa$accuracy[2])
 
+
 ua_pa_df <- calc_ua_pa(
   maparea = maparea$area,
   ma = as.data.frame.matrix(reschange1$table)
 )
+
 ua_pa_df
 waldo::compare(unname(ua_pa_df$ua_est), aa$stats$ua, tolerance = 1e-10)
 waldo::compare(unname(sqrt(ua_pa_df$ua_var)), aa$stats$ua_se, tolerance = 1e-3)
@@ -290,7 +292,8 @@ mapac::aa_confusion_matrix_flextable(
   proportion = TRUE,
   diagonal = TRUE,
   format.body = "%.2f",
-  format.accuracy = "%.3f"
+  format.accuracy = "%.3f",
+  rotate.header = TRUE
   )
 
 areas_df <- calc_areas(
@@ -312,8 +315,189 @@ waldo::compare(
   tolerance = 1e-5
 )
 
+# estimate areas using ReGenesees
+prop_area_h <- observed_changes |>
+  distinct(map, area) |>
+  mutate(
+    prop_area_h = area / sum(area)
+  )
+sum(prop_area_h$area)
+
+svydata <- observed_changes |>
+  mutate(
+    weights = 1/ ips,
+    ids = paste0("id_", 1:n()),
+    ones = 1,
+    oa = as.numeric(map == ref)
+  ) |>
+  mutate(
+    n_ref = n(),
+    .by = ref
+  ) |>
+  inner_join(
+    prop_area_h |> select(-area), by = join_by(map)
+  )
+design <- ReGenesees::e.svydesign(
+  data = svydata,
+  ids = ~ ids,
+  strata = ~ map,
+  weights = ~ weights,
+  fpc = ~ ips)
+
+df.pop <- ReGenesees::pop.template(
+  data = svydata,
+  calmodel = ~ map - 1
+) # see what the template should look like
+ReGenesees::pop.desc(df.pop)
+df.pop <- maparea |>
+  select(changecat, area) |>
+  pivot_wider(
+    names_from = changecat,
+    names_prefix = "map",
+    values_from = area) |>
+  as.data.frame()
+# calibrate on map marginal totals
+# this adds the calibration weights to the design
+cal <- ReGenesees::e.calibrate(
+  design = design,
+  df.population = df.pop,
+  calmodel = ~ map - 1
+)
+# but because in this case, apparently,
+# the ratio between calibrated weights and initial weights equals 1;
+# so using cal or design in estimation will have the same result
+# this is probably logical because inverse probability weights (N_h/n_h) already
+# incorporate the map marginal totals per stratum
+# this would not be the case if we calibrate on different strata or
+# additional strata and auxiliary information
+ReGenesees::g.range(cal)
+
+# estimate areas for ref
+cal_ref_areas <- ReGenesees::svystatTM(
+  design = cal,
+  y =  ~ ref,
+  estimator = "Total",
+  conf.int = TRUE,
+  deff = TRUE)
+
+waldo::compare(aa$area$area, cal_ref_areas$Total, tolerance = 1e-10)
+waldo::compare(aa$area$area_ci, 1.96*cal_ref_areas$SE, tolerance = 1e-4)
+
+sum(aa$area$area) - sum(prop_area_h$area)
+
+# can we estimate the areas also via Bayes formula?
+# $P(\text{referentie}=A) = \frac{UA}{PA}P(\text{kaart} = A)$
+# first a naive attempt for just the estimator without SE
+waldo::compare(
+  aa$area$area, aa$stats$ua / aa$stats$pa * maparea$area,
+  tolerance = 1e-4
+) # only difference is one NA resulting from division pa 0
+plot(aa$area$area, aa$stats$ua / aa$stats$pa * maparea$area)
+abline(0, 1)
+# how to estimate $\frac{UA}{PA}P(\text{kaart} = A)$ with ReGenesees?
+# oa = n_jj = variable equalling one if ref == map, 0 otherwise
+# n = n_i. = n_map the sample size per map stratum
+# n_ref = n_.k = the number of ref cases
+# UA / PA = (n_jj / n_i. ) / (n_jj / n_.k ) simplifies to n_.k / n_i.
+# P(\text{kaart} = i) = area_i
+#  n_.k / n_i. * area_i = sum over i of n_ik / n_i. * area_i
+# compare with eq 9 Olofsson:
+# W_i = area proportion of map class i = area_i / area_tot
+# n_ik = cell count map i ref k
+# n_i. = row sum map i
+# area estimator for ref class k =
+# total map area times sum over i (from 1 to 25) of W_i * n_ik/n_i.
+# which again equals sum over i (from 1 to 25) of area_i * n_ik/n_i.
+
+# note that area_i/n_i. are inverse probability weights
+# because our survey data are in long format, we can
+# represent n_ik as a vector of ones in combi with by = ~ref
+# to obtain the same as before using either an expression in svystatL or
+cal_ref_areas_checkL <- ReGenesees::svystatL(
+  design = cal,
+  expr =  expression(ones),
+  by = ~ ref,
+  conf.int = TRUE,
+  deff = TRUE)
+cal_ref_areas_checkTM <- ReGenesees::svystatTM(
+  design = cal,
+  y =  ~ ones,
+  by = ~ ref,
+  conf.int = TRUE,
+  deff = TRUE)
+waldo::compare(cal_ref_areas_checkL$ones, cal_ref_areas$Total)
+waldo::compare(cal_ref_areas_checkTM$Total.ones, cal_ref_areas$Total)
+waldo::compare(cal_ref_areas_checkL$SE.ones, cal_ref_areas$SE)
+waldo::compare(cal_ref_areas_checkTM$SE.Total.ones, cal_ref_areas$SE)
+
+# can it also be used to calculate OA, UA and PA?
+# OA: YES
+cal_oa <- ReGenesees::svystatTM(
+  design = cal,
+  y =  ~ oa,
+  estimator = "Mean",
+  conf.int = TRUE,
+  deff = TRUE)
+waldo::compare(aa$accuracy[1], cal_oa$Mean, tolerance = 1e-10)
+waldo::compare(aa$accuracy[2], cal_oa$SE, tolerance = 1e-5)
+
+# UA: YES
+# (which need be estimated by row of contingency table which means by "map")
+cal_ua <- ReGenesees::svystatTM(
+  design = cal,
+  y =  ~ ref,
+  by = ~ map,
+  estimator = "Mean",
+  conf.int = TRUE,
+  deff = TRUE)
+dim(cal_ua)
+# extract relevant estimates
+ua_est <- diag(as.matrix(cal_ua[1:25, 2:26]))
+ua_se <- diag(as.matrix(cal_ua[1:25, 2:26 + 25]))
+ua_cil <- diag(as.matrix(cal_ua[1:25, 2:26 + 25 + 25]))
+ua_ciu <- diag(as.matrix(cal_ua[1:25, 2:26 + 25 + 25 + 25]))
+cal_ua <- cal_ua |>
+  as_tibble() |>
+  select(map) |>
+  mutate(
+    ua_est = ua_est, ua_se = ua_se, ua_cil = ua_cil, ua_ciu = ua_ciu
+  )
+waldo::compare(aa$stats$ua, cal_ua$ua_est, tolerance = 1e-10)
+waldo::compare(aa$stats$ua_se, cal_ua$ua_se, tolerance = 1e-2) # more conservative
+hist(aa$stats$ua_se -  cal_ua$ua_se)
+plot(aa$stats$ua_se, cal_ua$ua_se)
+abline(0, 1)
+
+# PA
+cal_pa <- ReGenesees::svystatTM(
+  design = cal,
+  y =  ~ map,
+  by = ~ ref,
+  estimator = "Mean",
+  conf.int = TRUE,
+  deff = TRUE)
+dim(cal_pa)
+# extract relevant estimates
+pa_est <- diag(as.matrix(cal_pa[1:25, 2:26]))
+pa_se <- diag(as.matrix(cal_pa[1:25, 2:26 + 25]))
+pa_cil <- diag(as.matrix(cal_pa[1:25, 2:26 + 25 + 25]))
+pa_ciu <- diag(as.matrix(cal_pa[1:25, 2:26 + 25 + 25 + 25]))
+cal_pa <- cal_pa |>
+  as_tibble() |>
+  select(ref) |>
+  mutate(
+    pa_est = pa_est, pa_se = pa_se, pa_cil = pa_cil, pa_ciu = pa_ciu
+  )
+waldo::compare(aa$stats$pa, cal_pa$pa_est, tolerance = 1e-10)
+waldo::compare(aa$stats$pa_se, cal_pa$pa_se, tolerance = 1e-2)
+hist(aa$stats$pa_se -  cal_pa$pa_se)
+plot(aa$stats$pa_se, cal_pa$pa_se)
+abline(0, 1)
 
 areas_df %>%
+  inner_join(
+    aa$stats, by = join_by(class)
+  ) %>%
   separate(
     class,
     c("class_p1", "class_p2"),
@@ -322,7 +506,13 @@ areas_df %>%
   ) %>%
   mutate(change = class_p1 != class_p2) %>%
   mutate(
-    class = reorder(class, area_est_ha)
+    class = reorder(
+      sprintf(
+        "%s\n(n = %s; ua = %s; pa = %s)",
+        class, n_points, round(ua, 2), round(pa, 2)
+        ),
+      area_est_ha
+    )
   ) %>%
   ggplot() +
   geom_pointrange(
