@@ -279,7 +279,8 @@ sample_open_natuur <- extract_sample(
   fleagrts = fleagrts,
   stratum_name = "Open natuur_changecat",
   ntot = 100,
-  nmin = 10
+  nmin = 10,
+  min_stratum_size = 1000 # 10 ha
 )
 
 sample_open_natuur_combined <- bind_rows(sample_open_natuur)
@@ -401,6 +402,9 @@ all_samples$land_use <- gsub(
 all_samples_samplesizes <- all_samples |>
   st_drop_geometry() |>
   count(land_use, stratum_name)
+
+all_samples_samplesizes
+
 all_samples_multiple_selected <- all_samples |>
   st_drop_geometry() |>
   count(grts_rank) |>
@@ -431,3 +435,17 @@ all_samples_collapsed_n <- all_samples_collapsed |>
     reuse = grepl(pattern = "^.+-.+$", x = strata)
   ) |>
   count(stable, reuse)
+
+all_samples_collapsed_n
+
+all_samples_collapsed |>
+  st_drop_geometry() |>
+  inner_join(
+    catstable_ts |>
+      select(label, stable, pixelcount = count),
+    by = join_by(label)
+  ) |>
+  mutate(
+    reuse = grepl(pattern = "^.+-.+$", x = strata)
+  ) |>
+  group_by()
