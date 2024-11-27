@@ -316,13 +316,19 @@ waldo::compare(
 )
 
 # estimate areas using ReGenesees
+#################################
 prop_area_h <- observed_changes |>
   distinct(map, area) |>
   mutate(
     prop_area_h = area / sum(area)
   )
+# area Flanders
 sum(prop_area_h$area)
+# check if total area matches
+sum(aa$area$area) - sum(prop_area_h$area)
 
+# create survey data.frame (long format)
+# the variable oa is needed for estimation
 svydata <- observed_changes |>
   mutate(
     weights = 1/ ips,
@@ -337,6 +343,8 @@ svydata <- observed_changes |>
   inner_join(
     prop_area_h |> select(-area), by = join_by(map)
   )
+
+# create design object (could deal with more complex models)
 design <- ReGenesees::e.svydesign(
   data = svydata,
   ids = ~ ids,
@@ -344,6 +352,7 @@ design <- ReGenesees::e.svydesign(
   weights = ~ weights,
   fpc = ~ ips)
 
+# create dataframe containing marginal population totals
 df.pop <- ReGenesees::pop.template(
   data = svydata,
   calmodel = ~ map - 1
@@ -356,6 +365,7 @@ df.pop <- maparea |>
     names_prefix = "map",
     values_from = area) |>
   as.data.frame()
+
 # calibrate on map marginal totals
 # this adds the calibration weights to the design
 cal <- ReGenesees::e.calibrate(
@@ -363,14 +373,21 @@ cal <- ReGenesees::e.calibrate(
   df.population = df.pop,
   calmodel = ~ map - 1
 )
+summary(cal)
 # but because in this case, apparently,
 # the ratio between calibrated weights and initial weights equals 1;
 # so using cal or design in estimation will have the same result
 # this is probably logical because inverse probability weights (N_h/n_h) already
 # incorporate the map marginal totals per stratum
 # this would not be the case if we calibrate on different strata or
-# additional strata and auxiliary information
+# additional strata and other auxiliary information
+# the calibration weights are stored in cal$variables$weights.cal
 ReGenesees::g.range(cal)
+
+# check calibration
+ReGenesees::check.cal(cal)
+summary(weights(cal))
+ReGenesees::svystatTM(cal, ~ ones) # area of Flanders in 0.01 ha units
 
 # estimate areas for ref
 cal_ref_areas <- ReGenesees::svystatTM(
@@ -379,11 +396,10 @@ cal_ref_areas <- ReGenesees::svystatTM(
   estimator = "Total",
   conf.int = TRUE,
   deff = TRUE)
-
+# note that above with y = ~ map would just recover known marginal totals (SE=0)
 waldo::compare(aa$area$area, cal_ref_areas$Total, tolerance = 1e-10)
 waldo::compare(aa$area$area_ci, 1.96*cal_ref_areas$SE, tolerance = 1e-4)
 
-sum(aa$area$area) - sum(prop_area_h$area)
 
 # can we estimate the areas also via Bayes formula?
 # $P(\text{referentie}=A) = \frac{UA}{PA}P(\text{kaart} = A)$
@@ -445,53 +461,29 @@ waldo::compare(aa$accuracy[2], cal_oa$SE, tolerance = 1e-5)
 # (which need be estimated by row of contingency table which means by "map")
 cal_ua <- ReGenesees::svystatTM(
   design = cal,
-  y =  ~ ref,
+  y =  ~ oa,
   by = ~ map,
   estimator = "Mean",
   conf.int = TRUE,
   deff = TRUE)
-dim(cal_ua)
-# extract relevant estimates
-ua_est <- diag(as.matrix(cal_ua[1:25, 2:26]))
-ua_se <- diag(as.matrix(cal_ua[1:25, 2:26 + 25]))
-ua_cil <- diag(as.matrix(cal_ua[1:25, 2:26 + 25 + 25]))
-ua_ciu <- diag(as.matrix(cal_ua[1:25, 2:26 + 25 + 25 + 25]))
-cal_ua <- cal_ua |>
-  as_tibble() |>
-  select(map) |>
-  mutate(
-    ua_est = ua_est, ua_se = ua_se, ua_cil = ua_cil, ua_ciu = ua_ciu
-  )
-waldo::compare(aa$stats$ua, cal_ua$ua_est, tolerance = 1e-10)
-waldo::compare(aa$stats$ua_se, cal_ua$ua_se, tolerance = 1e-2) # more conservative
-hist(aa$stats$ua_se -  cal_ua$ua_se)
-plot(aa$stats$ua_se, cal_ua$ua_se)
+waldo::compare(aa$stats$ua, cal_ua$Mean.oa, tolerance = 1e-10)
+waldo::compare(aa$stats$ua_se, cal_ua$SE.Mean.oa, tolerance = 1e-2) # more conservative
+hist(aa$stats$ua_se -  cal_ua$SE.Mean.oa)
+plot(aa$stats$ua_se, cal_ua$SE.Mean.oa)
 abline(0, 1)
 
 # PA
 cal_pa <- ReGenesees::svystatTM(
   design = cal,
-  y =  ~ map,
+  y =  ~ oa,
   by = ~ ref,
   estimator = "Mean",
   conf.int = TRUE,
   deff = TRUE)
-dim(cal_pa)
-# extract relevant estimates
-pa_est <- diag(as.matrix(cal_pa[1:25, 2:26]))
-pa_se <- diag(as.matrix(cal_pa[1:25, 2:26 + 25]))
-pa_cil <- diag(as.matrix(cal_pa[1:25, 2:26 + 25 + 25]))
-pa_ciu <- diag(as.matrix(cal_pa[1:25, 2:26 + 25 + 25 + 25]))
-cal_pa <- cal_pa |>
-  as_tibble() |>
-  select(ref) |>
-  mutate(
-    pa_est = pa_est, pa_se = pa_se, pa_cil = pa_cil, pa_ciu = pa_ciu
-  )
-waldo::compare(aa$stats$pa, cal_pa$pa_est, tolerance = 1e-10)
-waldo::compare(aa$stats$pa_se, cal_pa$pa_se, tolerance = 1e-2)
-hist(aa$stats$pa_se -  cal_pa$pa_se)
-plot(aa$stats$pa_se, cal_pa$pa_se)
+waldo::compare(aa$stats$pa, cal_pa$Mean.oa, tolerance = 1e-10)
+waldo::compare(aa$stats$pa_se, cal_pa$SE.Mean.oa, tolerance = 1e-2)
+hist(aa$stats$pa_se -  cal_pa$SE.Mean.oa)
+plot(aa$stats$pa_se, cal_pa$SE.Mean.oa)
 abline(0, 1)
 
 areas_df %>%
