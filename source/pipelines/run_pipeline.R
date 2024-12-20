@@ -2,9 +2,7 @@ library(targets)
 
 Sys.setenv(TAR_PROJECT = "validation_sample")
 
-
 tar_make()
-
 
 # debugging and inspection
 
@@ -34,6 +32,7 @@ ml <- tar_read(maps)
 
 ml[[1]]
 terra::plot(ml[[1]])
+terra::values(ml[[1]], row = 5000, nrows = 1)
 terra::coltab(ml[[1]])
 terra::cats(ml[[1]])
 terra::datatype(ml[[1]])
@@ -46,6 +45,13 @@ waldo::compare(
   terra::crs(grts),
   terra::crs(ml[[1]])
   )
-terra::ext(grts)
-terra::ext(ml[[1]])
 
+tm <- targets::tar_read(temporal_map)
+tm
+terra::plot(tm)
+
+# develop
+targets::tar_load_globals()
+tar_load(names = c(mapnames, catstable, maps))
+debug(create_temporal_maps)
+test <- create_temporal_maps(input_maps = maps)

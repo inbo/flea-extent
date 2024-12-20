@@ -49,12 +49,12 @@ get_map <- function(gdb, name, cats, origin, grts) {
   setMinMax(map)
   map <- apply_cats(x = map, cats = cats, name = name)
   NAflag(map) <- 0
+  origin(map) <- origin
+  map <- extend(map, grts)
   map <- writeRaster(
     map,
     tempfile(fileext = ".tif"),
     datatype = "INT2U", overwrite = TRUE)
-  origin(map) <- origin
-  map <- extend(map, grts)
   return(map)
 }
 
@@ -124,19 +124,24 @@ categorize_land_use_change <- function(b, simple = TRUE) {
   }
 }
 
-create_temporal_maps <- function(input_maps, cats) {
+create_temporal_maps <- function(input_maps) {
+  namesvec <- purrr::map_vec(input_maps, names)
   map_stack <- rast(input_maps)
+  names(map_stack) <- namesvec
+  maskmap <- any(is.na(map_stack))
+  map_stack <- mask(map_stack, maskmap, maskvalues = 1)
   temporal_stratification <- unique(
     map_stack * 1,
     as.raster = TRUE
   )
-  # deal with NAs
-  temporal_stratification <- mask(temporal_stratification, map_stack)
-  temporal_stratification <- droplevels(temporal_stratification)
+  return(temporal_stratification)
+}
+
+add_changecats_tempstrat <- function(tempstrat, cats) {
 
   lg <- gsub(pattern = "^\\d\\s-\\s", replacement = "", x = cats$label)
 
-  additional_levels <- freq(temporal_stratification) %>%
+  additional_levels <- freq(tempstrat) %>%
     as_tibble() %>%
     tidyr::separate(
       value,
@@ -187,15 +192,14 @@ create_temporal_maps <- function(input_maps, cats) {
       )
     )
 
-  join_levels <- cats(temporal_stratification)[[1]] %>%
+  join_levels <- cats(tempstrat)[[1]] %>%
     mutate(across(starts_with("lg"), as.character)) %>%
     inner_join(
       additional_levels,
       by = join_by(lg2013, lg2016, lg2019, label == value)
     )
-  levels(temporal_stratification) <- join_levels
-  coltab(temporal_stratification) <- NULL
+  levels(tempstrat) <- join_levels
+  coltab(tempstrat) <- NULL
 
-
-  return(temporal_stratification)
+  return(tempstrat)
 }

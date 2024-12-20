@@ -98,8 +98,15 @@ list(
   tar_target(
     name = grts_origin,
     command = terra::origin(fleagrts)
-  )
+  ),
   # create (temporal) difference maps
+  tar_terra_rast(
+    name = temporal_map,
+    command = create_temporal_maps(
+      input_maps = maps
+    ),
+    preserve_metadata = "zip"
+  )
 
   # apply majority filter, use 3 by 3 block
 
