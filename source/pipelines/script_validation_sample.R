@@ -24,7 +24,7 @@ if (tar_active()) {
 
 
 tar_option_set(
-  packages = c("tibble", "geotargets", "assertthat", "terra"),
+  packages = c("tibble", "geotargets", "assertthat", "terra", "dplyr"),
   format = "qs",
   error = "null",
   memory = "transient",
@@ -106,7 +106,18 @@ list(
       input_maps = maps
     ),
     preserve_metadata = "zip"
+  ),
+  # add change categories to temporal map
+  tar_terra_rast(
+    name = temporal_map_strata,
+    command = add_changecats_tempstrat(
+      tempstrat = temporal_map,
+      cats = catstable,
+      mapnames = mapnames
+    ),
+    preserve_metadata = "zip"
   )
+
 
   # apply majority filter, use 3 by 3 block
 

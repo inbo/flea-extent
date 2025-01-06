@@ -67,14 +67,22 @@ get_grts <- function(path) {
 }
 
 
-binary_change <- function(data, lg) {
-  binary <- vector("list", length = length(lg))
-  binary <- setNames(binary, lg)
-  for (i in lg) {
-    binary[[i]] <- paste0(
-      stringr::str_detect(data$lg2013_label, i) %>% as.numeric(),
-      stringr::str_detect(data$lg2016_label, i) %>% as.numeric(),
-      stringr::str_detect(data$lg2019_label, i) %>% as.numeric()
+binary_change <- function(data, lg_values, mapnames) {
+  binary <- vector("list", length = length(lg_values))
+  bc_colnames <- paste0("bc_", lg_values)
+  binary <- setNames(binary, bc_colnames)
+  colselect <- paste0("value_", mapnames)
+  for (i in seq_along(lg_values)) {
+    binary[[bc_colnames[i]]] <-
+      purrr::map(colselect, ~{
+        stringr::str_detect(
+          data[[.x]],
+          paste0("^", lg_values[i], "$")
+        ) %>% as.numeric()
+      }) %>%
+      purrr::list_transpose() %>%
+      purrr::map_chr(
+        .f = \(x) paste(x, collapse = "")
     )
   }
   bind_cols(data, binary)
@@ -137,67 +145,74 @@ create_temporal_maps <- function(input_maps) {
   return(temporal_stratification)
 }
 
-add_changecats_tempstrat <- function(tempstrat, cats) {
+add_changecats_tempstrat <- function(tempstrat, cats, mapnames) {
 
-  lg <- gsub(pattern = "^\\d\\s-\\s", replacement = "", x = cats$label)
+  lg_values <- as.character(cats$value)
 
   additional_levels <- freq(tempstrat) %>%
     as_tibble() %>%
     tidyr::separate(
       value,
-      into = c("lg2013", "lg2016", "lg2019"),
+      into = mapnames,
       sep = "_",
       remove = FALSE
     ) %>%
+    tidyr::pivot_longer(
+      cols = all_of(mapnames),
+      names_to = "mapname",
+      values_to = "year_value"
+    )
+
+  additional_levels <- additional_levels %>%
     left_join(
       cats %>%
         mutate(
           value = as.character(value),
-          lg2013_label = label,
+          year_label = label,
           .keep = "none"
         ),
-      by = join_by(lg2013 == value)
-    ) %>%
-    left_join(
-      cats %>%
-        mutate(
-          value = as.character(value),
-          lg2016_label = label,
-          .keep = "none"
-        ),
-      by = join_by(lg2016 == value)
-    ) %>%
-    left_join(
-      catstable %>%
-        mutate(
-          value = as.character(value),
-          lg2019_label = label,
-          .keep = "none"
-        ),
-      by = join_by(lg2019 == value)
-    ) %>%
-    binary_change(lg = lg) %>%
+      by = join_by(
+         year_value == value
+      )
+    )
+
+  additional_levels <- additional_levels %>%
+    tidyr::pivot_wider(
+      id_cols = c(layer, value, count),
+      names_from = mapname,
+      values_from = c(year_value, year_label),
+      names_sort = TRUE,
+      names_glue = "{gsub('year_','',.value)}_{mapname}"
+    )
+
+  bc_colnames <- paste0("bc_", lg_values)
+
+  additional_levels <- additional_levels %>%
+    binary_change(lg_values = lg_values, mapnames = mapnames) %>%
     rowwise() %>%
-    mutate(stable = ifelse(
-      all(lg2013 == lg2016, lg2016 == lg2019),
-      "stable", "changed"
-    ) %>%
-      as.factor()) %>%
+    mutate(stable = all(
+      c_across(starts_with("value_")) == first(c_across(starts_with("value_")))
+        ) %>%
+        if_else("stable", "changed") %>%
+        as.factor()
+      ) %>%
     ungroup() %>%
     mutate(
       across(
-        all_of(lg),
+        all_of(bc_colnames),
         \(x) categorize_land_use_change(x),
         .names = "{.col}_changecat"
       )
     )
 
   join_levels <- cats(tempstrat)[[1]] %>%
-    mutate(across(starts_with("lg"), as.character)) %>%
+    mutate(across(all_of(mapnames), as.character)) %>%
+    as_tibble() %>%
     inner_join(
       additional_levels,
-      by = join_by(lg2013, lg2016, lg2019, label == value)
-    )
+      by = join_by(label == value)
+    ) %>%
+    select(-starts_with("value_"))
   levels(tempstrat) <- join_levels
   coltab(tempstrat) <- NULL
 

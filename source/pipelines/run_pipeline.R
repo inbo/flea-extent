@@ -50,8 +50,25 @@ tm <- targets::tar_read(temporal_map)
 tm
 terra::plot(tm)
 
+tms <- targets::tar_read(temporal_map_strata)
+tms
+terra::plot(tms)
+terra::activeCat(tms) <- "stable"
+terra::plot(tms)
+
+
 # develop
 targets::tar_load_globals()
-tar_load(names = c(mapnames, catstable, maps))
-debug(create_temporal_maps)
-test <- create_temporal_maps(input_maps = maps)
+tar_load(names = c(mapnames, catstable, temporal_map))
+debug(add_changecats_tempstrat)
+test <- add_changecats_tempstrat(
+  tempstrat = temporal_map, cats = catstable, mapnames = mapnames
+)
+
+targets::tar_load_globals()
+targets::tar_workspace("temporal_map_strata")
+debugonce(binary_change)
+test <- add_changecats_tempstrat(
+  tempstrat = temporal_map, cats = catstable, mapnames = mapnames
+)
+
