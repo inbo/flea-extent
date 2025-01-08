@@ -143,11 +143,6 @@ separate_grts_strata <- function(
   return(fleagrts_ts2)
 }
 
-get_changecats <- function(separate_grts) {
-  changecats <- names(separate_grts)
-  return(changecats)
-}
-
 
 #' Extract stratified sample from the cropped set of GRTS
 #' (Generalized Random Tessellation Stratified) rankings
@@ -159,6 +154,7 @@ get_changecats <- function(separate_grts) {
 #'
 extract_sample <- function(
     separate_grts,
+    stratum_name,
     ntot,
     nmin,
     min_stratum_size) {
@@ -172,7 +168,8 @@ extract_sample <- function(
 
   # determine stratum population sizes
   popsize <- global(separate_grts, fun = "notNA") |>
-    as_tibble(rownames = "layername")
+    as_tibble(rownames = "layername") |>
+    rename(count = notNA)
 
   # check for strata that are too small
   remove_me <- popsize$layername[popsize$count < min_stratum_size]
@@ -188,10 +185,24 @@ extract_sample <- function(
   # determine sample size allocation
   # first distribute nmin to each stratum,
   # remaining allocate proportional to stratum size
+  # give more weight to changes than to stable?
+  ntot <- ntot * nrow(popsize) / 4 # reduce ntot in case less than 4 changeclass
+
   allocation <- popsize |>
     mutate(
-      n_h = nmin + round((ntot - nmin * n()) * (count / sum(count))) # nolint
+      stable = layername == "Stable presence",
+      n_changeclasses = n(),
+      ntot_stable = round(ntot * 1 / n_changeclasses),
+      ntot_changed = ntot - ntot_stable,
+      n_h = ifelse(
+        stable,
+        ntot_stable,
+        nmin +
+          round((ntot_changed - nmin * (n() - 1)) *
+                  (count / sum(count[!stable]))) # nolint
+      )
     )
+
 
   sample_ts2 <- vector(mode = "list", length = nlyr(separate_grts))
   sample_ts2 <- setNames(sample_ts2, names(separate_grts))
@@ -204,6 +215,7 @@ extract_sample <- function(
   }
 
   sample_ts2 <- vect(sample_ts2)
+  sample_ts2$stratum_name <- stratum_name
 
   return(sample_ts2)
 }

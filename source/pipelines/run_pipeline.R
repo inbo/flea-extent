@@ -68,7 +68,10 @@ targets::tar_read(lu_changecats)
 sg <- targets::tar_read(separate_grts)
 all(purrr::map(sg, ~inherits(.x, "SpatRaster")) |> unlist())
 
-cc <- targets::tar_read(changecats)
+vs <- targets::tar_read(validation_sample)
+terra::vect(vs) |> sf::st_as_sf(crs = 31370) |>
+  sf::st_drop_geometry() |>
+  dplyr::count(grts_rank) |> dplyr::count(n)
 
 # develop
 targets::tar_load_globals()
@@ -77,12 +80,14 @@ debugonce(get_changecats)
 get_changecats(separate_grts)
 
 targets::tar_load_globals()
-targets::tar_workspace("separate_grts_03c5fe21ea8598b0")
-debugonce(separate_grts_strata)
-test <- separate_grts_strata(
-    stratum_raster = temporal_map_strata,
-    fleagrts = fleagrts,
-    stratum_name = lu_changecats)
+targets::tar_workspace("validation_sample_8ed063f6bf68fd26")
+debugonce(extract_sample)
+test <- extract_sample(
+  separate_grts = separate_grts,
+  ntot = 40 * 4 * 4,
+  nmin = 40,
+  min_stratum_size = 1000 # 10 ha
+)
 
 
 
