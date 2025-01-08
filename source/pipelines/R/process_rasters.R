@@ -26,7 +26,8 @@ get_lyrinfo <- function(lyr) {
       value = as.numeric(value),
       color = toupper(color)
     ) |>
-    dplyr::select(-alpha)
+    dplyr::select(-alpha) |>
+    dplyr::filter(value != 0)
   return(catstable)
 }
 
@@ -46,11 +47,13 @@ get_map <- function(gdb, name, cats, origin, grts) {
   assert_that(is.string(name))
   assert_that(is.numeric(origin) && length(origin) == 2)
   map <- rast(gdb, subds = name)
+  # replace 0 with NA
+  map <- mask(map, map, maskvalues = 0)
   setMinMax(map)
   map <- apply_cats(x = map, cats = cats, name = name)
-  NAflag(map) <- 0
   origin(map) <- origin
   map <- extend(map, grts)
+  crs(map) <- crs(grts)
   map <- writeRaster(
     map,
     tempfile(fileext = ".tif"),
@@ -218,3 +221,17 @@ add_changecats_tempstrat <- function(tempstrat, cats, mapnames) {
 
   return(tempstrat)
 }
+
+
+get_changecat_columns <- function(tempstrat) {
+  changecat_columns <- names(cats(tempstrat)[[1]])
+  changecat_columns <- changecat_columns[
+    stringr::str_detect(changecat_columns, "_changecat$")
+  ]
+  return(changecat_columns)
+}
+
+
+
+
+

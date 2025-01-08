@@ -116,6 +116,37 @@ list(
       mapnames = mapnames
     ),
     preserve_metadata = "zip"
+  ),
+  # get names of columns with change categories for each land use type
+  tar_target(
+    name = lu_changecats,
+    command = get_changecat_columns(tempstrat = temporal_map_strata)
+  ),
+  geotargets::tar_terra_rast(
+    name = separate_grts,
+    command = separate_grts_strata(
+      stratum_raster = temporal_map_strata,
+      fleagrts = fleagrts,
+      stratum_name = lu_changecats
+    ),
+    pattern = map(lu_changecats),
+    preserve_metadata = "zip",
+    deployment = "main",
+    garbage_collection = TRUE
+  ),
+  # extract grts sample for each land use change category
+  geotargets::tar_terra_vect(
+    name = validation_sample,
+    command = extract_sample(
+      separate_grts = separate_grts,
+      ntot = 40 * 4 * 4,
+      nmin = 40,
+      min_stratum_size = 1000 # 10 ha
+    ),
+    pattern = map(separate_grts),
+    deployment = "main",
+    memory = "transient",
+    garbage_collection = TRUE
   )
 
 
