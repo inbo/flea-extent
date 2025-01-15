@@ -1,10 +1,16 @@
+################
+# run pipeline #
+################
+
 library(targets)
 
 Sys.setenv(TAR_PROJECT = "validation_sample")
 
 tar_make()
 
-# debugging and inspection
+####################
+# inspect pipeline #
+####################
 
 targets::tar_meta(
   fields = error,
@@ -73,7 +79,23 @@ terra::vect(vs) |> sf::st_as_sf(crs = 31370) |>
   sf::st_drop_geometry() |>
   dplyr::count(grts_rank) |> dplyr::count(n)
 
-# develop
+library(ggplot2)
+library(sf)
+terra::vect(vs) |>
+  st_as_sf() |>
+  ggplot() +
+  geom_sf(aes(colour  = changecat), alpha = 0.2) +
+  facet_wrap(~ stratum_name)
+
+terra::vect(vs) |>
+  st_as_sf() |>
+  st_drop_geometry() |>
+  dplyr::count(stratum_name, changecat)
+
+##################
+# debug pipeline #
+##################
+
 targets::tar_load_globals()
 tar_load(names = c(separate_grts))
 debugonce(get_changecats)
