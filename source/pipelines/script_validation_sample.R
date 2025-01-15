@@ -148,9 +148,21 @@ list(
     deployment = "main",
     memory = "transient",
     garbage_collection = TRUE
-  )
+  ),
   # convert sampling locations to square polygons of size 9 x 9
-
+  geotargets::tar_terra_vect(
+    name = validation_polygons,
+    command = point_to_gridcell(
+      xy = validation_sample,
+      cell_width_m = 90,
+      point_position = "center",
+      crs = 31370
+    ),
+    pattern = map(validation_sample)
+  )
+  # add grb waterways
+  # add grb settlements
+  # add grb parcel outlines
 
   # apply majority filter, use 3 by 3 block
 
