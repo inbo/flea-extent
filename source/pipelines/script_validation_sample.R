@@ -149,23 +149,15 @@ list(
     memory = "transient",
     garbage_collection = TRUE
   )
+  # convert sampling locations to square polygons of size 9 x 9
 
 
   # apply majority filter, use 3 by 3 block
 
-  # create table containing all occuring transitions for each land-use
-
-  # reclassify transitions into stable, gained, lost, dynamic for each land-use
-
-  # for each land use, draw a spatially balanced ordered sample
-  # within each of the temporal classes
-  # possibly exclude some strata that are rare such as "urban - lost"
-  # sample sizes? Equal? Or less in stable, dynamic more in gained, lost?
 
   # merge the samples,check if locations were sampled > 1
   # deduplicate them, keeping all metadata
 
-  # convert sampling locations to square polygons of size 9 x 9
 
   # write out sampling polygons
 
