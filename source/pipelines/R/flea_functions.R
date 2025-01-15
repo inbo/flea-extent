@@ -1,11 +1,11 @@
 #' Convert a single point location to a grid cell polygon
 #'
-#' @param xy an object of class POINT
+#' @param xy a SpatVector with geometry type points
 #' @param cell_width_m cell width in meter, default 500
 #' @param point_position default centre of grid cell
 #' @param crs default EPSG code 31370
 #'
-#' @return
+#' @return a SpatVector with geometry type polygon
 #' @export
 #'
 #' @examples
@@ -19,7 +19,9 @@ point_to_gridcell <- function(
 
   if (point_position != "center") stop(point_position, " not yet implemented")
 
-  stopifnot(sf::st_is(xy, "POINT"))
+  stopifnot(inherits(xy, "SpatVector"))
+  # convert to sf
+  xy <- sf::st_as_sf(xy)
   xy_df <- sf::st_drop_geometry(xy)
   xy <- sf::st_geometry(xy)
 
@@ -35,6 +37,8 @@ point_to_gridcell <- function(
   rot <- function(a) matrix(c(cos(a), sin(a), -sin(a), cos(a)), 2, 2)
   pl <- (xy_buffer - xy) * rot(pi / 4) + xy
   pl <- sf::st_sf(data.frame(xy_df, pl), crs = crs)
+  # convert to SpatVector
+  pl <- terra::vect(pl)
   return(pl)
 }
 
