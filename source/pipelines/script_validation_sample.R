@@ -140,7 +140,7 @@ list(
     command = extract_sample(
       separate_grts = separate_grts,
       stratum_name = lu_changecats,
-      ntot = 40 * 4 * 4,
+      ntot = 40 * 2 * 4,
       nmin = 40,
       min_stratum_size = 1000 # 10 ha
     ),
