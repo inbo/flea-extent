@@ -233,7 +233,7 @@ extract_sample <- function(
 #' @param bbox A SpatExtent or an object from which a SpatExtent can be
 #' determined. The bbox values should be in CRS 31370.
 #'
-#' @return A SpatVector
+#' @return A SpatVector containing GRB layer objects that intersect bbox.
 #' @export
 #'
 #' @examples
@@ -261,3 +261,25 @@ get_grb <- function(layer, bbox) {
 
   return(grb)
 }
+
+read_layernames <- function(x) {
+  assertthat::assert_that(is.character(x))
+  return(x)
+}
+
+get_grb_by_row <- function(layer, polygons) {
+  assertthat::assert_that(inherits(polygons, "SpatVector"))
+
+  out <- vector("list", length = nrow(polygons))
+  namesvec <- polygons$grts_rank
+  out <- setNames(out, nm = namesvec)
+  for (i in seq_along(out)) {
+    bbox <- polygons[i, ]
+    grb <- get_grb(layer = layer, bbox = bbox)
+    grb$grts_rank <-  namesvec[i]
+    out[[as.character(namesvec[i])]] <- grb
+  }
+  out <- terra::vect(out)
+  return(out)
+}
+

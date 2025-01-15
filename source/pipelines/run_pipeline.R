@@ -12,11 +12,13 @@ tar_make()
 # inspect pipeline #
 ####################
 
+#targets::tar_prune()
+
 targets::tar_meta(
   fields = error,
   complete_only = TRUE
 )
-
+targets::tar_meta(fields = warnings, complete_only = TRUE)
 targets::tar_visnetwork(label = c("description", "time", "size"))
 
 
@@ -30,9 +32,10 @@ log_plot(log_data, metric = "resident")
 #tar_load(names = c(mapnames, catstable, grts_ext, grts_origin))
 
 tar_read(mapnames)
-tar_read(catstable) |> tail()
+ct <- tar_read(catstable)
 ml <- tar_read(maps)
 
+ct
 ml[[1]]
 terra::plot(ml[[1]], colNA = "orange")
 terra::values(ml[[1]], row = 5000, nrows = 1)
@@ -79,6 +82,10 @@ terra::vect(vs) |> sf::st_as_sf(crs = 31370) |>
   sf::st_drop_geometry() |>
   dplyr::count(grts_rank) |> dplyr::count(n)
 
+vp <- targets::tar_read(validation_polygons)
+lapply(vp, nrow) |> unlist() |> sum()
+
+
 library(ggplot2)
 library(sf)
 terra::vect(vs) |>
@@ -102,13 +109,11 @@ debugonce(get_changecats)
 get_changecats(separate_grts)
 
 targets::tar_load_globals()
-targets::tar_workspace("validation_sample_8ed063f6bf68fd26")
-debugonce(extract_sample)
-test <- extract_sample(
-  separate_grts = separate_grts,
-  ntot = 40 * 4 * 4,
-  nmin = 40,
-  min_stratum_size = 1000 # 10 ha
+targets::tar_workspace("grb_waterways_0b2d2afcb856bfba")
+debugonce(get_grb_by_row)
+test <- get_grb_by_row(
+  layer = lyrs_waterways,
+  polygons = validation_polygons
 )
 
 

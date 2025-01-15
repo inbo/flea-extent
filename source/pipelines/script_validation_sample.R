@@ -59,6 +59,24 @@ path_to_gdb <- "Z:/Projects/PRJ_FLEA/flea_data.gdb"
 path_to_lyr <- "Z:/Projects/PRJ_FLEA/reclass_bwk2016.lyr"
 path_to_grts <- file.path(flea_data, "data/c-mon/flea_cmon_level15.tiff")
 
+layers_ruimtebeslag <- c(
+  "GRB:WBN",
+  "GRB:SBN",
+  "GRB:GBG",
+  "GRB:GBA",
+  "GRB:KNW",
+  "GRB:TRN"
+)
+
+layers_water <- c(
+  "GRB:WTZ",
+  "GRB:WLAS"
+)
+
+layers_perceelgrens <- c(
+  "GRB:ADP"
+)
+
 
 # to be changed later: download the raster files from zenodo
 
@@ -159,10 +177,32 @@ list(
       crs = 31370
     ),
     pattern = map(validation_sample)
-  )
+  ),
   # add grb waterways
   # add grb settlements
   # add grb parcel outlines
+  tar_target(
+    name = lyrs_waterways,
+    command = read_layernames(x = layers_water)
+  ),
+  tar_target(
+    name = lyrs_settlements,
+    command = read_layernames(x = layers_ruimtebeslag)
+  ),
+  tar_target(
+    name = lyrs_parcels,
+    command = read_layernames(x = layers_perceelgrens)
+  ),
+  geotargets::tar_terra_vect(
+    name = grb_waterways,
+    command = get_grb_by_row(
+      layer = lyrs_waterways,
+      polygons = validation_polygons
+    ),
+    pattern = cross(lyrs_waterways, validation_polygons)
+  )
+
+
 
   # apply majority filter, use 3 by 3 block
 
