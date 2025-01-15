@@ -224,3 +224,40 @@ extract_sample <- function(
   return(sample_ts2)
 }
 
+
+
+#' Get data from the WFS service for GRB
+#'
+#' @param layer A string. Should be one of the WFS layers available in the
+#' service
+#' @param bbox A SpatExtent or an object from which a SpatExtent can be
+#' determined. The bbox values should be in CRS 31370.
+#'
+#' @return A SpatVector
+#' @export
+#'
+#' @examples
+get_grb <- function(layer, bbox) {
+  wfs_grb <- "https://geo.api.vlaanderen.be/GRB/wfs"
+
+  assertthat::assert_that(assertthat::is.string(layer))
+
+  bbox <- terra::ext(bbox)
+
+  bbox_sf <- sf::st_as_sfc(sf::st_bbox(bbox, crs = sf::st_crs(31370)))
+
+  grb <- sf::read_sf(
+    paste0("WFS:", wfs_grb),
+    layer = layer,
+    wkt_filter = sf::st_as_text(bbox_sf)
+  )
+
+  grb <- grb |>
+    sf::st_cast("GEOMETRYCOLLECTION") %>%
+    sf::st_collection_extract("LINESTRING") %>%
+    sf::st_cast("POLYGON")
+
+  grb <- terra::vect(grb)
+
+  return(grb)
+}
