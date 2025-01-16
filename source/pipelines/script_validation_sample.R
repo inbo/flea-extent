@@ -68,9 +68,9 @@ layers_ruimtebeslag <- c(
   "GRB:TRN"
 )
 
+# opm: GRB:WLAS zijn lijnobjecten
 layers_water <- c(
-  "GRB:WTZ",
-  "GRB:WLAS"
+  "GRB:WTZ"
 )
 
 layers_perceelgrens <- c(

@@ -259,6 +259,9 @@ get_grb <- function(layer, bbox) {
 
   grb <- terra::vect(grb)
 
+  # crop to bbox
+  grb <- terra::crop(grb, bbox)
+
   return(grb)
 }
 
@@ -269,6 +272,11 @@ read_layernames <- function(x) {
 
 get_grb_by_row <- function(layer, polygons) {
   assertthat::assert_that(inherits(polygons, "SpatVector"))
+
+  # check if polygon has data
+  if (nrow(polygons) == 0) {
+    return(polygons)
+  }
 
   out <- vector("list", length = nrow(polygons))
   namesvec <- polygons$grts_rank
