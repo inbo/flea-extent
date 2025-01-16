@@ -200,6 +200,22 @@ list(
       polygons = validation_polygons
     ),
     pattern = cross(lyrs_waterways, validation_polygons)
+  ),
+  geotargets::tar_terra_vect(
+    name = grb_settlements,
+    command = get_grb_by_row(
+      layer = lyrs_settlements,
+      polygons = validation_polygons
+    ),
+    pattern = cross(lyrs_settlements, validation_polygons)
+  ),
+  geotargets::tar_terra_vect(
+    name = grb_parcels,
+    command = get_grb_by_row(
+      layer = lyrs_parcels,
+      polygons = validation_polygons
+    ),
+    pattern = cross(lyrs_parcels, validation_polygons)
   )
 
 
