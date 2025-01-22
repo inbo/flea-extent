@@ -56,6 +56,7 @@ flea_data <- gsub(
 )
 input_names <- c("reclass_bwk2016", "reclass_bwk2020", "reclass_bwk2023")
 path_to_gdb <- "Z:/Projects/PRJ_FLEA/flea_data.gdb"
+path_to_lbg <- "Z:/Projects/PRJ_FLEA/landbouwdata.gdb"
 path_to_lyr <- "Z:/Projects/PRJ_FLEA/reclass_bwk2016.lyr"
 path_to_grts <- file.path(flea_data, "data/c-mon/flea_cmon_level15.tiff")
 
@@ -107,6 +108,13 @@ list(
     pattern = map(mapnames),
     preserve_metadata = "zip"
   ),
+  # calculate masks
+  tar_terra_rast(
+    name = settlement_masks,
+    command = calc_mask(maps = maps, values = c(101, 102, 105, 106)),
+    pattern = map(maps)
+  ),
+
   tar_terra_rast(
     name = fleagrts,
     command = get_grts(
@@ -199,7 +207,8 @@ list(
       layer = lyrs_waterways,
       polygons = validation_polygons
     ),
-    pattern = cross(lyrs_waterways, validation_polygons)
+    pattern = cross(lyrs_waterways, validation_polygons),
+    filetype = "GPKG"
   ),
   geotargets::tar_terra_vect(
     name = grb_settlements,
@@ -207,7 +216,8 @@ list(
       layer = lyrs_settlements,
       polygons = validation_polygons
     ),
-    pattern = cross(lyrs_settlements, validation_polygons)
+    pattern = cross(lyrs_settlements, validation_polygons),
+    filetype = "GPKG"
   ),
   geotargets::tar_terra_vect(
     name = grb_parcels,
@@ -215,8 +225,67 @@ list(
       layer = lyrs_parcels,
       polygons = validation_polygons
     ),
-    pattern = cross(lyrs_parcels, validation_polygons)
+    pattern = cross(lyrs_parcels, validation_polygons),
+    filetype = "GPKG"
+  ),
+  targets::tar_target(
+    name = lbg_layers,
+    command = get_lbg_layernames(path_to_lbg)
+  ),
+  geotargets::tar_terra_vect(
+    name = lbg_101,
+    command = get_lbg(
+      path_to_lbg = path_to_lbg,
+      layer = lbg_layers,
+      from_fields = c("GWSCOD_H", "GWSNAM_H"),
+      where_field = "GWSCOD_H",
+      where_values = c(1, 2, 11, 12 ,13, 14, 15, 16, 9536),
+      flea_value = 101
+    ),
+    pattern = map(lbg_layers)
+  ),
+  geotargets::tar_terra_vect(
+    name = lbg_104,
+    command = get_lbg(
+      path_to_lbg = path_to_lbg,
+      layer = lbg_layers,
+      from_fields = c("GWSCOD_H", "GWSNAM_H"),
+      where_field = "GWSCOD_H",
+      where_values = c(9),
+      flea_value = 104
+    ),
+    pattern = map(lbg_layers)
+  ),
+  geotargets::tar_terra_vect(
+    name = lbg_101_cropped,
+    command = spatvector_crop(x = lbg_101, y = validation_polygons),
+    pattern = cross(lbg_101, validation_polygons)
+  ),
+  geotargets::tar_terra_vect(
+    name = lbg_104_cropped,
+    command = spatvector_crop(x = lbg_104, y = validation_polygons),
+    pattern = cross(lbg_104, validation_polygons)
+  ),
+  geotargets::tar_terra_vect(
+    name = grb_settlements_processed,
+    command = process_settlement(
+      grb = grb_settlements)
+  ),
+  geotargets::tar_terra_vect(
+    name = grb_water_wtz_processed,
+    command = process_water_wtz(
+      grb = grb_waterways)
+  ),
+  geotargets::tar_terra_vect(
+    name = grb_parcels_processed,
+    command = process_parcels(
+      grb = grb_parcels)
   )
+  #,
+  #geotargets::tar_terra_vect(
+  #  name = grb_waterways_processed,
+  #  command = process_waterways(grb_waterways)
+  #)
 
 
 

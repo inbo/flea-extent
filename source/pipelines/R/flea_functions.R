@@ -288,6 +288,177 @@ get_grb_by_row <- function(layer, polygons) {
     out[[as.character(namesvec[i])]] <- grb
   }
   out <- terra::vect(out)
+  out$layer <- layer
+  # convert date(time) fields to ISO-8601 format
+  time <- terra::datatype(out) == "time"
+  datetimecols <- terra::names(out)[time]
+  if (length(datetimecols) > 0) {
+    for (i in datetimecols) {
+      out[[i]] <-
+        format(out[[i]], format = "%Y-%m-%dT%H:%M:%S.000Z", tz = "UTC")
+    }
+  }
+
   return(out)
 }
+
+process_water_wtz <- function(grb_wtz) {
+  grb <- vect(grb_wtz)
+  grb <- sf::st_as_sf(grb)
+  grb <- grb |>
+    dplyr::mutate(
+      jaar = pmin(lubridate::year(BEGINDATUM),
+                  lubridate::year(OPNDATUM), na.rm = TRUE),
+      layer = "GRB:WTZ",
+      value = NA
+    )
+
+
+  # select columns
+  grb <- grb |>
+    select(
+      gml_id,
+      grts_rank,
+      jaar,
+      layer,
+      value
+    )
+
+  grb <- vect(grb)
+
+  return(grb)
+}
+
+process_parcels <- function(grb) {
+  grb <- vect(grb)
+  grb <- grb[, c("gml_id", "grts_rank", "BEGINDATUM", "FISCDATUM")]
+  grb <- sf::st_as_sf(grb) |>
+    dplyr::mutate(
+      jaar = pmin(lubridate::year(BEGINDATUM),
+                  lubridate::year(FISCDATUM), na.rm = TRUE),
+      layer = "GRB:ADP",
+      value = NA
+    ) |>
+    dplyr::select(gml_id, grts_rank, jaar, layer, value)
+  # cast to lines
+  grb <- terra::vect(grb) |> terra::as.lines()
+  return(grb)
+}
+
+process_settlement <- function(grb) {
+  grb <- vect(grb) # this should combine grb settlement layers
+  grb <- sf::st_as_sf(grb)
+
+  # enkel TRN met bodembedekking verhard
+  grb <- grb |>
+    dplyr::filter(is.na(LBLBDMBD) | LBLBDMBD == "verhard") |>
+    tidyr::unite(
+      col = lbl,
+      c(LBLTYPE, LBLFNCT),
+      na.rm = TRUE,
+      remove = FALSE) |>
+    dplyr::mutate(
+      jaar = pmin(lubridate::year(BEGINDATUM),
+                  lubridate::year(OPNDATUM), na.rm = TRUE)
+    )
+
+  # assign values
+  # 101 1.1 Settlements - buildings
+  # 102 1.2 Settlements - sealed soil
+  # 105 1.5 Settlements - water
+  # 106 1.6 Settlements - unknown land cover
+  grb <- grb |>
+    dplyr::mutate(
+      value = case_when(
+        layer %in% c("GRB:GBG", "GRB:GBA") ~ 101,
+        layer %in% c(
+          "GRB:WBN",
+          "GRB:SBN",
+          "GRB:KNW") |
+          (layer == "GRB:TRN" & LBLBDMBD == "verhard") ~ 102,
+        TRUE ~ NA
+      )
+    )
+
+  # select columns
+  grb <- grb |>
+    select(
+      gml_id,
+      grts_rank,
+      layer,
+      jaar,
+      lbl,
+      value
+    )
+
+  grb <- vect(grb)
+  return(grb)
+}
+
+
+get_lbg_layernames <- function(path_to_lbg) {
+
+  lyrs <- terra::vector_layers(path_to_lbg)
+  lyrs <- lyrs[grepl(".+20\\d\\d.+", lyrs)]
+  return(lyrs)
+}
+
+get_lbg <- function(
+    path_to_lbg, layer, from_fields, where_field, where_values, flea_value) {
+
+  assertthat::assert_that(assertthat::is.string(layer))
+  assertthat::assert_that(is.character(from_fields))
+  assertthat::assert_that(assertthat::is.string(where_field))
+  assertthat::assert_that(is.numeric(where_values))
+
+  query <- paste0(
+    "SELECT ",
+    paste0(from_fields, collapse = ","),
+    " FROM ",
+    layer,
+    " WHERE ",
+    where_field,
+    " IN (",
+    paste0("'", where_values, "'", collapse = ","),
+    ")"
+  )
+
+  lbg <- vect(x = path_to_lbg,
+              query = query,
+              crs = "EPSG:31370")
+  lbg$layer <- layer
+  lbg$value <- flea_value
+  # convert date(time) fields to ISO-8601 format
+  time <- terra::datatype(lbg) == "time"
+  datetimecols <- terra::names(lbg)[time]
+  if (length(datetimecols) > 0) {
+    for (i in datetimecols) {
+      lbg[[i]] <-
+        format(lbg[[i]], format = "%Y-%m-%dT%H:%M:%S.000Z", tz = "UTC")
+    }
+  }
+
+  return(lbg)
+}
+
+spatvector_crop <- function(x, y) {
+  assertthat::assert_that(inherits(x, "SpatVector"))
+  assertthat::assert_that(inherits(y, "SpatVector"))
+
+  # spatial subset
+  x <- x[y]
+  # topology fix if needed
+  x <- terra::makeValid(x)
+  # if y contains overlapping polygons dissolve them
+  y <- terra::aggregate(y)
+  # tryCatch?
+  out <- terra::crop(x, y)
+  return(out)
+}
+
+
+get_watervlakken <- function() {
+  #https://inbo.github.io/n2khab/reference/read_watersurfaces.html
+}
+
 

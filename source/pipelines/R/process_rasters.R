@@ -232,6 +232,9 @@ get_changecat_columns <- function(tempstrat) {
 }
 
 
-
+calc_mask <- function(maps, values) {
+  my_mask <- maps %in% values
+  return(my_mask)
+}
 
 

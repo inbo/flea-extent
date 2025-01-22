@@ -14,10 +14,12 @@ tar_make()
 
 #targets::tar_prune()
 
-targets::tar_meta(
+mt <- targets::tar_meta(
   fields = error,
   complete_only = TRUE
 )
+mt
+#View(mt)
 targets::tar_meta(fields = warnings, complete_only = TRUE)
 targets::tar_visnetwork(label = c("description", "time", "size"))
 
@@ -35,8 +37,18 @@ tar_read(mapnames)
 ct <- tar_read(catstable)
 ml <- tar_read(maps)
 
-ct
+
 ml[[1]]
+terra::cats(ml[[1]])
+settlement_mask <- app(
+  ml[[1]],
+  fun = function(x) {
+    x[!x %in% c(101, 102, 105, 106)] <- NA
+    return(x)
+  }
+)
+plot(settlement_mask, colNA = "snow4")
+
 terra::plot(ml[[1]], colNA = "orange")
 terra::values(ml[[1]], row = 5000, nrows = 1)
 terra::coltab(ml[[1]])
@@ -81,6 +93,10 @@ vs <- targets::tar_read(validation_sample)
 terra::vect(vs) |> sf::st_as_sf(crs = 31370) |>
   sf::st_drop_geometry() |>
   dplyr::count(grts_rank) |> dplyr::count(n)
+terra::vect(vs) |> sf::st_as_sf(crs = 31370) |>
+  sf::st_drop_geometry() |>
+  dplyr::count(stratum_name, changecat) |>
+  tidyr::pivot_wider(names_from = changecat, values_from = n)
 
 vp <- targets::tar_read(validation_polygons)
 lapply(vp, nrow) |> unlist() |> sum()
@@ -99,23 +115,59 @@ terra::vect(vs) |>
   st_drop_geometry() |>
   dplyr::count(stratum_name, changecat)
 
+grb_parc <- tar_read(grb_parcels)
+grb_parc <- terra::vect(grb_parc) |>
+  st_as_sf() |>
+  dplyr::mutate(source = "parcels")
+grb_set <- tar_read(grb_settlements)
+grb_set <- terra::vect(grb_set) |>
+  st_as_sf() |>
+  dplyr::mutate(source = "settlements")
+grb_water <- tar_read(grb_waterways)
+grb_water <- terra::vect(grb_water) |>
+  st_as_sf() |>
+  dplyr::mutate(source = "water")
+
+dplyr::bind_rows(
+  grb_water,
+  grb_set) |>
+  mapview::mapview(zcol = "source", alpha.regions = 0.2) +
+  mapview::mapview(grb_parc, alpha.region = 0)
+
+lbg_101 <- tar_read(lbg_101_cropped)
+lbg_104 <- tar_read(lbg_104_cropped)
+
+mapview::mapview(terra::vect(lbg_101), alpha.regions = 0.2
+                 , col.regions = "orange") +
+  mapview::mapview(terra::vect(lbg_104), alpha.regions = 0.2,
+                   col.regions = "yellow") +
+  mapview::mapview(terra::vect(vp), alpha.regions = 0)
+
 ##################
 # debug pipeline #
 ##################
 
 targets::tar_load_globals()
-tar_load(names = c(separate_grts))
-debugonce(get_changecats)
-get_changecats(separate_grts)
-
-targets::tar_load_globals()
-targets::tar_workspace("grb_waterways_14e96c73491bb69c")
+debugonce(add_changecats_tempstrat)
+add_changecats_tempstrat(
+  tempstrat = temporal_map,
+  cats = catstable,
+  mapnames = mapnames
+)
 debugonce(get_grb_by_row)
 test <- get_grb_by_row(
-  layer = lyrs_waterways,
+  layer = "GRB:ADP",
+  polygons = tar_read(validation_polygons_6e7d3123e950eb4d)[1:2,]
+)
+targets::tar_load_globals()
+targets::tar_workspace("grb_settlements_b23f12e3c6cbbb94")
+debugonce(get_grb_by_row)
+test <- get_grb_by_row(
+  layer = lyrs_settlements,
   polygons = validation_polygons
 )
 
-
-
-
+targets::tar_load_globals()
+targets::tar_workspace("grb_parcels_processed")
+debugonce(process_parcels)
+test <- process_parcels(grb_parcels)
