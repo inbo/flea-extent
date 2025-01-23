@@ -280,6 +280,34 @@ list(
     name = grb_parcels_processed,
     command = process_parcels(
       grb = grb_parcels)
+  ),
+  targets::tar_target(
+    name = watersurfaces_meta,
+    command = data.frame(
+      doi = c(
+        "10.5281/zenodo.3386859",
+        "10.5281/zenodo.4117543",
+        "10.5281/zenodo.7440931",
+        "10.5281/zenodo.14203168"
+      ),
+      source = c(
+        "ortho_2015_2016",
+        "ortho_2018_2019",
+        "ortho_2019_2021",
+        "ortho_2021_2023"
+      ),
+      version = c(
+        "v1.0", "v1.1", "v1.2", "v2024"
+      )
+    )
+  ),
+  targets::tar_target(
+    name = zenodo_watersurface,
+    command = download_watersurfaces(
+      path_flea_data = flea_data,
+      meta = watersurfaces_meta
+    ),
+    pattern = map(watersurfaces_meta)
   )
   #,
   #geotargets::tar_terra_vect(

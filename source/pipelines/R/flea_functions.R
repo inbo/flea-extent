@@ -457,8 +457,30 @@ spatvector_crop <- function(x, y) {
 }
 
 
-get_watervlakken <- function() {
+download_watersurfaces <- function(path_flea_data, meta) {
+  n2khab::fileman_folders(path = path_flea_data)
+  path <- file.path(path_flea_data,
+                    "n2khab_data", "10_raw",
+                    paste0("watersurfaces_", meta$version))
+  fs::dir_create(path)
+  n2khab::download_zenodo(
+    doi = meta$doi,
+    path = path,
+    quiet = TRUE,
+    parallel = FALSE
+  )
+
+  return(path)
+}
+
+read_watersurfaces <- function() {
   #https://inbo.github.io/n2khab/reference/read_watersurfaces.html
+  ws <- n2khab::read_watersurfaces(
+    targets::tar_read(zenodo_watersurface)[1],
+    version = "v1.0"
+    )
+
+
 }
 
 

@@ -6,6 +6,13 @@ library(targets)
 
 Sys.setenv(TAR_PROJECT = "validation_sample")
 
+# check status
+tar_visnetwork()
+
+# check reason if any is outdated
+tar_sitrep() |> dplyr::filter(dplyr::if_any(.cols = !c(name)))
+
+# run the pipeline
 tar_make()
 
 ####################
