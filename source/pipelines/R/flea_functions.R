@@ -473,14 +473,21 @@ download_watersurfaces <- function(path_flea_data, meta) {
   return(path)
 }
 
-read_watersurfaces <- function() {
+get_watersurfaces <- function(path_version, polygons) {
   #https://inbo.github.io/n2khab/reference/read_watersurfaces.html
   ws <- n2khab::read_watersurfaces(
-    targets::tar_read(zenodo_watersurface)[1],
-    version = "v1.0"
+    path_version,
+    version = basename(path_version),
+    fix_geom = TRUE
     )
+  ws <- vect(ws)
 
+  ws <- spatvector_crop(x = ws, y = polygons)
 
+  ws$layer <- basename(path_version)
+  ws$value <- NA
+
+  return(ws)
 }
 
 

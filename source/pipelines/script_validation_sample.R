@@ -308,6 +308,14 @@ list(
       meta = watersurfaces_meta
     ),
     pattern = map(watersurfaces_meta)
+  ),
+  geotargets::tar_terra_vect(
+    name = watersurfaces_processed,
+    command = get_watersurfaces(
+      path_version = zenodo_watersurface,
+      polygons = validation_polygons
+    ),
+    pattern = cross(zenodo_watersurface, validation_polygons)
   )
   #,
   #geotargets::tar_terra_vect(
