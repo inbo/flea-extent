@@ -167,14 +167,19 @@ test <- get_grb_by_row(
   polygons = tar_read(validation_polygons_6e7d3123e950eb4d)[1:2,]
 )
 targets::tar_load_globals()
-targets::tar_workspace("grb_settlements_b23f12e3c6cbbb94")
-debugonce(get_grb_by_row)
-test <- get_grb_by_row(
-  layer = lyrs_settlements,
-  polygons = validation_polygons
+targets::tar_workspace("vp_water_settlements_bc312eaba6d3a034")
+debugonce(combine_water_settlements)
+test <- combine_water_settlements(
+  water = tar_read(vp_water, branches = 1)[[1]],
+  settlements = tar_read(grb_settlements_processed),
+  polygons = tar_read(validation_polygons)
 )
 
 targets::tar_load_globals()
-targets::tar_workspace("grb_parcels_processed")
-debugonce(process_parcels)
-test <- process_parcels(grb_parcels)
+targets::tar_workspace("vp_water_settlements_bc312eaba6d3a034")
+debugonce(get_watersurfaces)
+test <- get_watersurfaces(
+  path_version = zenodo_watersurface,
+  polygons = validation_polygons,
+  meta = watersurfaces_meta
+)

@@ -473,21 +473,62 @@ download_watersurfaces <- function(path_flea_data, meta) {
   return(path)
 }
 
-get_watersurfaces <- function(path_version, polygons) {
+get_watersurfaces <- function(path_version, polygons, meta) {
   #https://inbo.github.io/n2khab/reference/read_watersurfaces.html
+
+  file_version <- switch(
+    meta$version,
+    "v1.0" = file.path(path_version, "watersurfaces.shp"),
+    "v1.1" = file.path(path_version, "watersurfaces.gpkg"),
+    "v1.2" = file.path(path_version, "watersurfaces.gpkg"),
+    "v2024" = file.path(path_version, "watersurfaces.gpkg")
+  )
+
   ws <- n2khab::read_watersurfaces(
-    path_version,
+    file = file_version,
     version = basename(path_version),
     fix_geom = TRUE
     )
   ws <- vect(ws)
 
   ws <- spatvector_crop(x = ws, y = polygons)
-
+  ws$year_flea <- meta$year_flea
   ws$layer <- basename(path_version)
   ws$value <- NA
+  ws$area_name <- NULL
+  ws$wfd_type_certain <- NULL
 
   return(ws)
 }
 
 
+combine_grb_inbo_water <- function(grb_water, inbo_water, meta) {
+  inbo_water <- vect(inbo_water)
+  inbo_water <- inbo_water[
+    inbo_water$layer == paste0("watersurfaces_",meta$version), ]
+
+  # cover: values of x that overlap with y are replaced by y
+  grb_water <- aggregate(x = grb_water, by = names(grb_water))
+  water <- cover(x = grb_water, y = inbo_water)
+  return(water)
+}
+
+combine_water_settlements <- function(water, settlements, polygons) {
+  vp <- vect(polygons)
+
+  vplist <- vector("list", nrow(vp))
+  for (i in seq_along(vp)) {
+    vp_ <- vp[i]
+    w_ <- water[vp_]
+    s_ <- settlements[vp_]
+    out <- cover(vp_, cover(w_, s_))
+    out$grts_rank <- vp_$grts_rank
+    out$cell <- vp_$cell
+    out$stratum_name <- vp_$stratum_name
+    out$changecat <- vp_$changecat
+    vplist[[i]] <- out
+  }
+  vp_wa_se <- vect(vplist)
+
+  return(vp_wa_se)
+}

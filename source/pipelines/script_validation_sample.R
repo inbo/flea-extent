@@ -55,6 +55,7 @@ flea_data <- gsub(
   pattern = "flea-extent", replacement = "flea-data", x = git_root
 )
 input_names <- c("reclass_bwk2016", "reclass_bwk2020", "reclass_bwk2023")
+input_years <- c(2016, 2019, 2022)
 path_to_gdb <- "Z:/Projects/PRJ_FLEA/flea_data.gdb"
 path_to_lbg <- "Z:/Projects/PRJ_FLEA/landbouwdata.gdb"
 path_to_lyr <- "Z:/Projects/PRJ_FLEA/reclass_bwk2016.lyr"
@@ -296,6 +297,7 @@ list(
         "ortho_2019_2021",
         "ortho_2021_2023"
       ),
+      year_flea = c(2016, 2019, NA, 2022),
       version = c(
         "v1.0", "v1.1", "v1.2", "v2024"
       )
@@ -309,13 +311,37 @@ list(
     ),
     pattern = map(watersurfaces_meta)
   ),
+  # read INBO watersurfaces maps and crop with validation polygons
   geotargets::tar_terra_vect(
     name = watersurfaces_processed,
     command = get_watersurfaces(
       path_version = zenodo_watersurface,
+      polygons = validation_polygons,
+      meta = watersurfaces_meta
+    ),
+    pattern = cross(
+      map(zenodo_watersurface, watersurfaces_meta),
+      validation_polygons
+    )
+  ),
+  # combine the GRB water layer with the INBO watersurfaces
+  geotargets::tar_terra_vect(
+    name = vp_water,
+    command = combine_grb_inbo_water(
+      grb_water = grb_water_wtz_processed,
+      inbo_water = watersurfaces_processed,
+      meta = watersurfaces_meta
+    ),
+    pattern = map(watersurfaces_meta)
+  ),
+  geotargets::tar_terra_vect(
+    name = vp_water_settlements,
+    command = combine_water_settlements(
+      water = vp_water,
+      settlements = grb_settlements_processed,
       polygons = validation_polygons
     ),
-    pattern = cross(zenodo_watersurface, validation_polygons)
+    pattern = map(vp_water)
   )
   #,
   #geotargets::tar_terra_vect(
