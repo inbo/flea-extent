@@ -150,6 +150,9 @@ mapview::mapview(terra::vect(lbg_101), alpha.regions = 0.2
                    col.regions = "yellow") +
   mapview::mapview(terra::vect(vp), alpha.regions = 0)
 
+vp_wa_se <- tar_read(vp_water_settlements)
+
+
 ##################
 # debug pipeline #
 ##################

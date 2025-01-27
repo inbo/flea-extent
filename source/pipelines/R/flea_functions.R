@@ -529,6 +529,93 @@ combine_water_settlements <- function(water, settlements, polygons) {
     vplist[[i]] <- out
   }
   vp_wa_se <- vect(vplist)
+  vp_wa_se <- terra::unique(vp_wa_se)
 
   return(vp_wa_se)
 }
+
+postprocess_water_settlements <- function(water_settlements) {
+  ws <- st_as_sf(water_settlements)
+
+  # get the validation year
+  year_to_validate <- unique(ws$year_flea)
+  year_to_validate <- year_to_validate[!is.na(year_to_validate)]
+
+  ws <- ws |>
+    select(
+      grts_rank,
+      layer,
+      year_grb = jaar,
+      stratum_name,
+      changecat,
+      value,
+      year_flea
+    ) |>
+    group_by(grts_rank) |>
+    mutate(
+      stratum_name = ifelse(
+        is.na(stratum_name), first(stratum_name), stratum_name),
+      changecat = ifelse(
+        is.na(changecat), first(changecat), changecat),
+      collabel = case_when(
+        !is.na(value) ~ as.character(value),
+        layer %in% c("GRB:WTZ") ~ "water",
+        grepl("waters", layer) ~ "water",
+        TRUE ~ NA
+      ),
+      year_flea = year_to_validate
+    )
+  ws <- vect(ws)
+  return(ws)
+}
+
+intersect_validation_polygons <- function(wsp) {
+  out <- wsp |>
+    vect() |>
+    st_as_sf() |>
+    mutate(year_flea2 = year_flea) |>
+    group_by(grts_rank, stratum_name, changecat, year_flea2) |>
+    tidyr::nest()
+
+  out <- out |>
+    mutate(
+      data = map(data, function(x) {
+        x %>% rename_with(
+          .cols = c(layer, year_grb, value, collabel),
+          .fn = \(x) paste0(x, "_", .$year_flea[1], recycle0 = TRUE)
+        )
+      }
+      )
+    ) |>
+    tidyr::pivot_wider(
+      id_cols = c(grts_rank, stratum_name, changecat),
+      names_from = year_flea2,
+      names_prefix = "data_",
+      values_from = data
+    ) |>
+    tidyr::pivot_longer(
+      cols = starts_with("data_"),
+      names_to = "year_flea",
+      names_prefix = "data_") |>
+    mutate(
+      value = lapply(value, vect),
+      value = lapply(value, makeValid)
+    )
+
+  out <- out |>
+    summarize(
+      intersected_data = list(
+        reduce(value, terra::intersect)),
+      .groups = "drop"
+    ) |>
+    mutate(
+      intersected_data = lapply(intersected_data, st_as_sf)
+    ) |>
+    tidyr::unnest(intersected_data) |>
+    st_as_sf(crs = 31370) |>
+    select(!starts_with("year_flea")) |>
+    vect()
+
+  return(out)
+}
+

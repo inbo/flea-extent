@@ -24,7 +24,7 @@ if (tar_active()) {
 
 
 tar_option_set(
-  packages = c("tibble", "geotargets", "assertthat", "terra", "dplyr"),
+  packages = c("tibble", "geotargets", "assertthat", "terra", "dplyr", "sf"),
   format = "qs",
   error = "null",
   memory = "transient",
@@ -288,18 +288,16 @@ list(
       doi = c(
         "10.5281/zenodo.3386859",
         "10.5281/zenodo.4117543",
-        "10.5281/zenodo.7440931",
         "10.5281/zenodo.14203168"
       ),
       source = c(
         "ortho_2015_2016",
         "ortho_2018_2019",
-        "ortho_2019_2021",
         "ortho_2021_2023"
       ),
-      year_flea = c(2016, 2019, NA, 2022),
+      year_flea = c(2016, 2019, 2022),
       version = c(
-        "v1.0", "v1.1", "v1.2", "v2024"
+        "v1.0", "v1.1", "v2024"
       )
     )
   ),
@@ -342,6 +340,19 @@ list(
       polygons = validation_polygons
     ),
     pattern = map(vp_water)
+  ),
+  geotargets::tar_terra_vect(
+    name = vp_water_settlements_cleaned,
+    command = postprocess_water_settlements(
+      vp_water_settlements
+    ),
+    pattern = map(vp_water_settlements)
+  ),
+  geotargets::tar_terra_vect(
+    name = changeset_validation_polygons,
+    command = intersect_validation_polygons(
+      vp_water_settlements_cleaned
+    )
   )
   #,
   #geotargets::tar_terra_vect(
