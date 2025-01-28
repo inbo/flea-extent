@@ -349,10 +349,16 @@ list(
     pattern = map(vp_water_settlements)
   ),
   geotargets::tar_terra_vect(
-    name = changeset_validation_polygons,
+    name = vp_water_settlements_singletarget,
+    command = single_wsp(vp_water_settlements_cleaned)
+  ),
+  geotargets::tar_terra_vect(
+    name = prelabeled_validation_polygons,
     command = intersect_validation_polygons(
-      vp_water_settlements_cleaned
-    )
+      wsp_target = vp_water_settlements_singletarget,
+      lu_changecat = lu_changecats
+    ),
+    pattern = map(lu_changecats)
   )
   #,
   #geotargets::tar_terra_vect(

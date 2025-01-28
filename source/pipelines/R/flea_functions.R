@@ -391,7 +391,39 @@ process_settlement <- function(grb) {
       value
     )
 
+  # deal with overlapping polygons
+  grb <- grb |>
+    arrange(value, factor(
+      layer,
+      levels = c(
+        "GRB:GBG", "GRB:GBA", "GRB:KNW", "GRB:WBN", "GRB:SBN", "GRB:TRN"
+        )
+      )
+    )
   grb <- vect(grb)
+  grb <- unique(grb)
+  cvr <- relate(grb, grb, "covers", TRUE, TRUE)
+  cvr <- cvr[cvr[,1] != cvr[,2],]
+
+  to_add <- vect()
+  to_delete_indices <- c()
+
+  for (i in seq_len(nrow(cvr))) {
+    pair <- cvr[i,]
+    grb_pair <- grb[pair, ]
+    if (length(unique(grb_pair$grts_rank)) == 2) next
+    non_overlapping <- grb_pair |>
+      st_as_sf() |>
+      st_difference() |>
+      vect()
+    to_add <- rbind(to_add, non_overlapping)
+    to_delete_indices <- c(to_delete_indices, pair)
+  }
+  grb <- rbind(
+    grb[!(seq_along(grb) %in% to_delete_indices),],
+    to_add
+  )
+
   return(grb)
 }
 
@@ -569,17 +601,34 @@ postprocess_water_settlements <- function(water_settlements) {
   return(ws)
 }
 
-intersect_validation_polygons <- function(wsp) {
-  out <- wsp |>
-    vect() |>
+single_wsp <- function(wsp_pattern) {
+  out <- wsp_pattern |>
+    vect()
+  return(out)
+}
+
+distinct_grts_strata <- function(wsp_target) {
+  out <- wsp_target |>
     st_as_sf() |>
+    st_drop_geometry() |>
+    distinct(grts_rank, stratum_name, changecat)
+  return(out)
+}
+
+intersect_validation_polygons <- function(
+    wsp_target, lu_changecat) {
+  out <- wsp_target |>
+    st_as_sf() |>
+    filter(stratum_name == lu_changecat) |>
     mutate(year_flea2 = year_flea) |>
     group_by(grts_rank, stratum_name, changecat, year_flea2) |>
     tidyr::nest()
 
+  if (nrow(out) == 0) return(vect())
+
   out <- out |>
     mutate(
-      data = map(data, function(x) {
+      data = purrr::map(data, function(x) {
         x %>% rename_with(
           .cols = c(layer, year_grb, value, collabel),
           .fn = \(x) paste0(x, "_", .$year_flea[1], recycle0 = TRUE)
@@ -605,7 +654,7 @@ intersect_validation_polygons <- function(wsp) {
   out <- out |>
     summarize(
       intersected_data = list(
-        reduce(value, terra::intersect)),
+        purrr::reduce(value, terra::intersect)),
       .groups = "drop"
     ) |>
     mutate(

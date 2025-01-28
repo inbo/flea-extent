@@ -7,7 +7,7 @@ library(targets)
 Sys.setenv(TAR_PROJECT = "validation_sample")
 
 # check status
-tar_visnetwork()
+tar_visnetwork(level_separation = 5000)
 
 # check reason if any is outdated
 tar_sitrep() |> dplyr::filter(dplyr::if_any(.cols = !c(name)))
@@ -150,7 +150,12 @@ mapview::mapview(terra::vect(lbg_101), alpha.regions = 0.2
                    col.regions = "yellow") +
   mapview::mapview(terra::vect(vp), alpha.regions = 0)
 
-vp_wa_se <- tar_read(vp_water_settlements)
+prelabeled <- tar_read(prelabeled_validation_polygons)
+
+mapview::mapview(prelabeled$prelabeled_validation_polygons_b0bae0239048f770)
+
+prelabeled$prelabeled_validation_polygons_b0bae0239048f770 |>
+  sfst_as_sf()
 
 
 ##################
@@ -158,12 +163,11 @@ vp_wa_se <- tar_read(vp_water_settlements)
 ##################
 
 targets::tar_load_globals()
-debugonce(add_changecats_tempstrat)
-add_changecats_tempstrat(
-  tempstrat = temporal_map,
-  cats = catstable,
-  mapnames = mapnames
-)
+debugonce(process_settlement)
+targets::tar_load(grb_settlements)
+process_settlement(grb = grb_settlements)
+
+
 debugonce(get_grb_by_row)
 test <- get_grb_by_row(
   layer = "GRB:ADP",
@@ -179,10 +183,8 @@ test <- combine_water_settlements(
 )
 
 targets::tar_load_globals()
-targets::tar_workspace("vp_water_settlements_bc312eaba6d3a034")
-debugonce(get_watersurfaces)
-test <- get_watersurfaces(
-  path_version = zenodo_watersurface,
-  polygons = validation_polygons,
-  meta = watersurfaces_meta
+targets::tar_workspace("prelabeled_validation_polygons_e9e42187a231237d")
+debugonce(intersect_validation_polygons)
+test <- intersect_validation_polygons(
+ vp_water_settlements_singletarget, lu_changecats
 )
