@@ -174,13 +174,21 @@ test <- get_grb_by_row(
   polygons = tar_read(validation_polygons_6e7d3123e950eb4d)[1:2,]
 )
 targets::tar_load_globals()
-targets::tar_workspace("vp_water_settlements_bc312eaba6d3a034")
+targets::tar_workspace("vp_water_settlements_5319be99c3d05901")
 debugonce(combine_water_settlements)
 test <- combine_water_settlements(
-  water = tar_read(vp_water, branches = 1)[[1]],
-  settlements = tar_read(grb_settlements_processed),
-  polygons = tar_read(validation_polygons)
+  water = vp_water,
+  settlements = grb_settlements_processed,
+  polygons = validation_polygons
 )
+
+targets::tar_load_globals()
+targets::tar_workspace("vp_water_settlements_cleaned_57abadb85e4ad4bc")
+debugonce(postprocess_water_settlements)
+test <- postprocess_water_settlements(
+  vp_water_settlements
+)
+
 
 targets::tar_load_globals()
 targets::tar_workspace("prelabeled_validation_polygons_e9e42187a231237d")

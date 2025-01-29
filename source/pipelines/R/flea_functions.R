@@ -548,16 +548,24 @@ combine_grb_inbo_water <- function(grb_water, inbo_water, meta) {
 combine_water_settlements <- function(water, settlements, polygons) {
   vp <- vect(polygons)
 
+  # get the validation year
+  year_to_validate <- unique(water$year_flea)
+  year_to_validate <- year_to_validate[!is.na(year_to_validate)]
+
+
   vplist <- vector("list", nrow(vp))
   for (i in seq_along(vp)) {
     vp_ <- vp[i]
     w_ <- water[vp_]
+    w_ <- w_[w_$grts_rank == vp_$grts_rank, ]
     s_ <- settlements[vp_]
+    s_ <- s_[s_$grts_rank == vp_$grts_rank, ]
     out <- cover(vp_, cover(w_, s_))
     out$grts_rank <- vp_$grts_rank
     out$cell <- vp_$cell
     out$stratum_name <- vp_$stratum_name
     out$changecat <- vp_$changecat
+    out$year_flea <- year_to_validate
     vplist[[i]] <- out
   }
   vp_wa_se <- vect(vplist)
