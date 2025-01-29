@@ -183,6 +183,25 @@ test <- combine_water_settlements(
 )
 
 targets::tar_load_globals()
+targets::tar_load(
+  names = c(
+  grb_settlements_processed,
+  vp_water,
+  validation_polygons,
+  lbg_101_cropped,
+  lbg_104_cropped))
+
+debugonce(combine_water_settlements)
+test <-  combine_water_settlements(
+  water = vp_water$vp_water_f39e59863b95dc86,
+  settlements = grb_settlements_processed,
+  lbg_101 = lbg_101_cropped,
+  lbg_104 = lbg_104_cropped,
+  polygons = validation_polygons
+)
+
+
+targets::tar_load_globals()
 targets::tar_workspace("vp_water_settlements_cleaned_57abadb85e4ad4bc")
 debugonce(postprocess_water_settlements)
 test <- postprocess_water_settlements(

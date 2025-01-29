@@ -482,6 +482,7 @@ spatvector_crop <- function(x, y) {
   # topology fix if needed
   x <- terra::makeValid(x)
   # if y contains overlapping polygons dissolve them
+  # this was needed in case validation polygons overlapped
   y <- terra::aggregate(y)
   # tryCatch?
   out <- terra::crop(x, y)
@@ -545,12 +546,27 @@ combine_grb_inbo_water <- function(grb_water, inbo_water, meta) {
   return(water)
 }
 
-combine_water_settlements <- function(water, settlements, polygons) {
+combine_water_settlements <- function(
+    water, settlements, polygons,
+    lbg_101, lbg_104) {
+
+  assertthat::assert_that(inherits(water, "SpatVector")) # a branch
+  assertthat::assert_that(inherits(settlements, "SpatVector")) # a target
+  assertthat::assert_that(inherits(lbg_101, "list")) # a pattern
+  assertthat::assert_that(inherits(lbg_104, "list")) # a pattern
+  assertthat::assert_that(inherits(polygons, "list")) # a pattern
+
   vp <- vect(polygons)
+  lbg_101 <- vect(lbg_101) # this combines multiple years
+  lbg_104 <- vect(lbg_104) # this combines multiple years
 
   # get the validation year
   year_to_validate <- unique(water$year_flea)
   year_to_validate <- year_to_validate[!is.na(year_to_validate)]
+
+  # filter the lbg layers to only the validation year
+  lbg_101 <- lbg_101[grepl(year_to_validate, x = lbg_101$layer), ]
+  lbg_104 <- lbg_104[grepl(year_to_validate, x = lbg_104$layer), ]
 
 
   vplist <- vector("list", nrow(vp))
@@ -560,7 +576,10 @@ combine_water_settlements <- function(water, settlements, polygons) {
     w_ <- w_[w_$grts_rank == vp_$grts_rank, ]
     s_ <- settlements[vp_]
     s_ <- s_[s_$grts_rank == vp_$grts_rank, ]
-    out <- cover(vp_, cover(w_, s_))
+    lbg_101_ <- lbg_101[vp_]
+    lbg_104_ <- lbg_104[vp_]
+    lbg_ <- rbind(lbg_101_, lbg_104_)
+    out <- cover(vp_, cover(w_, cover(s_, lbg_)))
     out$grts_rank <- vp_$grts_rank
     out$cell <- vp_$cell
     out$stratum_name <- vp_$stratum_name

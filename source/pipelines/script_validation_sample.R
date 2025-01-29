@@ -337,6 +337,8 @@ list(
     command = combine_water_settlements(
       water = vp_water,
       settlements = grb_settlements_processed,
+      lbg_101 = lbg_101_cropped,
+      lbg_104 = lbg_104_cropped,
       polygons = validation_polygons
     ),
     pattern = map(vp_water)
