@@ -28,7 +28,9 @@ mt <- targets::tar_meta(
 mt
 #View(mt)
 targets::tar_meta(fields = warnings, complete_only = TRUE)
-targets::tar_visnetwork(label = c("description", "time", "size"))
+targets::tar_visnetwork(
+  label = c("description", "time", "size"),
+  level_separation = 5000)
 
 
 # logging

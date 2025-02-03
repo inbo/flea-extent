@@ -79,6 +79,7 @@ layers_perceelgrens <- c(
   "GRB:ADP"
 )
 
+settlement_codes <- 101:106
 
 # to be changed later: download the raster files from zenodo
 
@@ -112,7 +113,7 @@ list(
   # calculate masks
   tar_terra_rast(
     name = settlement_masks,
-    command = calc_mask(maps = maps, values = c(101, 102, 105, 106)),
+    command = calc_mask(maps = maps, values = settlement_codes),
     pattern = map(maps)
   ),
 
