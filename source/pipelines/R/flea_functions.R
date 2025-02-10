@@ -392,6 +392,7 @@ process_settlement <- function(grb) {
     )
 
   # deal with overlapping polygons
+  # within same grts_rank
   grb <- grb |>
     arrange(value, factor(
       layer,
@@ -402,29 +403,89 @@ process_settlement <- function(grb) {
     )
   grb <- vect(grb)
   grb <- unique(grb)
-  cvr <- relate(grb, grb, "covers", TRUE, TRUE)
-  cvr <- cvr[cvr[,1] != cvr[,2],]
 
-  to_add <- vect()
-  to_delete_indices <- c()
+  gbg <- subset(grb, layer == "GRB:GBG", NSE = TRUE) |>
+    aggregate(
+      by = c(
+        "gml_id",
+        "grts_rank",
+        "layer",
+        "jaar",
+        "lbl",
+        "value"
+      ),
+      count = FALSE
+    )
+  gba <- subset(grb, layer == "GRB:GBA", NSE = TRUE) |>
+    aggregate(
+      by = c(
+        "gml_id",
+        "grts_rank",
+        "layer",
+        "jaar",
+        "lbl",
+        "value"
+      ),
+      count = FALSE
+    )
+  knw <- subset(grb, layer == "GRB:KNW", NSE = TRUE) |>
+    aggregate(
+      by = c(
+        "gml_id",
+        "grts_rank",
+        "layer",
+        "jaar",
+        "lbl",
+        "value"
+      ),
+      count = FALSE
+    )
+  wbn <- subset(grb, layer == "GRB:WBN", NSE = TRUE) |>
+    aggregate(
+      by = c(
+        "gml_id",
+        "grts_rank",
+        "layer",
+        "jaar",
+        "lbl",
+        "value"
+      ),
+      count = FALSE
+    )
+  sbn <- subset(grb, layer == "GRB:SBN", NSE = TRUE) |>
+    aggregate(
+      by = c(
+        "gml_id",
+        "grts_rank",
+        "layer",
+        "jaar",
+        "lbl",
+        "value"
+      ),
+      count = FALSE
+    )
+  trn <- subset(grb, layer == "GRB:TRN", NSE = TRUE) |>
+    aggregate(
+      by = c(
+        "gml_id",
+        "grts_rank",
+        "layer",
+        "jaar",
+        "lbl",
+        "value"
+      ),
+      count = FALSE
+    )
 
-  for (i in seq_len(nrow(cvr))) {
-    pair <- cvr[i,]
-    grb_pair <- grb[pair, ]
-    if (length(unique(grb_pair$grts_rank)) == 2) next
-    non_overlapping <- grb_pair |>
-      st_as_sf() |>
-      st_difference() |>
-      vect()
-    to_add <- rbind(to_add, non_overlapping)
-    to_delete_indices <- c(to_delete_indices, pair)
-  }
-  grb <- rbind(
-    grb[!(seq_along(grb) %in% to_delete_indices),],
-    to_add
-  )
+  c1 <- cover(gba, gbg)
+  c2 <- cover(knw, c1)
+  c3 <- cover(wbn, c2)
+  c4 <- cover(sbn, c3)
+  c5 <- cover(trn, c4)
 
-  return(grb)
+  c5 <- unique(c5) # remove duplicate records
+
+  return(c5)
 }
 
 
@@ -543,6 +604,7 @@ combine_grb_inbo_water <- function(grb_water, inbo_water, meta) {
   # cover: values of x that overlap with y are replaced by y
   grb_water <- aggregate(x = grb_water, by = names(grb_water))
   water <- cover(x = grb_water, y = inbo_water)
+  water <- unique(water)
   return(water)
 }
 
@@ -557,8 +619,8 @@ combine_water_settlements <- function(
   assertthat::assert_that(inherits(polygons, "list")) # a pattern
 
   vp <- vect(polygons)
-  lbg_101 <- vect(lbg_101) # this combines multiple years
-  lbg_104 <- vect(lbg_104) # this combines multiple years
+  lbg_101 <- vect(lbg_101) |> unique() # this combines multiple years
+  lbg_104 <- vect(lbg_104) |> unique() # this combines multiple years
 
   # get the validation year
   year_to_validate <- unique(water$year_flea)
@@ -585,10 +647,17 @@ combine_water_settlements <- function(
     out$stratum_name <- vp_$stratum_name
     out$changecat <- vp_$changecat
     out$year_flea <- year_to_validate
+    out <- disagg(out) #casts multipolygon to polygon
     vplist[[i]] <- out
   }
   vp_wa_se <- vect(vplist)
-  vp_wa_se <- terra::unique(vp_wa_se)
+
+  # make sure records are unique
+  vp_wa_se <- terra::unique(vp_wa_se) |> terra::disagg()
+
+  # remove tiny areas
+  areas <- expanse(vp_wa_se)
+  vp_wa_se <- subset(vp_wa_se, areas > 1)
 
   return(vp_wa_se)
 }
@@ -624,7 +693,7 @@ postprocess_water_settlements <- function(water_settlements) {
       ),
       year_flea = year_to_validate
     )
-  ws <- vect(ws)
+  ws <- vect(ws) |> unique()
   return(ws)
 }
 
@@ -648,6 +717,7 @@ intersect_validation_polygons <- function(
     st_as_sf() |>
     filter(stratum_name == lu_changecat) |>
     mutate(year_flea2 = year_flea) |>
+    st_make_valid() |>
     group_by(grts_rank, stratum_name, changecat, year_flea2) |>
     tidyr::nest()
 
@@ -690,7 +760,8 @@ intersect_validation_polygons <- function(
     tidyr::unnest(intersected_data) |>
     st_as_sf(crs = 31370) |>
     select(!starts_with("year_flea")) |>
-    vect()
+    vect() |>
+    unique()
 
   return(out)
 }
