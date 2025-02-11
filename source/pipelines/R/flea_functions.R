@@ -633,15 +633,29 @@ combine_water_settlements <- function(
 
   vplist <- vector("list", nrow(vp))
   for (i in seq_along(vp)) {
-    vp_ <- vp[i]
+    vp_ <- vp[i] # selecteert 1 validatie-polygoon
     w_ <- water[vp_]
-    w_ <- w_[w_$grts_rank == vp_$grts_rank, ]
+    w_area <- expanse(w_)
+    w_ <- subset(w_, w_area > 1)
+    w_ <- crop(w_, vp_)
+    w_ <- subset(w_, w_$grts_rank == vp_$grts_rank | is.na(w_$grts_rank))
     s_ <- settlements[vp_]
+    s_ <- crop(s_, vp_)
     s_ <- s_[s_$grts_rank == vp_$grts_rank, ]
     lbg_101_ <- lbg_101[vp_]
+    lbg_101_ <- crop(lbg_101_, vp_)
     lbg_104_ <- lbg_104[vp_]
+    lbg_104_ <- crop(lbg_104_, vp_)
     lbg_ <- rbind(lbg_101_, lbg_104_)
-    out <- cover(vp_, cover(w_, cover(s_, lbg_)))
+    c1 <- cover(s_, lbg_)
+    c1_area <- expanse(c1)
+    c1 <- subset(c1, c1_area > 1)
+    c2 <- cover(w_, c1)
+    c2_area <- expanse(c2)
+    c2 <- subset(c2, c2_area > 1)
+    out <- cover(vp_, c2)
+    out_area <- expanse(out)
+    out <- subset(out, out_area > 1)
     out$grts_rank <- vp_$grts_rank
     out$cell <- vp_$cell
     out$stratum_name <- vp_$stratum_name
