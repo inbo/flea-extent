@@ -298,6 +298,13 @@ get_grb_by_row <- function(layer, polygons) {
         format(out[[i]], format = "%Y-%m-%dT%H:%M:%S.000Z", tz = "UTC")
     }
   }
+  # catch case empty records
+  # can be removed when terra or geotargets deals with this natively
+  # https://github.com/ropensci/geotargets/issues/187
+  if (nrow(out) == 0) {
+    out <- .create_empty_geom(out, type = terra::geomtype(polygons))
+    return(out)
+  }
 
   return(out)
 }
@@ -534,6 +541,25 @@ get_lbg <- function(
   return(lbg)
 }
 
+
+#' Helper functions to deal with empty records in tar_terra_vect
+.create_empty_geom <- function(x, type) {
+  type <- match.arg(gsub("S$", "", toupper(type)), c("POINT", "LINE", "POLYGON"))
+  if (nrow(x) == 0) {
+    empty <- terra::vect(paste(type, "EMPTY"), crs = terra::crs(x))
+    cols <- as.data.frame(x)[1, ]
+    x <- cbind(empty, cols)
+  }
+  x
+}
+
+.filter_empty_geom <- function(x) {
+  x[!is.na(x), ]
+}
+
+
+
+
 spatvector_crop <- function(x, y) {
   assertthat::assert_that(inherits(x, "SpatVector"))
   assertthat::assert_that(inherits(y, "SpatVector"))
@@ -545,7 +571,13 @@ spatvector_crop <- function(x, y) {
   # if y contains overlapping polygons dissolve them
   # this was needed in case validation polygons overlapped
   y <- terra::aggregate(y)
-  # tryCatch?
+  # catch case empty records
+  # can be removed when terra or geotargets deals with this natively
+  # https://github.com/ropensci/geotargets/issues/187
+  if (nrow(x) == 0) {
+    out <- .create_empty_geom(x, type = terra::geomtype(y))
+    return(out)
+  }
   out <- terra::crop(x, y)
   return(out)
 }

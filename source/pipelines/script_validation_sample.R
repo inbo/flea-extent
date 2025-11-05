@@ -26,7 +26,7 @@ if (tar_active()) {
 tar_option_set(
   packages = c("tibble", "geotargets", "assertthat", "terra", "dplyr", "sf"),
   format = "qs",
-  error = "null",
+#  error = "null",
   memory = "transient",
   garbage_collection = TRUE,
   controller = controller
@@ -54,11 +54,15 @@ git_root <- rprojroot::find_root(rprojroot::is_git_root)
 flea_data <- gsub(
   pattern = "flea-extent", replacement = "flea-data", x = git_root
 )
-input_names <- c("reclass_bwk2016", "reclass_bwk2020", "reclass_bwk2023")
+input_names <- c(
+  "ecosysteemkaart_niv1_2016_v12",
+  "ecosysteemkaart_niv1_2019_v12",
+  "ecosysteemkaart_niv1_2022_v12"
+)
 input_years <- c(2016, 2019, 2022)
-path_to_gdb <- "Z:/Projects/PRJ_FLEA/flea_data.gdb"
+path_to_gdb <- "Z:/Projects/PRJ_FLEA/flea_output.gdb"
 path_to_lbg <- "Z:/Projects/PRJ_FLEA/landbouwdata.gdb"
-path_to_lyr <- "Z:/Projects/PRJ_FLEA/reclass_bwk2016.lyr"
+path_to_lyr <- "Z:/Projects/PRJ_FLEA/ecosysteemkaart_niv1_v12.lyr"
 path_to_grts <- file.path(flea_data, "data/c-mon/flea_cmon_level15.tiff")
 
 layers_ruimtebeslag <- c(
@@ -189,16 +193,16 @@ list(
     pattern = map(validation_sample)
   ),
   # add grb waterways
-  # add grb settlements
-  # add grb parcel outlines
   tar_target(
     name = lyrs_waterways,
     command = read_layernames(x = layers_water)
   ),
+  # add grb settlements
   tar_target(
     name = lyrs_settlements,
     command = read_layernames(x = layers_ruimtebeslag)
   ),
+  # add grb parcel outlines
   tar_target(
     name = lyrs_parcels,
     command = read_layernames(x = layers_perceelgrens)
