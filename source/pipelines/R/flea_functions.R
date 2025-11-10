@@ -662,9 +662,10 @@ combine_water_settlements <- function(
   lbg_101 <- lbg_101[grepl(year_to_validate, x = lbg_101$layer), ]
   lbg_104 <- lbg_104[grepl(year_to_validate, x = lbg_104$layer), ]
 
-
+  #vp <- vp[1:200,] # testing only
   vplist <- vector("list", nrow(vp))
   for (i in seq_along(vp)) {
+    #if (i %% 100 == 0) print(sprintf("%s out of %s done", i, nrow(vp)))
     vp_ <- vp[i] # selecteert 1 validatie-polygoon
     w_ <- water[vp_]
     w_area <- expanse(w_)
@@ -696,7 +697,52 @@ combine_water_settlements <- function(
     out <- disagg(out) #casts multipolygon to polygon
     vplist[[i]] <- out
   }
-  vp_wa_se <- vect(vplist)
+  # # Ensure all SpatVectors have the same attributes
+  # common_cols <- Reduce(intersect, lapply(vplist, names))
+  #
+  # vplist_std <- lapply(vplist, function(x) {
+  #   x[, common_cols]
+  # })
+
+  all_types <- data.frame(
+    colname = c(
+      "grts_rank", "cell", "stratum_name",
+      "changecat", "gml_id", "layer", "jaar", "lbl", "value", "year_flea",
+      "agg_n", "polygon_id", "wfd_code", "hyla_code", "name", "wfd_type",
+      "depth_class", "connectivity", "usage", "wfd_type_alternative",
+      "water_level_management", "GWSCOD_H", "GWSNAM_H"),
+    type = c(
+      "numeric",
+      "numeric", "character", "character", "character", "character",
+      "numeric", "character", "numeric", "numeric", "numeric", "character",
+      "character", "numeric", "character", "character", "character",
+      "character", "character", "character", "character", "character",
+      "character")
+  )
+
+
+  all_cols <- all_types$colname
+
+  vplist_complete <- lapply(vplist, function(x) {
+    missing_cols <- setdiff(all_cols, names(x))
+    if (length(missing_cols) > 0) {
+      # Add missing columns with NA of appropriate type
+      for (col in missing_cols) {
+        target_type <- all_types$type[all_types$colname == col]
+        # Create NA of the correct type
+        x[[col]] <- as(NA, target_type)
+      }
+    }
+    x <- x[, all_cols]  # Reorder to match
+    for (col in all_cols) {
+      target_type <- all_types$type[all_types$colname == col]
+      values(x)[[col]] <- as(values(x)[[col]], target_type)
+    }
+    return(x)
+  })
+
+
+  vp_wa_se <- vect(vplist_complete)
 
   # make sure records are unique
   vp_wa_se <- terra::unique(vp_wa_se) |> terra::disagg()

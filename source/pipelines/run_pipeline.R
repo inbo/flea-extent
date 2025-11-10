@@ -1,19 +1,35 @@
 ################
 # run pipeline #
 ################
-
 library(targets)
 
 Sys.setenv(TAR_PROJECT = "validation_sample")
 
 # check status
-tar_visnetwork(level_separation = 5000)
+tar_visnetwork(targets_only = TRUE, physics = TRUE)
 
 # check reason if any is outdated
 tar_sitrep() |> dplyr::filter(dplyr::if_any(.cols = !c(name)))
 
 # run the pipeline
-tar_make()
+px <- tar_make(as_job = TRUE, use_crew = TRUE)
+
+# run with profiling
+results <- profvis::profvis(
+  targets::tar_make(
+    callr_function = NULL, # Do not run the pipeline behind a callr::r() process.
+    use_crew = FALSE, # Disable parallel computing with crew (optional)
+    as_job = FALSE # Do not run the pipeline in a Posit Workbench / RStudio background job.
+  )
+)
+print(results, aggregate = TRUE) # aggregate = TRUE is crucial for interpretable flame graphs.
+
+
+tar_progress_summary()
+tar_poll()
+
+# stop process
+# ps::ps_kill(px$as_ps_handle())
 
 ####################
 # inspect pipeline #
@@ -27,10 +43,13 @@ mt <- targets::tar_meta(
 )
 mt
 #View(mt)
-targets::tar_meta(fields = warnings, complete_only = TRUE)
+wn <- targets::tar_meta(fields = warnings, complete_only = TRUE)
+wn
+#View(wn)
 targets::tar_visnetwork(
   label = c("description", "time", "size"),
-  level_separation = 5000)
+  targets_only = TRUE, physics = TRUE
+)
 
 
 # logging
@@ -49,14 +68,6 @@ ml <- tar_read(maps)
 
 ml[[1]]
 terra::cats(ml[[1]])
-settlement_mask <- app(
-  ml[[1]],
-  fun = function(x) {
-    x[!x %in% c(101, 102, 105, 106)] <- NA
-    return(x)
-  }
-)
-plot(settlement_mask, colNA = "snow4")
 
 terra::plot(ml[[1]], colNA = "orange")
 terra::values(ml[[1]], row = 5000, nrows = 1)
@@ -66,7 +77,7 @@ terra::datatype(ml[[1]])
 terra::NAflag(ml[[1]]) # not preserved!
 ft <- terra::freq(ml[[3]])
 ft |>
-  mutate(prop = round(count / sum(count), 4))
+  dplyr::mutate(prop = round(count / sum(count), 4))
 
 grts <- tar_read(fleagrts)
 grts
@@ -105,7 +116,8 @@ terra::vect(vs) |> sf::st_as_sf(crs = 31370) |>
 terra::vect(vs) |> sf::st_as_sf(crs = 31370) |>
   sf::st_drop_geometry() |>
   dplyr::count(stratum_name, changecat) |>
-  tidyr::pivot_wider(names_from = changecat, values_from = n)
+  tidyr::pivot_wider(names_from = changecat, values_from = n) |>
+  View()
 
 vp <- targets::tar_read(validation_polygons)
 lapply(vp, nrow) |> unlist() |> sum()
@@ -137,9 +149,11 @@ grb_water <- terra::vect(grb_water) |>
   st_as_sf() |>
   dplyr::mutate(source = "water")
 
-dplyr::bind_rows(
+grb_water_set <- dplyr::bind_rows(
   grb_water,
-  grb_set) |>
+  grb_set)
+
+grb_water_set |>
   mapview::mapview(zcol = "source", alpha.regions = 0.2) +
   mapview::mapview(grb_parc, alpha.region = 0)
 
@@ -154,10 +168,11 @@ mapview::mapview(terra::vect(lbg_101), alpha.regions = 0.2
 
 prelabeled <- tar_read(prelabeled_validation_polygons)
 
-mapview::mapview(prelabeled$prelabeled_validation_polygons_b0bae0239048f770)
+mapview::mapview(prelabeled$prelabeled_validation_polygons_b0bae0239048f770,
+                 zcol = "collabel_2022")
 
 prelabeled$prelabeled_validation_polygons_b0bae0239048f770 |>
-  sfst_as_sf()
+  sf::st_as_sf()
 
 
 ##################
@@ -176,12 +191,14 @@ test <- get_grb_by_row(
   polygons = tar_read(validation_polygons_6e7d3123e950eb4d)[1:2,]
 )
 targets::tar_load_globals()
-targets::tar_workspace("vp_water_settlements_5319be99c3d05901")
+targets::tar_workspace("vp_water_settlements_bc312eaba6d3a034")
 debugonce(combine_water_settlements)
 test <- combine_water_settlements(
   water = vp_water,
   settlements = grb_settlements_processed,
-  polygons = validation_polygons
+  polygons = validation_polygons,
+  lbg_101 = lbg_101_cropped,
+  lbg_104 = lbg_104_cropped
 )
 
 targets::tar_load_globals()
@@ -204,10 +221,12 @@ test <-  combine_water_settlements(
 
 
 targets::tar_load_globals()
-targets::tar_workspace("vp_water_settlements_cleaned_57abadb85e4ad4bc")
-debugonce(postprocess_water_settlements)
-test <- postprocess_water_settlements(
-  vp_water_settlements
+targets::tar_workspace("watersurfaces_processed_d90ebef693247dc3")
+debugonce(get_watersurfaces)
+test <- get_watersurfaces(
+  path_version = zenodo_watersurface,
+  polygons = validation_polygons,
+  meta = watersurfaces_meta
 )
 
 
@@ -217,3 +236,17 @@ debugonce(intersect_validation_polygons)
 test <- intersect_validation_polygons(
  vp_water_settlements_singletarget, lu_changecats
 )
+
+targets::tar_workspace("vp_water_settlements_5319be99c3d05901")
+
+debugonce(combine_water_settlements)
+
+result <- combine_water_settlements(
+  water = vp_water,
+  settlements = grb_settlements_processed,
+  lbg_101 = lbg_101_cropped,
+  lbg_104 = lbg_104_cropped,
+  polygons = validation_polygons
+)
+
+
