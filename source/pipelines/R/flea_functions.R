@@ -585,9 +585,11 @@ spatvector_crop <- function(x, y) {
 
 download_watersurfaces <- function(path_flea_data, meta) {
   n2khab::fileman_folders(path = path_flea_data)
-  path <- file.path(path_flea_data,
-                    "n2khab_data", "10_raw",
-                    paste0("watersurfaces_", meta$version))
+  path <- file.path(
+    path_flea_data,
+    "n2khab_data", "10_raw",
+    paste0("watersurfaces_", meta$version)
+  )
   fs::dir_create(path)
   n2khab::download_zenodo(
     doi = meta$doi,
@@ -665,7 +667,7 @@ combine_water_settlements <- function(
   #vp <- vp[1:200,] # testing only
   vplist <- vector("list", nrow(vp))
   for (i in seq_along(vp)) {
-    #if (i %% 100 == 0) print(sprintf("%s out of %s done", i, nrow(vp)))
+    print(sprintf("%s out of %s done", i, nrow(vp)))
     vp_ <- vp[i] # selecteert 1 validatie-polygoon
     w_ <- water[vp_]
     w_area <- expanse(w_)
@@ -686,7 +688,28 @@ combine_water_settlements <- function(
     c2 <- cover(w_, c1)
     c2_area <- expanse(c2)
     c2 <- subset(c2, c2_area > 1)
+    # verwijder polygonen waar layer GRB en jaar (van GRB) > year_to_validate
+    c2 <- subset(c2, !(c2$jaar > year_to_validate & grepl("^GRB", c2$layer)))
+    if (nrow(c2) > 1) {
+      c2 <- unique(c2)
+      # possibly overlapping polygons (with slight differences in geom)
+      c2 <- aggregate(
+        x = c2,
+        by = names(c2),
+        dissolve = TRUE
+      )
+    }
     out <- cover(vp_, c2)
+    # Repeat until areas match within tolerance
+    # give up after 4 attempts
+    j <- 1
+    while (abs(expanse(vp_) - sum(expanse(out))) > 1) {
+      out <- cover(vp_, out)
+      j <- j + 1
+      if (j == 4) {
+        break
+      }
+    }
     out_area <- expanse(out)
     out <- subset(out, out_area > 1)
     out$grts_rank <- vp_$grts_rank
@@ -777,11 +800,20 @@ postprocess_water_settlements <- function(water_settlements) {
         is.na(stratum_name), first(stratum_name), stratum_name),
       changecat = ifelse(
         is.na(changecat), first(changecat), changecat),
-      collabel = case_when(
-        !is.na(value) ~ as.character(value),
-        layer %in% c("GRB:WTZ") ~ "water",
-        grepl("waters", layer) ~ "water",
-        TRUE ~ NA
+      label = case_when(
+        value == 101 ~ "101",
+        value == 102 ~ "102",
+        value == 104 ~ "104",
+        layer %in% c("GRB:GBA", "GRB:GBG") ~ "101",
+        layer %in% c(
+          "GRB:WBN",
+          "GRB:SBN",
+          "GRB:KNW",
+          "GRB:TRN") ~ "102",
+        grepl("Landbouwgebruikspercelen", layer) ~ "101",
+        grepl("watersurfaces", layer) ~ "water",
+        layer == "GRB:WTZ" ~ "water",
+        TRUE ~ "other"
       ),
       year_flea = year_to_validate
     )
@@ -803,6 +835,95 @@ distinct_grts_strata <- function(wsp_target) {
   return(out)
 }
 
+# helper functions to dissolve boundaries
+# https://github.com/r-spatial/sf/issues/2422#issuecomment-2398718177
+poly_2_nb_id <- function(x,
+                         snap = NULL,
+                         queen = TRUE,
+                         quiet = TRUE,
+                         ...) {
+  rlang::check_installed("spdep")
+  fn <- invisible
+  if (quiet) {
+    fn <- suppressWarnings
+  }
+
+  rlang::try_fetch(
+    fn({
+      nb <- spdep::poly2nb(x, snap = snap, queen = queen, ...)
+      comp_nb <- spdep::n.comp.nb(nb)
+      comp_nb[["comp.id"]]
+    }),
+    error = \(cnd) {
+      rep_len(0, length(x))
+    }
+  )
+}
+st_dissolve_by <- function(x,
+                           ...,
+                           .by = NULL,
+                           do_union = TRUE,
+                           .data_key = "data",
+                           .dissolve_key = "group.comp.id") {
+  stopifnot(
+    !rlang::has_name(x, .dissolve_key),
+    is.data.frame(x)
+  )
+
+  # Handle tidyselect style .by arguments
+  by <- rlang::enquo(.by)
+  if (!dplyr::is_grouped_df(x) && !rlang::quo_is_null(by)) {
+    x <- dplyr::group_by(x, dplyr::across(!!by))
+    .by <- NULL
+  }
+
+  x_group_vars <- NULL
+
+  if (dplyr::is_grouped_df(x)) {
+    x_group_vars <- dplyr::group_vars(x)
+    .by <- x_group_vars
+    x <- dplyr::ungroup(x)
+  }
+
+  sf_column_nm <- attr(x, "sf_column")
+
+  # Create dissolve key with poly_2_nb_id
+  x <- x |>
+    dplyr::mutate(
+      "{.dissolve_key}" := paste0(
+        dplyr::cur_group_id(), ".",
+        poly_2_nb_id(.data[[sf_column_nm]], ...)
+      ),
+      .by = .by
+    )
+
+  # Use st_combine or st_union (if `do_union = TRUE`)
+  sf_summarise_fn <- sf::st_combine
+  if (do_union) {
+    sf_summarise_fn <- sf::st_union
+  }
+
+  x_dissolve <- x |>
+    dplyr::summarise(
+      # Keep unique values for grouping variables (if supplied)
+      dplyr::across(
+        tidyselect::any_of(x_group_vars),
+        unique
+      ),
+      # Combine geometry with sf summary function
+      dplyr::across(
+        tidyselect::all_of(sf_column_nm),
+        sf_summarise_fn
+      ),
+      .by = tidyselect::all_of(.dissolve_key)
+    )
+
+  return(x_dissolve)
+}
+
+
+
+
 intersect_validation_polygons <- function(
     wsp_target, lu_changecat) {
   out <- wsp_target |>
@@ -819,7 +940,7 @@ intersect_validation_polygons <- function(
     mutate(
       data = purrr::map(data, function(x) {
         x %>% rename_with(
-          .cols = c(layer, year_grb, value, collabel),
+          .cols = c(layer, year_grb, value, label),
           .fn = \(x) paste0(x, "_", .$year_flea[1], recycle0 = TRUE)
         )
       }
@@ -855,6 +976,23 @@ intersect_validation_polygons <- function(
     vect() |>
     unique()
 
-  return(out)
+  out_agg <- out |>
+    st_as_sf() |>
+    mutate(
+      labels = paste(label_2016, label_2019, label_2022, sep = "-")
+    ) |>
+    st_dissolve_by(
+      .by = c(
+        grts_rank, stratum_name, changecat, labels
+        # , layer_2016, year_grb_2016, value_2016,
+        # label_2016, layer_2019, year_grb_2019, value_2019,
+        # label_2019, layer_2022, year_grb_2022,
+        # value_2022, label_2022
+      )
+    ) |>
+    vect() |>
+    .filter_empty_geom()
+
+  return(out_agg)
 }
 
