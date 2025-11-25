@@ -192,6 +192,16 @@ list(
     ),
     pattern = map(validation_sample)
   ),
+  geotargets::tar_terra_vect(
+    name = validation_polygons_50,
+    command = point_to_gridcell(
+      xy = validation_sample,
+      cell_width_m = 50,
+      point_position = "center",
+      crs = 31370
+    ),
+    pattern = map(validation_sample)
+  ),
   # add grb waterways
   tar_target(
     name = lyrs_waterways,
@@ -366,7 +376,16 @@ list(
       lu_changecat = lu_changecats
     ),
     pattern = map(lu_changecats)
+  ),
+  geotargets::tar_terra_vect(
+    name = prelabeled_validation_polygons_50,
+    command = crop_labeled_polygons(
+      pvp = prelabeled_validation_polygons,
+      crop_with = validation_polygons_50
+    ),
+    pattern = map(prelabeled_validation_polygons, validation_polygons_50)
   )
+
   #,
   #geotargets::tar_terra_vect(
   #  name = grb_waterways_processed,

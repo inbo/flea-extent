@@ -148,6 +148,7 @@ separate_grts_strata <- function(
 }
 
 
+
 #' Extract stratified sample from the cropped set of GRTS
 #' (Generalized Random Tessellation Stratified) rankings
 #'
@@ -976,23 +977,37 @@ intersect_validation_polygons <- function(
     vect() |>
     unique()
 
-  out_agg <- out |>
-    st_as_sf() |>
-    mutate(
-      labels = paste(label_2016, label_2019, label_2022, sep = "-")
-    ) |>
-    st_dissolve_by(
-      .by = c(
-        grts_rank, stratum_name, changecat, labels
-        # , layer_2016, year_grb_2016, value_2016,
-        # label_2016, layer_2019, year_grb_2019, value_2019,
-        # label_2019, layer_2022, year_grb_2022,
-        # value_2022, label_2022
-      )
-    ) |>
-    vect() |>
-    .filter_empty_geom()
+  out$labels <- paste(out$label_2016, out$label_2019, out$label_2022, sep = "-")
+  out <- st_as_sf(out) |>
+    st_make_valid() |>
+    st_cast("GEOMETRYCOLLECTION") |>
+    st_collection_extract(type = "POLYGON") |>
+    vect()
+  out <- .filter_empty_geom(out)
+  out_agg <-  aggregate(
+    out,
+    by = c(
+      "grts_rank", "stratum_name", "changecat", "labels",
+      paste0("label_", input_years)
+      ),
+    dissolve = TRUE
+  )
 
   return(out_agg)
 }
 
+crop_labeled_polygons <- function(
+  pvp,
+  crop_with
+) {
+  spsub <- pvp[crop_with]
+  cropped <- st_intersection(st_as_sf(spsub), st_as_sf(crop_with))
+  cropped <- cropped |>
+    filter(grts_rank == grts_rank.1, changecat == changecat.1,
+           stratum_name == stratum_name.1) |>
+    select(-ends_with(".1")) |>
+    st_cast("MULTIPOLYGON") |>
+    st_cast("POLYGON")
+  cropped <- vect(cropped)
+  return(cropped)
+}
