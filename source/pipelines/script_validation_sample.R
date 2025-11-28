@@ -373,7 +373,8 @@ list(
     name = prelabeled_validation_polygons,
     command = intersect_validation_polygons(
       wsp_target = vp_water_settlements_singletarget,
-      lu_changecat = lu_changecats
+      lu_changecat = lu_changecats,
+      input_years = input_years
     ),
     pattern = map(lu_changecats)
   ),

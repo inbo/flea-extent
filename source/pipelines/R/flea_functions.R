@@ -926,7 +926,7 @@ st_dissolve_by <- function(x,
 
 
 intersect_validation_polygons <- function(
-    wsp_target, lu_changecat) {
+    wsp_target, lu_changecat, input_years) {
   out <- wsp_target |>
     st_as_sf() |>
     filter(stratum_name == lu_changecat) |>
@@ -977,8 +977,21 @@ intersect_validation_polygons <- function(
     vect() |>
     unique()
 
-  out$labels <- paste(out$label_2016, out$label_2019, out$label_2022, sep = "-")
+  # extra columns in case of doubt over label (second choice label)
+  new_cols <- setNames(
+    rep(list("none"), length(input_years)),
+    paste0("label_", input_years, "_2")
+  )
+
   out <- st_as_sf(out) |>
+    rowwise() |>
+    mutate(
+      labels = paste(
+        c_across(all_of(paste0("label_", input_years))),
+        collapse = "-")
+    ) |>
+    ungroup() |>
+    mutate(!!!new_cols) |>
     st_make_valid() |>
     st_cast("GEOMETRYCOLLECTION") |>
     st_collection_extract(type = "POLYGON") |>
@@ -988,7 +1001,8 @@ intersect_validation_polygons <- function(
     out,
     by = c(
       "grts_rank", "stratum_name", "changecat", "labels",
-      paste0("label_", input_years)
+      paste0("label_", input_years),
+      paste0("label_", input_years, "_2")
       ),
     dissolve = TRUE
   )
