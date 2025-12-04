@@ -496,6 +496,40 @@ process_settlement <- function(grb) {
   return(c5)
 }
 
+mapping_lbg_to_flea <- function() {
+  mapping <- googlesheets4::read_sheet(
+    ss = "1O_6EFo9hK_VM4MEoBR_f9yufeVFlfw5hdhyPGY9N34Q",
+    sheet = "LGP_Reclass"
+  ) |>
+    dplyr::select(
+      GWSNAM_H, GWSCOD_H,
+      FLEA = EXT_LEV2_CODE
+    ) |>
+    dplyr::mutate(
+      FLEA = gsub("(^[2-9])0\\d{1}", "\\100", FLEA) |> as.numeric()
+    ) |>
+    dplyr::distinct()
+  if (!any(mapping$GWSCOD_H == 1)) {
+    mapping <- mapping |>
+      dplyr::add_row(
+        GWSCOD_H = 1,
+        GWSNAM_H = "Stallen en gebouwen / bedrijfszetel",
+        GWSGRPH_LB = "Landbouwinfrastructuur",
+        FLEA = 101
+      )
+  }
+  if (!any(mapping$GWSCOD_H == 2)) {
+    mapping <- mapping |>
+      dplyr::add_row(
+        GWSCOD_H = 2,
+        GWSNAM_H = "Bijgebouwen",
+        GWSGRPH_LB = "Landbouwinfrastructuur",
+        FLEA = 101
+      )
+  }
+  return(mapping)
+}
+
 
 get_lbg_layernames <- function(path_to_lbg) {
 
@@ -643,19 +677,32 @@ combine_grb_inbo_water <- function(grb_water, inbo_water, meta) {
   return(water)
 }
 
-combine_water_settlements <- function(
+
+
+
+combine_water_grb_lbg <- function(
     water, settlements, polygons,
-    lbg_101, lbg_104) {
+    lbg_101, lbg_104, lbg_200, lbg_300, lbg_400, lbg_500, lbg_900) {
 
   assertthat::assert_that(inherits(water, "SpatVector")) # a branch
   assertthat::assert_that(inherits(settlements, "SpatVector")) # a target
   assertthat::assert_that(inherits(lbg_101, "list")) # a pattern
   assertthat::assert_that(inherits(lbg_104, "list")) # a pattern
+  assertthat::assert_that(inherits(lbg_200, "list")) # a pattern
+  assertthat::assert_that(inherits(lbg_300, "list")) # a pattern
+  assertthat::assert_that(inherits(lbg_400, "list")) # a pattern
+  assertthat::assert_that(inherits(lbg_500, "list")) # a pattern
+  assertthat::assert_that(inherits(lbg_900, "list")) # a pattern
   assertthat::assert_that(inherits(polygons, "list")) # a pattern
 
   vp <- vect(polygons)
   lbg_101 <- vect(lbg_101) |> unique() # this combines multiple years
   lbg_104 <- vect(lbg_104) |> unique() # this combines multiple years
+  lbg_200 <- vect(lbg_200) |> unique() # this combines multiple years
+  lbg_300 <- vect(lbg_300) |> unique() # this combines multiple years
+  lbg_400 <- vect(lbg_400) |> unique() # this combines multiple years
+  lbg_500 <- vect(lbg_500) |> unique() # this combines multiple years
+  lbg_900 <- vect(lbg_900) |> unique() # this combines multiple years
 
   # get the validation year
   year_to_validate <- unique(water$year_flea)
@@ -664,8 +711,29 @@ combine_water_settlements <- function(
   # filter the lbg layers to only the validation year
   lbg_101 <- lbg_101[grepl(year_to_validate, x = lbg_101$layer), ]
   lbg_104 <- lbg_104[grepl(year_to_validate, x = lbg_104$layer), ]
+  lbg_200 <- lbg_200[grepl(year_to_validate, x = lbg_200$layer), ]
+  lbg_300 <- lbg_300[grepl(year_to_validate, x = lbg_300$layer), ]
+  lbg_400 <- lbg_400[grepl(year_to_validate, x = lbg_400$layer), ]
+  lbg_500 <- lbg_500[grepl(year_to_validate, x = lbg_500$layer), ]
+  lbg_900 <- lbg_900[grepl(year_to_validate, x = lbg_900$layer), ]
 
-  #vp <- vp[1:200,] # testing only
+  all_types <- data.frame(
+    colname = c(
+      "grts_rank", "cell", "stratum_name",
+      "changecat", "gml_id", "layer", "jaar", "lbl", "value", "year_flea",
+      "agg_n", "polygon_id", "wfd_code", "hyla_code", "name", "wfd_type",
+      "depth_class", "connectivity", "usage", "wfd_type_alternative",
+      "water_level_management", "GWSCOD_H", "GWSNAM_H"),
+    type = c(
+      "numeric",
+      "numeric", "character", "character", "character", "character",
+      "numeric", "character", "numeric", "numeric", "numeric", "character",
+      "character", "numeric", "character", "character", "character",
+      "character", "character", "character", "character", "character",
+      "character")
+  )
+
+  #vp <- vp[1:50,] # testing only
   vplist <- vector("list", nrow(vp))
   for (i in seq_along(vp)) {
     print(sprintf("%s out of %s done", i, nrow(vp)))
@@ -682,25 +750,57 @@ combine_water_settlements <- function(
     lbg_101_ <- crop(lbg_101_, vp_)
     lbg_104_ <- lbg_104[vp_]
     lbg_104_ <- crop(lbg_104_, vp_)
-    lbg_ <- rbind(lbg_101_, lbg_104_)
-    c1 <- cover(s_, lbg_)
-    c1_area <- expanse(c1)
-    c1 <- subset(c1, c1_area > 1)
-    c2 <- cover(w_, c1)
+    lbg_200_ <- lbg_200[vp_]
+    lbg_200_ <- crop(lbg_200_, vp_)
+    lbg_300_ <- lbg_300[vp_]
+    lbg_300_ <- crop(lbg_300_, vp_)
+    lbg_400_ <- lbg_400[vp_]
+    lbg_400_ <- crop(lbg_400_, vp_)
+    lbg_500_ <- lbg_500[vp_]
+    lbg_500_ <- crop(lbg_500_, vp_)
+    lbg_900_ <- lbg_900[vp_]
+    lbg_900_ <- crop(lbg_900_, vp_)
+    lbg_ <- rbind(
+      lbg_101_, lbg_104_, lbg_200_, lbg_300_, lbg_400_, lbg_500_, lbg_900_
+    )
+    # check types match
+    if (nrow(w_) > 0) w_$value <- as.numeric(w_$value)
+    # als lbg_ overlapt, vervang vp_
+    c0 <- cover(vp_, lbg_)
+    # als s_ overlapt, vervang c0
+    # verwijder eerst polygonen waar layer GRB en jaar (van GRB) > year_to_validate
+    s_ <- subset(s_, !(s_$jaar > year_to_validate & grepl("^GRB", s_$layer)))
+    c1 <- cover(c0, s_)
+    # als w_overlapt, vervang c1
+    c2 <- cover(c1, w_)
+    #c1_area <- expanse(c1)
+    #c1 <- subset(c1, c1_area > 1)
+    #c2 <- cover(w_, c1)
     c2_area <- expanse(c2)
     c2 <- subset(c2, c2_area > 1)
+    c2 <- makeValid(c2)
+    c2 <- disagg(c2)
     # verwijder polygonen waar layer GRB en jaar (van GRB) > year_to_validate
-    c2 <- subset(c2, !(c2$jaar > year_to_validate & grepl("^GRB", c2$layer)))
+    #c2 <- subset(c2, !(c2$jaar > year_to_validate & grepl("^GRB", c2$layer)))
     if (nrow(c2) > 1) {
       c2 <- unique(c2)
-      # possibly overlapping polygons (with slight differences in geom)
+      c2 <- makeValid(c2)
+      # dissolve
       c2 <- aggregate(
         x = c2,
         by = names(c2),
         dissolve = TRUE
       )
+      # possibly still overlapping polygons (with slight differences in geom)
+      if (nrow(c2) > 1) {
+        result <- c2[1, ]
+        for (k in 2:nrow(c2)) {
+          result <- cover(result, c2[k, ])
+        }
+        c2 <- result
+      }
     }
-    out <- cover(vp_, c2)
+    out <- c2
     # Repeat until areas match within tolerance
     # give up after 4 attempts
     j <- 1
@@ -719,6 +819,7 @@ combine_water_settlements <- function(
     out$changecat <- vp_$changecat
     out$year_flea <- year_to_validate
     out <- disagg(out) #casts multipolygon to polygon
+    stopifnot(nrow(out) >= 1)
     vplist[[i]] <- out
   }
   # # Ensure all SpatVectors have the same attributes
@@ -728,21 +829,6 @@ combine_water_settlements <- function(
   #   x[, common_cols]
   # })
 
-  all_types <- data.frame(
-    colname = c(
-      "grts_rank", "cell", "stratum_name",
-      "changecat", "gml_id", "layer", "jaar", "lbl", "value", "year_flea",
-      "agg_n", "polygon_id", "wfd_code", "hyla_code", "name", "wfd_type",
-      "depth_class", "connectivity", "usage", "wfd_type_alternative",
-      "water_level_management", "GWSCOD_H", "GWSNAM_H"),
-    type = c(
-      "numeric",
-      "numeric", "character", "character", "character", "character",
-      "numeric", "character", "numeric", "numeric", "numeric", "character",
-      "character", "numeric", "character", "character", "character",
-      "character", "character", "character", "character", "character",
-      "character")
-  )
 
 
   all_cols <- all_types$colname
@@ -778,8 +864,8 @@ combine_water_settlements <- function(
   return(vp_wa_se)
 }
 
-postprocess_water_settlements <- function(water_settlements) {
-  ws <- st_as_sf(water_settlements)
+postprocess_water_grb_lbg <- function(water_grb_lbg) {
+  ws <- st_as_sf(water_grb_lbg)
 
   # get the validation year
   year_to_validate <- unique(ws$year_flea)
@@ -802,16 +888,15 @@ postprocess_water_settlements <- function(water_settlements) {
       changecat = ifelse(
         is.na(changecat), first(changecat), changecat),
       label = case_when(
-        value == 101 ~ "101",
-        value == 102 ~ "102",
-        value == 104 ~ "104",
+        #normaal geen overlappende polygonen meer
+        #dus elke polygoon afkomstig van 1 bron (layer)
+        !is.na(value) ~ as.character(value),
         layer %in% c("GRB:GBA", "GRB:GBG") ~ "101",
         layer %in% c(
           "GRB:WBN",
           "GRB:SBN",
           "GRB:KNW",
           "GRB:TRN") ~ "102",
-        grepl("Landbouwgebruikspercelen", layer) ~ "101",
         grepl("watersurfaces", layer) ~ "water",
         layer == "GRB:WTZ" ~ "water",
         TRUE ~ "other"
@@ -926,7 +1011,7 @@ st_dissolve_by <- function(x,
 
 
 intersect_validation_polygons <- function(
-    wsp_target, lu_changecat, input_years) {
+    wsp_target, lu_changecat, input_years, area_too_small = 10) {
   out <- wsp_target |>
     st_as_sf() |>
     filter(stratum_name == lu_changecat) |>
@@ -997,31 +1082,202 @@ intersect_validation_polygons <- function(
     st_collection_extract(type = "POLYGON") |>
     vect()
   out <- .filter_empty_geom(out)
+  group_by_cols <- c(
+    "grts_rank", "stratum_name", "changecat", "labels",
+    paste0("label_", input_years),
+    paste0("label_", input_years, "_2")
+  )
   out_agg <-  aggregate(
     out,
-    by = c(
-      "grts_rank", "stratum_name", "changecat", "labels",
-      paste0("label_", input_years),
-      paste0("label_", input_years, "_2")
-      ),
+    by = group_by_cols,
     dissolve = TRUE
   )
 
-  return(out_agg)
+  # combine small intersections with larger intersections
+  out_combined <- out_agg |>
+    st_as_sf() |>
+    group_by(grts_rank, stratum_name, changecat) |>
+    tidyr::nest() |>
+    mutate(
+      sv_input = purrr::map(data, vect),
+      sv_combined = purrr::map(
+        sv_input,
+        \(x) {
+          combine_small_intersections(
+            x,
+            area_threshold = area_too_small
+          )
+        }
+      )
+    )
+
+  out_combined <- unnest_spatvector(out_combined, "sv_combined")
+
+  return(out_combined)
 }
 
 crop_labeled_polygons <- function(
   pvp,
-  crop_with
+  crop_with,
+  area_too_small = 10
 ) {
   spsub <- pvp[crop_with]
-  cropped <- st_intersection(st_as_sf(spsub), st_as_sf(crop_with))
+  spsub <- st_as_sf(spsub) |> st_make_valid()
+  cropped <- st_intersection(spsub, st_as_sf(crop_with))
   cropped <- cropped |>
     filter(grts_rank == grts_rank.1, changecat == changecat.1,
            stratum_name == stratum_name.1) |>
-    select(-ends_with(".1")) |>
+    select(-ends_with(".1")) %>%
+    filter(st_geometry_type(.) %in% c("POLYGON", "MULTIPOLYGON")) |>
     st_cast("MULTIPOLYGON") |>
     st_cast("POLYGON")
-  cropped <- vect(cropped)
-  return(cropped)
+
+  # combine small intersections
+  cropped <- cropped |>
+    st_as_sf() |>
+    group_by(grts_rank, stratum_name, changecat) |>
+    tidyr::nest() |>
+    mutate(
+      sv_input = purrr::map(data, vect),
+      sv_combined = purrr::map(
+        sv_input,
+        \(x) {
+          combine_small_intersections(
+            x, area_threshold = area_too_small
+          )
+        }
+      )
+    )
+
+  out_combined <- unnest_spatvector(cropped, "sv_combined")
+
+  return(out_combined)
 }
+
+# helper function to combine small polygons with larger polygons
+# based on shared boundary length
+combineGeoms_ <- purrr::possibly(terra::combineGeoms)
+combine_small_intersections <- function(
+    spatvec,
+    area_threshold = 10) {
+
+  assertthat::assert_that(is.numeric(area_threshold) && area_threshold > 0)
+
+  # 1. Standardize and cleanup
+  spatvec <- terra::snap(spatvec, tolerance = 0.1)
+  spatvec <- terra::makeValid(spatvec)
+  spatvec <- disagg(spatvec)
+
+  # Calculate area using a temporary safe column name
+  spatvec$tmp_area_calc <- expanse(spatvec)
+
+  # Return early if clean
+  if (all(spatvec$tmp_area_calc >= area_threshold)) {
+    spatvec$tmp_area_calc <- NULL
+    return(spatvec)
+  }
+
+  # 2. Split Data
+  small_spatvec <- spatvec[spatvec$tmp_area_calc < area_threshold]
+  large_spatvec <- spatvec[spatvec$tmp_area_calc >= area_threshold]
+
+  # Clean up the area column
+  large_spatvec$tmp_area_calc <- NULL
+  small_spatvec$tmp_area_calc <- NULL
+
+  # 3. Try combineGeoms
+  small_for_combine <- small_spatvec
+  values(small_for_combine) <- NULL
+
+  new <- combineGeoms_(
+    large_spatvec, small_for_combine,
+    overlap = TRUE, boundary = TRUE, distance = FALSE,
+    append = FALSE, dissolve = TRUE, erase = TRUE
+  )
+
+  # 4. Fallback Strategy: Assign & Aggregate
+  if (is.null(new)) {
+    message("combineGeoms failed. Switching to 'Assign and Aggregate' fallback.")
+
+    # A. Find the nearest large polygon for each small polygon
+    nearest_neighbors <- terra::nearby(
+      small_spatvec, large_spatvec,
+      centroids = FALSE
+    )
+    nearest_neighbors <- large_spatvec[nearest_neighbors[, "k1"]]
+
+    # B. Transfer attributes
+    # We overwrite the small polygon attributes with their large neighbor's
+    # attributes
+    # This effectively "merges" them logically, even if the border isn't
+    # dissolved yet
+    if (nrow(small_spatvec) == nrow(nearest_neighbors)) {
+      values(small_spatvec) <- values(nearest_neighbors)
+    } else {
+      message(
+        paste0("Nearest neighbor failed.",
+        " Returning only polygons for which area larger than threshold.")
+        )
+      return(large_spatvec)
+    }
+
+    # C. Bind them back together
+    # We now have a list of polygons where the small ones look identical
+    # (data-wise) to their neighbors
+    combined <- rbind(large_spatvec, small_spatvec)
+
+    # D. Aggregate (Dissolve)
+    # This melts the boundary lines between polygons that share the same
+    # attributes.
+    # It automatically handles the "overlap" issue because they become one
+    # geometry.
+    all_cols <- names(combined)
+    label_cols <- all_cols[grep("^label", all_cols)]
+    final <- terra::aggregate(combined, by = label_cols, dissolve = TRUE)
+    final$mean_agg_n <- NULL
+    names(final) <- all_cols
+
+    # E. Final Cleanup
+    final <- disagg(final) # cast multipolygon to polygon
+    final <- terra::makeValid(final)
+
+    return(final)
+
+  } else {
+    new <- terra::makeValid(new)
+    return(new)
+  }
+}
+
+
+unnest_spatvector <- function(df, col_name) {
+
+  # 1. Extract the list of SpatVectors
+  sv_list <- df[[col_name]]
+
+  # 2. Calculate how many polygons are in each list element
+  n_polys <- vapply(sv_list, function(x) {
+    if (is.null(x)) 0 else nrow(x)
+  }, FUN.VALUE = numeric(1))
+
+  # 3. Combine all SpatVectors into one 'long' SpatVector
+  combined_sv <- vect(sv_list)
+
+  # 4. Expand the original dataframe metadata
+  # We repeat each row of the dataframe 'n_polys' times
+  df_expanded <- df[rep(1:nrow(df), n_polys), ]
+
+  # 5. Remove the heavy list-columns from the metadata
+  cols_to_remove <- names(df_expanded)[
+    purrr::map_chr(df_expanded, class) == "list"
+  ]
+  df_expanded <- df_expanded[
+    , !names(df_expanded) %in% cols_to_remove,
+    drop = FALSE]
+
+  # 6. Merge metadata with SpatVector attributes
+  values(combined_sv) <- cbind(values(combined_sv), df_expanded)
+
+  return(combined_sv)
+}
+

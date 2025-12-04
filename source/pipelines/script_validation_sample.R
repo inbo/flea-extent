@@ -85,6 +85,15 @@ layers_perceelgrens <- c(
 
 settlement_codes <- 101:106
 
+# lbg mapping codes
+lbg_mapping_flea_codes <- data.frame(
+  flea_id = c(101, 104, 200, 300, 400, 500, 900)
+)
+
+lbg_symbols <- rlang::syms(
+  paste0("lbg_cropped_", lbg_mapping_flea_codes$flea_id)
+)
+
 # to be changed later: download the raster files from zenodo
 
 # target list:
@@ -120,7 +129,6 @@ list(
     command = calc_mask(maps = maps, values = settlement_codes),
     pattern = map(maps)
   ),
-
   tar_terra_rast(
     name = fleagrts,
     command = get_grts(
@@ -245,42 +253,50 @@ list(
     filetype = "GPKG"
   ),
   targets::tar_target(
+    name = lbg_mapping_df,
+    command = mapping_lbg_to_flea(),
+    description = "Mapping between GWSCOD_H, GWSNAME_H and flea landuse codes"
+  ),
+  targets::tar_target(
     name = lbg_layers,
     command = get_lbg_layernames(path_to_lbg)
   ),
-  geotargets::tar_terra_vect(
-    name = lbg_101,
-    command = get_lbg(
-      path_to_lbg = path_to_lbg,
-      layer = lbg_layers,
-      from_fields = c("GWSCOD_H", "GWSNAM_H"),
-      where_field = "GWSCOD_H",
-      where_values = c(1, 2, 11, 12 ,13, 14, 15, 16, 9536),
-      flea_value = 101
+  tarchetypes::tar_map(
+    values = lbg_mapping_flea_codes,
+    names = "flea_id",
+    # get the unique GWSCOD_H that map to flea_ids
+    targets::tar_target(
+      name = lbg_mapping, # The base name (becomes mapping_101, mapping_104, etc.)
+      command = lbg_mapping_df$GWSCOD_H[
+        lbg_mapping_df$FLEA == flea_id & !is.na(lbg_mapping_df$FLEA)
+      ]
     ),
-    pattern = map(lbg_layers)
-  ),
-  geotargets::tar_terra_vect(
-    name = lbg_104,
-    command = get_lbg(
-      path_to_lbg = path_to_lbg,
-      layer = lbg_layers,
-      from_fields = c("GWSCOD_H", "GWSNAM_H"),
-      where_field = "GWSCOD_H",
-      where_values = c(9),
-      flea_value = 104
+    # extract them from the LBG layers
+    geotargets::tar_terra_vect(
+      name = lbg, # Becomes lbg_101, etc.
+      command = get_lbg(
+        path_to_lbg = path_to_lbg,
+        layer = lbg_layers,
+        from_fields = c("GWSCOD_H", "GWSNAM_H"),
+        where_field = "GWSCOD_H",
+        # referencing 'lbg_mapping' here automatically resolves to 'lbg_mapping_101'
+        # because they are in the same tar_map scope!
+        where_values = lbg_mapping,
+        flea_value = flea_id
+      ),
+      # This applies dynamic branching to every static branch
+      # in this case the lbg_layer for each year
+      pattern = map(lbg_layers)
     ),
-    pattern = map(lbg_layers)
-  ),
-  geotargets::tar_terra_vect(
-    name = lbg_101_cropped,
-    command = spatvector_crop(x = lbg_101, y = validation_polygons),
-    pattern = cross(lbg_101, validation_polygons)
-  ),
-  geotargets::tar_terra_vect(
-    name = lbg_104_cropped,
-    command = spatvector_crop(x = lbg_104, y = validation_polygons),
-    pattern = cross(lbg_104, validation_polygons)
+    # --- Step 3: Crop (Dynamic Branching: cross) ---
+    # Result: lbg_cropped_101, lbg_cropped_104...
+    geotargets::tar_terra_vect(
+      name = lbg_cropped,
+      command = spatvector_crop(x = lbg, y = validation_polygons),
+      # 'lbg' here refers to lbg_101 (which is already branched).
+      # 'cross' will multiply lbg_101 branches by validation_polygons branches.
+      pattern = cross(lbg, validation_polygons)
+    )
   ),
   geotargets::tar_terra_vect(
     name = grb_settlements_processed,
@@ -348,33 +364,40 @@ list(
     pattern = map(watersurfaces_meta)
   ),
   geotargets::tar_terra_vect(
-    name = vp_water_settlements,
-    command = combine_water_settlements(
+    name = vp_water_grb_lbg,
+    command = combine_water_grb_lbg(
       water = vp_water,
       settlements = grb_settlements_processed,
-      lbg_101 = lbg_101_cropped,
-      lbg_104 = lbg_104_cropped,
+      lbg_101 = lbg_cropped_101,
+      lbg_104 = lbg_cropped_104,
+      lbg_200 = lbg_cropped_200,
+      lbg_300 = lbg_cropped_300,
+      lbg_400 = lbg_cropped_400,
+      lbg_500 = lbg_cropped_500,
+      lbg_900 = lbg_cropped_900,
       polygons = validation_polygons
     ),
     pattern = map(vp_water)
   ),
   geotargets::tar_terra_vect(
-    name = vp_water_settlements_cleaned,
-    command = postprocess_water_settlements(
-      vp_water_settlements
+    name = vp_water_grb_lbg_cleaned,
+    command = postprocess_water_grb_lbg(
+      vp_water_grb_lbg
     ),
-    pattern = map(vp_water_settlements)
-  ),
+    pattern = map(vp_water_grb_lbg)
+  )
+  ,
   geotargets::tar_terra_vect(
-    name = vp_water_settlements_singletarget,
-    command = single_wsp(vp_water_settlements_cleaned)
+    name = vp_water_grb_lbg_singletarget,
+    command = single_wsp(vp_water_grb_lbg_cleaned)
   ),
   geotargets::tar_terra_vect(
     name = prelabeled_validation_polygons,
     command = intersect_validation_polygons(
-      wsp_target = vp_water_settlements_singletarget,
+      wsp_target = vp_water_grb_lbg_singletarget,
       lu_changecat = lu_changecats,
-      input_years = input_years
+      input_years = input_years,
+      area_too_small = 10
     ),
     pattern = map(lu_changecats)
   ),
@@ -382,7 +405,8 @@ list(
     name = prelabeled_validation_polygons_50,
     command = crop_labeled_polygons(
       pvp = prelabeled_validation_polygons,
-      crop_with = validation_polygons_50
+      crop_with = validation_polygons_50,
+      area_too_small = 10
     ),
     pattern = map(prelabeled_validation_polygons, validation_polygons_50)
   )
