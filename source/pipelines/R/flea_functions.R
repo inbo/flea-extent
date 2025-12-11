@@ -1281,3 +1281,55 @@ unnest_spatvector <- function(df, col_name) {
   return(combined_sv)
 }
 
+raster_to_polygons <- function(
+    tm, # temporal raster
+    vp, # validation polygons
+    input_years
+) {
+  assertthat::assert_that(inherits(tm, "SpatRaster"))
+  assertthat::assert_that(inherits(vp, "SpatVector"))
+  assertthat::assert_that(is.character(input_years))
+
+  # mask raster using validation polygons
+  masked <- mask(tm, vp)
+  # first as.points, directly as.polygons runs into memory issues
+  masked_p <- as.points(masked, values = TRUE, na.rm = TRUE)
+
+  # add polygon attributes back ensuring every validation poly is joined with
+  # the raster points
+  masked_pp <- masked_p |>
+    st_as_sf() |>
+    st_join(
+      st_as_sf(vp),
+      join = st_intersects,
+      left = TRUE
+    ) |>
+    vect()
+
+  # convert points to squares 10x10
+  masked_v <- point_to_gridcell(masked_pp, cell_width_m = 10)
+
+  # extra columns in case of doubt over label (second choice label)
+  new_cols <- setNames(
+    rep(list("none"), length(input_years)),
+    paste0("label_", input_years, "_2")
+  )
+
+  masked_f <- masked_v |>
+    st_as_sf() |>
+    mutate(
+      label = gsub("_", "-", label)
+    ) |>
+    tidyr::separate_wider_delim(
+      label,
+      "-",
+      names = input_years,
+      names_sep = "_",
+      cols_remove = FALSE
+    ) |>
+    mutate(!!!new_cols) |>
+    st_as_sf() |>
+    vect()
+  return(masked_f)
+}
+

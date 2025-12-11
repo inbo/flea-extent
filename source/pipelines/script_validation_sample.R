@@ -409,8 +409,17 @@ list(
       area_too_small = 10
     ),
     pattern = map(prelabeled_validation_polygons, validation_polygons_50)
+  ),
+  geotargets::tar_terra_vect(
+    name = raster_labeled_validation_polygons_50,
+    command = raster_to_polygons(
+      tm = temporal_map_strata, # temporal raster
+      vp = validation_polygons_50, # validation polygons
+      input_years = as.character(input_years)
+    ),
+    pattern = map(validation_polygons_50),
+    deployment = "main"
   )
-
   #,
   #geotargets::tar_terra_vect(
   #  name = grb_waterways_processed,
