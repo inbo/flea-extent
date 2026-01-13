@@ -320,10 +320,10 @@ validatiepunten <- validatiepunten %>%
   mutate(
     map_2013_2016 =
       paste(abbreviate(map_2013), abbreviate(map_2016), sep = "-") |>
-        factor(),
+       factor(),
     ref_2013_2016 =
       paste(abbreviate(ref_2013), abbreviate(ref_2016), sep = "-") |>
-        factor(levels = levels(map_2013_2016))
+      factor(levels = levels(map_2013_2016))
   )
 
 # Create confusion matrix

@@ -645,18 +645,16 @@ binary_change <- function(
 }
 
 categorize_land_use_change <- function(b) {
-    case_when(
-      # Stable conditions
-      grepl("^0+$", b) ~ "Stable absence",
-      grepl("^1+$", b) ~ "Stable presence",
-
-      # Simple changes
-      grepl("^0+1+$", b) ~ "Gain",
-      grepl("^1+0+$", b) ~ "Loss",
-
-      # Default case
-      TRUE ~ "Other complex pattern"
-    )
+  case_when(
+    # Stable conditions
+    grepl("^0+$", b) ~ "Stable absence",
+    grepl("^1+$", b) ~ "Stable presence",
+    # Simple changes
+    grepl("^0+1+$", b) ~ "Gain",
+    grepl("^1+0+$", b) ~ "Loss",
+    # Default case
+    TRUE ~ "Other complex pattern"
+  )
 }
 
 lg <- c("Field", "Urban", "High green", "Open nature", "Other")
@@ -733,18 +731,18 @@ mapfield <- mapdata |>
     across(
       c(area, n),
       sum
-      ),
+    ),
     .by = Field_changecat
   ) |>
   mutate(
     ips = n / area
-)
+  )
 
 # calculate accuracies for field
 aa_field <- mapac::aa_card(
   data = validationdata[, c("Field_ref_changecat", "Field_map_changecat")] |>
     as.data.frame(),
-  w = (mapfield$area/sum(mapfield$area))[order(mapfield$Field_changecat)],
+  w = (mapfield$area / sum(mapfield$area))[order(mapfield$Field_changecat)],
   strata = simplechange,
   area = sum(mapfield$area),
   confusion_matrix = FALSE,
@@ -764,5 +762,3 @@ aa_field2 <- mapac::aa_stratified(
 
 mapac::aa_confusion_matrix_flextable(aa_field2)
 mapac::aa_class_accuracy_plot(aa_field2)
-
-
