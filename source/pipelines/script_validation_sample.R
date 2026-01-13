@@ -43,9 +43,9 @@ tar_config_set(
   project = "validation_sample",
   use_crew = TRUE)
 
-# Run the R scripts in the R/ folder with your custom functions:
+# Run the R scripts in the r/ folder with your custom functions:
 tar_source(
-  files = file.path(targets_project_dir, "R")
+  files = file.path(targets_project_dir, "r")
 )
 # tar_source("other_functions.R") # Source other scripts as needed # nolint
 
