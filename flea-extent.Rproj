@@ -15,7 +15,3 @@ LaTeX: XeLaTeX
 AutoAppendNewline: Yes
 StripTrailingWhitespace: Yes
 LineEndingConversion: Posix
-
-MarkdownWrap: Sentence
-MarkdownReferences: Document
-MarkdownCanonical: Yes
