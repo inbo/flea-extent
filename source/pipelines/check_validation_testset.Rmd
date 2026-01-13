@@ -335,7 +335,7 @@ time_estimates |>
   knitr::kable()
 ```
 
-## Vergelijking tussen validatoren
+## Vergelijking tussen validators
 
 ### Rastercel-gebaseerde validatie
 

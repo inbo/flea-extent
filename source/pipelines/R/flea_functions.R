@@ -1,11 +1,11 @@
 #' Convert a single point location to a grid cell polygon
 #'
-#' @param xy a SpatVector with geometry type points
+#' @param xy a `SpatVector` with geometry type points
 #' @param cell_width_m cell width in meter, default 500
 #' @param point_position default centre of grid cell
 #' @param crs default EPSG code 31370
 #'
-#' @return a SpatVector with geometry type polygon
+#' @return a `SpatVector` with geometry type polygon
 #' @export
 #'
 #' @examples
@@ -51,7 +51,7 @@ point_to_gridcell <- function(
 #' numbers
 #' @param n The number of points to extract
 #'
-#' @return SpatVector object containing the extracted points with their values,
+#' @return `SpatVector` object containing the extracted points with their values,
 #'         cell numbers, coordinates, and assigned stratum name
 #'
 #' @importFrom terra extract as.points
@@ -98,7 +98,7 @@ extract_sample_helper <- function(
 #' @param min_stratum_size Integer specifying the minimum stratum size in terms
 #' of number of raster cells
 #'
-#' @return A SpatRaster
+#' @return A `SpatRaster`
 #'
 #' @importFrom terra `activeCat<-` classify segregate crop
 #' @importFrom dplyr %>% mutate
@@ -155,7 +155,7 @@ separate_grts_strata <- function(
 #' @param ntot Integer specifying the total number of samples to extract
 #' @param nmin Integer specifying the minimum number of samples per stratum
 #'
-#' @return A SpatVector
+#' @return A `SpatVector`
 #'
 extract_sample <- function(
     separate_grts,
@@ -227,14 +227,14 @@ extract_sample <- function(
 
 
 
-#' Get data from the WFS service for GRB
+#' Get data from the web feature service for GRB
 #'
-#' @param layer A string. Should be one of the WFS layers available in the
+#' @param layer A string. Should be one of the `WFS` layers available in the
 #' service
-#' @param bbox A SpatExtent or an object from which a SpatExtent can be
-#' determined. The bbox values should be in CRS 31370.
+#' @param bbox A `SpatExtent` or an object from which a `SpatExtent` can be
+#' determined. The `bbox` values should be in CRS 31370.
 #'
-#' @return A SpatVector containing GRB layer objects that intersect bbox.
+#' @return A `SpatVector` containing `GRB` layer objects that intersect `bbox`.
 #' @export
 #'
 #' @examples
@@ -577,7 +577,7 @@ get_lbg <- function(
 }
 
 
-#' Helper functions to deal with empty records in tar_terra_vect
+#' Helper functions to deal with empty records in `tar_terra_vect`
 .create_empty_geom <- function(x, type) {
   type <- match.arg(gsub("S$", "", toupper(type)), c("POINT", "LINE", "POLYGON"))
   if (nrow(x) == 0) {
