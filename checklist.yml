@@ -15,17 +15,20 @@ required:
 - filename conventions
 - folder conventions
 - license
+- organisation
 - spelling
 spelling:
   default: en-GB
   ignore:
   - .github
   - LICENSE.md
-  - NCA_validatingextend
+  - nca_validatingextend
   - source/checklist.R
   - source/validatie/LICENSE.md
   - source/validatie/000_abstract.Rmd
   other:
     nl-BE:
-      - source/markdown/d1_validatie_landgebruik.Rmd
-      - source/validatie
+    - source/markdown/d1_validatie_landgebruik.Rmd
+    - source/validatie
+    - source/pipelines/check_validation_testset.Rmd
+pak: []
