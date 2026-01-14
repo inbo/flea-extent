@@ -31,4 +31,7 @@ spelling:
     - source/markdown/d1_validatie_landgebruik.Rmd
     - source/validatie
     - source/pipelines/check_validation_testset.Rmd
-pak: []
+pak:
+- davidsjoberg/ggsankey
+- gitlab::pflugmad/mapac
+- DiegoZardetto/ReGenesees
