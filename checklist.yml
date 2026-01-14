@@ -33,5 +33,5 @@ spelling:
     - source/pipelines/check_validation_testset.Rmd
 pak:
 - davidsjoberg/ggsankey
-- gitlab::pflugmad/mapac
+- mapac=https://scm.cms.hu-berlin.de/pflugmad/mapac.git
 - DiegoZardetto/ReGenesees
