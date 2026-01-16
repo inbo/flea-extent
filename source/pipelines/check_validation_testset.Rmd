@@ -341,7 +341,6 @@ time_estimates |>
 
 ```{r compare-cells}
 compare_cells <- validation_cells |>
-  st_drop_geometry() |>
   select(
     validator, method, grts_rank, label_2016, label_2019, label_2022
   ) |>
@@ -355,7 +354,7 @@ compare_cells <- validation_cells |>
     values_to = "label"
   ) |>
   pivot_wider(
-    id_cols = c(grts_rank, X, Y, method, year),
+    id_cols = c(grts_rank, X, Y, method, year, geom),
     names_from = validator,
     values_from = label
   ) |>
@@ -368,6 +367,7 @@ compare_cells <- validation_cells |>
   left_join(design_meta)
 
 compare_cells |>
+  st_drop_geometry() |>
   group_by(PO, SDS, beoordeling) |>
   summarise(
     area = sum(area),
@@ -382,6 +382,7 @@ compare_cells |>
 
 ```{r compare-cells-collapsed}
 compare_cells |>
+  st_drop_geometry() |>
   group_by(beoordeling) |>
   summarise(
     area = sum(area)
@@ -432,7 +433,7 @@ compare_polys <- st_make_valid(validation_polys_sds) |>
     area = st_area(.),
     id = seq_len(n())
   ) |>
-  st_drop_geometry() |>
+#  st_drop_geometry() |>
   select(
     id,
     grts_rank,
@@ -452,7 +453,7 @@ compare_polys <- st_make_valid(validation_polys_sds) |>
     values_to = "label"
   ) |>
   pivot_wider(
-    id_cols = c(id, grts_rank, area, year),
+    id_cols = c(id, grts_rank, area, year, geom),
     names_from = validator,
     values_from = label
   ) |>
@@ -492,3 +493,73 @@ compare_polys |>
     y = guide_axis(check.overlap = TRUE)
   )
 ```
+
+
+## Zij-aan-zij vergelijking per 50 m x 50 m polygoon
+
+
+```{r maps, out.width="100%", fig.height=200/25.4}
+tar_load(catstable)
+
+comparison <- bind_rows(
+  compare_cells |> rename(po = PO, sds = SDS),
+  compare_polys |> 
+    mutate(
+      method = "polys",
+      po = as.numeric(po),
+      sds = as.numeric(sds)
+    )
+) |>
+  pivot_longer(
+    cols = c(po, sds),
+    names_to = "validator",
+    values_to = "value"
+  ) |>
+  left_join(catstable, by = join_by(value)) |>
+  mutate(
+    stratum = sprintf(
+      "%s (%s)",
+      stringr::str_extract(stratum_name, "\\d+"),
+      changecat
+    )
+  )
+
+flea_colours <- catstable$color
+names(flea_colours) <- catstable$label
+
+plot_map <- function(x, y, z) {
+  x |>
+    ggplot() +
+    geom_sf(
+      aes(fill = label),
+      colour = "white",
+      alpha = 0.8
+    ) +
+    facet_grid(
+      rows = vars(method, validator),
+      cols = vars(year)
+    ) +
+    scale_fill_manual(values = flea_colours) +
+    theme_void() +
+    labs(
+      title = sprintf("stratum = %s, grts_rank = %s", y, z)
+    )
+}
+
+comparison_nest <- comparison |>
+  nest(.by = c(grts_rank, stratum)) |>
+  mutate(
+    map = purrr::pmap(
+      .l = list(
+        x = data,
+        y = stratum,
+        z = grts_rank
+      ),
+      .f = plot_map
+    )
+  )
+
+comparison_nest$map
+```
+
+
