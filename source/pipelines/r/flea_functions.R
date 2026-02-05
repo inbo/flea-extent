@@ -378,11 +378,10 @@ process_settlement <- function(grb) {
   grb <- grb |>
     dplyr::mutate(
       value = case_when(
-        layer %in% c("GRB:GBG", "GRB:GBA") ~ 101,
+        layer %in% c("GRB:GBG", "GRB:GBA", "GRB:KNW") ~ 101,
         layer %in% c(
           "GRB:WBN",
-          "GRB:SBN",
-          "GRB:KNW") |
+          "GRB:SBN") |
           (layer == "GRB:TRN" & LBLBDMBD == "verhard") ~ 102,
         TRUE ~ NA
       )
