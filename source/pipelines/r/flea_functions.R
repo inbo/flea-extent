@@ -695,13 +695,13 @@ combine_water_grb_lbg <- function(
   assertthat::assert_that(inherits(polygons, "list")) # a pattern
 
   vp <- vect(polygons)
-  lbg_101 <- vect(lbg_101) |> unique() # this combines multiple years
-  lbg_104 <- vect(lbg_104) |> unique() # this combines multiple years
-  lbg_200 <- vect(lbg_200) |> unique() # this combines multiple years
-  lbg_300 <- vect(lbg_300) |> unique() # this combines multiple years
-  lbg_400 <- vect(lbg_400) |> unique() # this combines multiple years
-  lbg_500 <- vect(lbg_500) |> unique() # this combines multiple years
-  lbg_900 <- vect(lbg_900) |> unique() # this combines multiple years
+  lbg_101 <- vect(lbg_101) |> unique()
+  lbg_104 <- vect(lbg_104) |> unique()
+  lbg_200 <- vect(lbg_200) |> unique()
+  lbg_300 <- vect(lbg_300) |> unique()
+  lbg_400 <- vect(lbg_400) |> unique()
+  lbg_500 <- vect(lbg_500) |> unique()
+  lbg_900 <- vect(lbg_900) |> unique()
 
   # get the validation year
   year_to_validate <- unique(water$year_flea)
@@ -732,133 +732,134 @@ combine_water_grb_lbg <- function(
       "character")
   )
 
-  #vp <- vp[1:50,] # testing only
   vplist <- vector("list", nrow(vp))
   for (i in seq_along(vp)) {
     print(sprintf("%s out of %s done", i, nrow(vp)))
-    vp_ <- vp[i] # selecteert 1 validatie-polygoon
+    vp_ <- vp[i]
+    vp_ <- makeValid(vp_) # Ensure base polygon is perfectly valid
+
+    # Process Water
     w_ <- water[vp_]
-    w_area <- expanse(w_)
-    w_ <- subset(w_, w_area > 1)
     w_ <- crop(w_, vp_)
-    w_ <- subset(w_, w_$grts_rank == vp_$grts_rank | is.na(w_$grts_rank))
+    if (nrow(w_) > 0) {
+      w_ <- subset(w_, expanse(w_) > 1)
+      w_ <- subset(w_, w_$grts_rank == vp_$grts_rank | is.na(w_$grts_rank))
+      w_$value <- as.numeric(w_$value)
+      w_ <- makeValid(w_)
+    }
+
+    # Process Settlements
     s_ <- settlements[vp_]
     s_ <- crop(s_, vp_)
     s_ <- s_[s_$grts_rank == vp_$grts_rank, ]
-    lbg_101_ <- lbg_101[vp_]
-    lbg_101_ <- crop(lbg_101_, vp_)
-    lbg_104_ <- lbg_104[vp_]
-    lbg_104_ <- crop(lbg_104_, vp_)
-    lbg_200_ <- lbg_200[vp_]
-    lbg_200_ <- crop(lbg_200_, vp_)
-    lbg_300_ <- lbg_300[vp_]
-    lbg_300_ <- crop(lbg_300_, vp_)
-    lbg_400_ <- lbg_400[vp_]
-    lbg_400_ <- crop(lbg_400_, vp_)
-    lbg_500_ <- lbg_500[vp_]
-    lbg_500_ <- crop(lbg_500_, vp_)
-    lbg_900_ <- lbg_900[vp_]
-    lbg_900_ <- crop(lbg_900_, vp_)
+    s_ <- subset(s_, !(s_$jaar > year_to_validate & grepl("^GRB", s_$layer)))
+    if (nrow(s_) > 0) s_ <- makeValid(s_)
+
+    # Process Agriculture
+    lbg_101_ <- crop(lbg_101[vp_], vp_)
+    lbg_104_ <- crop(lbg_104[vp_], vp_)
+    lbg_200_ <- crop(lbg_200[vp_], vp_)
+    lbg_300_ <- crop(lbg_300[vp_], vp_)
+    lbg_400_ <- crop(lbg_400[vp_], vp_)
+    lbg_500_ <- crop(lbg_500[vp_], vp_)
+    lbg_900_ <- crop(lbg_900[vp_], vp_)
+
     lbg_ <- rbind(
       lbg_101_, lbg_104_, lbg_200_, lbg_300_, lbg_400_, lbg_500_, lbg_900_
     )
-    # check types match
-    if (nrow(w_) > 0) w_$value <- as.numeric(w_$value)
-    # als lbg_ overlapt, vervang vp_
-    c0 <- cover(vp_, lbg_)
-    # als s_ overlapt, vervang c0
-    # verwijder eerst polygonen waar layer GRB en jaar (van GRB) > year_to_validate
-    s_ <- subset(s_, !(s_$jaar > year_to_validate & grepl("^GRB", s_$layer)))
-    c1 <- cover(c0, s_)
-    # als w_overlapt, vervang c1
-    c2 <- cover(c1, w_)
-    #c1_area <- expanse(c1)
-    #c1 <- subset(c1, c1_area > 1)
-    #c2 <- cover(w_, c1)
-    c2_area <- expanse(c2)
-    c2 <- subset(c2, c2_area > 1)
-    c2 <- makeValid(c2)
+    if (nrow(lbg_) > 0) lbg_ <- makeValid(lbg_)
+
+    # Hierarchical Overlay (Z-Order)
+    # 1. Initialize the base layer
+    c2 <- vp_
+
+    # 2. Sequentially cover only if the layer actually contains data
+    if (nrow(lbg_) > 0) {
+      c2 <- cover(c2, lbg_)
+      c2 <- makeValid(c2)
+    }
+
+    if (nrow(s_) > 0) {
+      c2 <- cover(c2, s_)
+      c2 <- makeValid(c2)
+    }
+
+    if (nrow(w_) > 0) {
+      c2 <- cover(c2, w_)
+      c2 <- makeValid(c2)
+    }
+
+    # 3. Finally, disaggregate the combined result
     c2 <- disagg(c2)
-    # verwijder polygonen waar layer GRB en jaar (van GRB) > year_to_validate
-    #c2 <- subset(c2, !(c2$jaar > year_to_validate & grepl("^GRB", c2$layer)))
+
+    # Pre-dissolve geometry flattening
     if (nrow(c2) > 1) {
       c2 <- unique(c2)
       c2 <- makeValid(c2)
-      # dissolve
-      c2 <- aggregate(
-        x = c2,
-        by = names(c2),
-        dissolve = TRUE
-      )
+
       # possibly still overlapping polygons (with slight differences in geom)
       if (nrow(c2) > 1) {
         result <- c2[1, ]
         for (k in 2:nrow(c2)) {
-          result <- cover(result, c2[k, ])
+          part_k <- makeValid(c2[k, ])
+          result <- cover(result, part_k)
+          result <- makeValid(result)
         }
         c2 <- result
       }
     }
+
     out <- c2
-    # Repeat until areas match within tolerance
-    # give up after 4 attempts
-    j <- 1
-    while (abs(expanse(vp_) - sum(expanse(out))) > 1) {
-      out <- cover(vp_, out)
-      j <- j + 1
-      if (j == 4) {
-        break
-      }
-    }
-    out_area <- expanse(out)
-    out <- subset(out, out_area > 1)
+    out <- disagg(out)
+
+    out_areas <- expanse(out)
+    out <- subset(out, !is.na(out_areas) & out_areas > 0.01)
+    out <- makeValid(out)
+
+    # Enforce base vp_ attributes globally on the resulting pieces
     out$grts_rank <- vp_$grts_rank
     out$cell <- vp_$cell
     out$stratum_name <- vp_$stratum_name
     out$changecat <- vp_$changecat
     out$year_flea <- year_to_validate
-    out <- disagg(out) #casts multipolygon to polygon
+
     stopifnot(nrow(out) >= 1)
     vplist[[i]] <- out
   }
-  # # Ensure all SpatVectors have the same attributes
-  # common_cols <- Reduce(intersect, lapply(vplist, names))
-  #
-  # vplist_std <- lapply(vplist, function(x) {
-  #   x[, common_cols]
-  # })
-
-
 
   all_cols <- all_types$colname
 
+  # Column Standardization
   vplist_complete <- lapply(vplist, function(x) {
     missing_cols <- setdiff(all_cols, names(x))
     if (length(missing_cols) > 0) {
-      # Add missing columns with NA of appropriate type
       for (col in missing_cols) {
         target_type <- all_types$type[all_types$colname == col]
-        # Create NA of the correct type
         x[[col]] <- as(NA, target_type)
       }
     }
     x <- x[, all_cols]  # Reorder to match
+
+    x_vals <- values(x)
     for (col in all_cols) {
       target_type <- all_types$type[all_types$colname == col]
-      values(x)[[col]] <- as(values(x)[[col]], target_type)
+      x_vals[[col]] <- as(x_vals[[col]], target_type)
     }
+    values(x) <- x_vals
+
     return(x)
   })
 
-
   vp_wa_se <- vect(vplist_complete)
 
-  # make sure records are unique
-  vp_wa_se <- terra::unique(vp_wa_se) |> terra::disagg()
+  # Final unique pass
+  vp_wa_se <- terra::unique(vp_wa_se)
+  vp_wa_se <- makeValid(vp_wa_se)
+  vp_wa_se <- terra::disagg(vp_wa_se)
 
-  # remove tiny areas
+  # Any microscopic artifacts < 0.1 sq meters remaining here are true topology ghosts
   areas <- expanse(vp_wa_se)
-  vp_wa_se <- subset(vp_wa_se, areas > 1)
+  vp_wa_se <- subset(vp_wa_se, !is.na(areas) & areas > 0.1)
 
   return(vp_wa_se)
 }
