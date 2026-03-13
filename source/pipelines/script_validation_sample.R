@@ -382,9 +382,10 @@ list(
   geotargets::tar_terra_vect(
     name = vp_water_grb_lbg_cleaned,
     command = postprocess_water_grb_lbg(
-      vp_water_grb_lbg
+      water_grb_lbg = vp_water_grb_lbg,
+      settlement_mask = settlement_masks
     ),
-    pattern = map(vp_water_grb_lbg)
+    pattern = map(vp_water_grb_lbg, settlement_masks)
   )
   ,
   geotargets::tar_terra_vect(

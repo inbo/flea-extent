@@ -863,7 +863,20 @@ combine_water_grb_lbg <- function(
   return(vp_wa_se)
 }
 
-postprocess_water_grb_lbg <- function(water_grb_lbg) {
+postprocess_water_grb_lbg <- function(
+    water_grb_lbg,
+    settlement_mask
+  ) {
+  # add column indicating fraction of poly within settlement
+  settl_prop <- extract(
+    x = settlement_mask,
+    y = water_grb_lbg,
+    fun = mean,
+    na.rm = TRUE,
+    weights = TRUE
+  )
+  water_grb_lbg$prop_in_settlement <- settl_prop[, 2]
+
   ws <- st_as_sf(water_grb_lbg)
 
   # get the validation year
@@ -878,7 +891,8 @@ postprocess_water_grb_lbg <- function(water_grb_lbg) {
       stratum_name,
       changecat,
       value,
-      year_flea
+      year_flea,
+      prop_in_settlement
     ) |>
     group_by(grts_rank) |>
     mutate(
@@ -896,7 +910,8 @@ postprocess_water_grb_lbg <- function(water_grb_lbg) {
           "GRB:SBN",
           "GRB:KNW",
           "GRB:TRN") ~ "102",
-        grepl("watersurfaces", layer) ~ "water",
+        grepl("watersurfaces", layer) & prop_in_settlement > 0.5 ~ "105",
+        grepl("watersurfaces", layer) & prop_in_settlement <= 0.5 ~ "900",
         layer == "GRB:WTZ" ~ "water",
         TRUE ~ "other"
       ),
