@@ -616,7 +616,6 @@ spatvector_crop <- function(x, y) {
   return(out)
 }
 
-
 download_watersurfaces <- function(path_flea_data, meta) {
   n2khab::fileman_folders(path = path_flea_data)
   path <- file.path(
@@ -631,9 +630,26 @@ download_watersurfaces <- function(path_flea_data, meta) {
     quiet = TRUE,
     parallel = FALSE
   )
-
   return(path)
 }
+
+
+download_habitatmap_terr <- function(path_flea_data, meta) {
+  n2khab::fileman_folders(path = path_flea_data)
+  path <- file.path(
+    path_flea_data,
+    "n2khab_data", "20_processed", meta$version
+  )
+  fs::dir_create(path)
+  n2khab::download_zenodo(
+    doi = meta$doi,
+    path = path,
+    quiet = TRUE,
+    parallel = FALSE
+  )
+  return(path)
+}
+
 
 get_watersurfaces <- function(path_version, polygons, meta) {
   #https://inbo.github.io/n2khab/reference/read_watersurfaces.html
@@ -662,6 +678,52 @@ get_watersurfaces <- function(path_version, polygons, meta) {
 
   return(ws)
 }
+
+get_types_heath <- function() {
+  n2khab::read_types() |>
+    filter(
+      typeclass_name %in% c("Temperate heath and scrub", "Sclerophyllous scrub")
+    ) |>
+    pull(type)
+}
+
+
+get_habitatmap_terr <- function(path_version, polygons, meta, types, min_phab) {
+  assertthat::assert_that(is.character(path_version), is.factor(types))
+  assertthat::assert_that(inherits(polygons, "SpatVector"))
+  assertthat::assert_that(is.data.frame(meta))
+  assertthat::assert_that(is.numeric(min_phab), min_phab > 0, min_phab <= 100)
+
+  file_version <- switch(
+    meta$version,
+    "habitatmap_terr_2018_v2" = file.path(path_version, "habitatmap_terr.gpkg"),
+    "habitatmap_terr_2020_v2" = file.path(path_version, "habitatmap_terr.gpkg"),
+    "habitatmap_terr_2023_v1" = file.path(path_version, "habitatmap_terr.gpkg")
+  )
+
+  hmt <- n2khab::read_habitatmap_terr(
+    file = file_version,
+    version = basename(path_version),
+    keep_aq_types = FALSE,
+    drop_7220 = TRUE
+  )
+  hmtp <- hmt$habitatmap_terr_polygons
+  hmtt <- hmt$habitatmap_terr_types
+
+  # keep only selected types
+  hmtt <- hmtt |> filter(type %in% types, phab >= min_phab)
+  hmtp <- hmtp |> inner_join(hmtt, by = "polygon_id")
+
+
+  hmtp <- vect(hmtp)
+  hmtp <- spatvector_crop(x = hmtp, y = polygons)
+  hmtp$year_flea <- meta$year_flea
+  hmtp$layer <- basename(path_version)
+  hmtp$value <- NA
+
+  return(hmtp)
+}
+
 
 
 combine_grb_inbo_water <- function(grb_water, inbo_water, meta) {
@@ -857,7 +919,7 @@ combine_water_grb_lbg <- function(
   vp_wa_se <- makeValid(vp_wa_se)
   vp_wa_se <- terra::disagg(vp_wa_se)
 
-  # Any microscopic artifacts < 0.1 sq meters remaining here are true topology ghosts
+  # remove any microscopic artifacts < 0.1 sq meters remaining
   areas <- expanse(vp_wa_se)
   vp_wa_se <- subset(vp_wa_se, !is.na(areas) & areas > 0.1)
 
@@ -866,26 +928,26 @@ combine_water_grb_lbg <- function(
 
 postprocess_water_grb_lbg <- function(
     water_grb_lbg,
-    settlement_mask
-  ) {
+    settlement_mask,
+    mmu = 30
+) {
   # add column indicating fraction of poly within settlement
-  settl_prop <- extract(
+  settl_prop <- exactextractr::exact_extract(
     x = settlement_mask,
-    y = water_grb_lbg,
-    fun = mean,
-    na.rm = TRUE,
-    weights = TRUE
+    y = st_as_sf(water_grb_lbg),
+    fun = 'mean',
+    progress = FALSE
   )
-  water_grb_lbg$prop_in_settlement <- settl_prop[, 2]
+  water_grb_lbg$prop_in_settlement <- settl_prop
 
-  ws <- st_as_sf(water_grb_lbg)
+  ws <- sf::st_as_sf(water_grb_lbg)
 
   # get the validation year
   year_to_validate <- unique(ws$year_flea)
   year_to_validate <- year_to_validate[!is.na(year_to_validate)]
 
   ws <- ws |>
-    select(
+    dplyr::select(
       grts_rank,
       layer,
       year_grb = jaar,
@@ -895,31 +957,98 @@ postprocess_water_grb_lbg <- function(
       year_flea,
       prop_in_settlement
     ) |>
-    group_by(grts_rank) |>
-    mutate(
+    dplyr::group_by(grts_rank) |>
+    dplyr::mutate(
       stratum_name = ifelse(
-        is.na(stratum_name), first(stratum_name), stratum_name),
+        is.na(stratum_name), dplyr::first(stratum_name), stratum_name),
       changecat = ifelse(
-        is.na(changecat), first(changecat), changecat),
-      label = case_when(
-        #normaal geen overlappende polygonen meer
-        #dus elke polygoon afkomstig van 1 bron (layer)
+        is.na(changecat), dplyr::first(changecat), changecat),
+      label = dplyr::case_when(
         !is.na(value) ~ as.character(value),
         layer %in% c("GRB:GBA", "GRB:GBG") ~ "101",
-        layer %in% c(
-          "GRB:WBN",
-          "GRB:SBN",
-          "GRB:KNW",
-          "GRB:TRN") ~ "102",
+        layer %in% c("GRB:WBN", "GRB:SBN", "GRB:KNW", "GRB:TRN") ~ "102",
         grepl("watersurfaces", layer) & prop_in_settlement > 0.5 ~ "105",
         grepl("watersurfaces", layer) & prop_in_settlement <= 0.5 ~ "900",
         layer == "GRB:WTZ" ~ "water",
         TRUE ~ "other"
       ),
       year_flea = year_to_validate
+    ) |>
+    dplyr::ungroup()
+
+  # --------------------------------------------------------------------
+  # MMU Enforcement: Longest Shared Border Assignment
+  # --------------------------------------------------------------------
+
+  ws <- terra::vect(ws)
+  group_cols <- c(
+    "grts_rank", "stratum_name", "changecat", "year_flea", "label"
+  )
+  aggregate_cols <- setdiff(names(ws), group_cols)
+  # need to isolate each validation polygons
+  # to avoid slivers from one stratum get dissolved into another stratum
+  stratum_cols <- c("grts_rank", "stratum_name", "changecat", "year_flea")
+
+  # Get unique strata
+  strata_df <- unique(values(ws)[, stratum_cols])
+
+  # Apply dissolve function to each stratum
+  processed_list <- vector(mode = "list", length = nrow(strata_df))
+  for (strat in seq_len(nrow(strata_df))) {
+    print(sprintf("Stratum number %s out of %s", strat, nrow(strata_df)))
+    # Subset to just this stratum
+    sub_poly <- filter_spatvector(ws, strata_df[strat, ])
+    # Run dissolve function
+    # terra_dissolve_boundaries <- purrr::possibly(
+    #   terra_dissolve_boundaries, otherwise =  sub_poly
+    # )
+    processed_list[[strat]] <- terra_dissolve_boundaries(
+      polygons = sub_poly,
+      group_cols = group_cols,
+      mmu = mmu
     )
-  ws <- vect(ws) |> unique()
+  }
+  # Combine the results back into a single SpatVector
+  ws <- do.call(rbind, processed_list)
+  ws <- terra::unique(ws)
   return(ws)
+}
+
+
+filter_spatvector <- function(v, df) {
+  # 1. Validate inputs
+  assertthat::assert_that(inherits(v, "SpatVector"),
+                          msg = "Input 'v' must be a terra SpatVector.")
+  assertthat::assert_that(is.data.frame(df) && nrow(df) == 1,
+                          msg = "Input 'df' must be a 1-row data.frame.")
+
+  filter_cols <- names(df)
+
+  # 2. Check that all filter columns actually exist in the SpatVector
+  missing_cols <- setdiff(filter_cols, names(v))
+  assertthat::assert_that(
+    length(missing_cols) == 0,
+    msg = sprintf(
+      "Columns not found in SpatVector: %s",
+      paste(missing_cols, collapse = ", ")
+    )
+  )
+
+  # 3. Extract attributes for fast base-R comparison
+  v_attr <- terra::values(v)
+
+  # 4. Build and combine the logical masks
+  mask_list <- lapply(filter_cols, function(col) {
+    v_attr[[col]] == df[[col]][1]
+  })
+
+  final_mask <- Reduce(`&`, mask_list)
+
+  # 5. Handle NAs to prevent subsetting errors
+  final_mask[is.na(final_mask)] <- FALSE
+
+  # 6. Subset and return
+  return(v[final_mask, ])
 }
 
 single_wsp <- function(wsp_pattern) {
@@ -1023,14 +1152,157 @@ st_dissolve_by <- function(x,
 }
 
 
+terra_dissolve_boundaries <- function(
+    polygons,
+    group_cols, # aggregate by
+    mmu # minimum mappable unit
+) {
+  assertthat::assert_that(inherits(polygons, "SpatVector"))
+  assertthat::assert_that(is.character(group_cols))
+  assertthat::assert_that(
+    all(group_cols %in% names(polygons)),
+    msg = "Not all group_cols are present in the polygon attributes."
+  )
+  assertthat::assert_that(is.numeric(mmu), mmu >= 0)
+  assertthat::assert_that(all(!is.na(terra::values(polygons[, group_cols]))))
 
+  # Reject overlapping polygons input
+  area_sum <- sum(terra::expanse(polygons))
+  area_union <- sum(terra::expanse(terra::aggregate(polygons)))
+  assertthat::assert_that(
+    abs(area_sum - area_union) < 0.1,
+    msg = "Input contains overlapping polygons, which are not allowed."
+  )
+
+  # Dissolve everything by final classification first
+  aggregate_cols <- setdiff(names(polygons), group_cols)
+  polygons_df <- values(polygons)
+  polygons <- terra::aggregate(
+    polygons[, group_cols], #drop non-grouping cols; handled separately
+    by = group_cols,
+    dissolve = TRUE,
+    count = FALSE
+  )
+  # Summarize attributes with correct type handling
+  aggregated_attribs <- polygons_df |>
+    group_by(across(all_of(group_cols))) |>
+    summarise(
+      across(
+        all_of(aggregate_cols),
+        \(x) if (is.numeric(x)) {
+          mean(x, na.rm = TRUE)
+        } else {
+          paste(unique(na.omit(x)), collapse = "|")
+        }
+      ),
+      .groups = "drop"
+    )
+
+  # Join the summarized attributes back to the geometries
+  polygons <- merge(polygons, aggregated_attribs, by = group_cols)
+
+  polygons <- terra::makeValid(polygons)
+  polygons <- terra::disagg(polygons)
+
+  if (mmu > 0) {
+    # Identify Slivers vs Keepers
+    area_sqm <- terra::expanse(polygons)
+    sliver_mask <- !is.na(area_sqm) & area_sqm < mmu
+
+    if (any(sliver_mask)) {
+      slivers <- polygons[sliver_mask, ]
+      keepers <- polygons[!sliver_mask, ]
+
+      # Edge case safety: Only do this if there is at least one polygon >= MMU
+      if (nrow(keepers) > 0) {
+
+        slv_df <- terra::values(slivers)
+
+        # Buffer ALL slivers at once
+        slivers_buf <- terra::buffer(slivers, width = 0.1)
+
+        # Prevent column renaming during intersect
+        terra::values(slivers_buf) <- NULL
+
+        # Build a spatial index using relate.
+        # pairs = TRUE returns a 2-column matrix of just the intersecting
+        # indices (id.x = sliver, id.y = keeper)
+        overlap_pairs <- terra::relate(
+          slivers_buf, keepers, relation = "intersects", pairs = TRUE
+        )
+
+        # Iterate through slivers
+        for (i in seq_len(nrow(slivers))) {
+
+          # Find ONLY the keepers that touch this specific sliver
+          candidate_idx <- overlap_pairs[overlap_pairs[, 1] == i, 2]
+
+          if (length(candidate_idx) > 0) {
+
+            # Subset down to the local candidates
+            local_keepers <- keepers[candidate_idx, ]
+            slv_buf_single <- slivers_buf[i, ]
+
+            overlaps <- terra::intersect(local_keepers, slv_buf_single)
+
+            if (nrow(overlaps) > 0) {
+              overlap_areas <- terra::expanse(overlaps)
+              best_idx <- which.max(overlap_areas)
+              # Dynamically adopt the attributes
+              slv_df[i, group_cols] <-
+                terra::values(overlaps)[best_idx, group_cols]
+            }
+          }
+        }
+
+        # Put the updated attributes back into the slivers SpatVector
+        terra::values(slivers) <- slv_df
+
+        # Recombine the updated slivers with the keepers
+        polygons <- rbind(keepers, slivers)
+
+        # Final Dissolve
+        aggregate_cols <- setdiff(names(polygons), group_cols)
+        polygons_df <- values(polygons)
+        polygons <- terra::aggregate(
+          polygons[, group_cols],
+          by = group_cols,
+          dissolve = TRUE,
+          count = FALSE
+        )
+        # Summarize attributes with correct type handling
+        aggregated_attribs <- polygons_df |>
+          group_by(across(all_of(group_cols))) |>
+          summarise(
+            across(
+              all_of(aggregate_cols),
+              \(x) if (is.numeric(x)) {
+                mean(x, na.rm = TRUE)
+              } else {
+                paste(unique(na.omit(x)), collapse = "|")
+              }
+            ),
+            .groups = "drop"
+          )
+
+        # Join the summarized attributes back to the geometries
+        polygons <- merge(polygons, aggregated_attribs, by = group_cols)
+        polygons <- terra::makeValid(polygons)
+        polygons <- terra::disagg(polygons)
+      }
+    }
+  }
+  return(polygons)
+}
 
 intersect_validation_polygons <- function(
-    wsp_target, lu_changecat, input_years, area_too_small = 10) {
+    wsp_target, lu_changecat, input_years, mmu = 30) {
   out <- wsp_target |>
     st_as_sf() |>
     filter(stratum_name == lu_changecat) |>
-    mutate(year_flea2 = year_flea) |>
+    mutate(
+      year_flea2 = year_flea
+    ) |>
     st_make_valid() |>
     group_by(grts_rank, stratum_name, changecat, year_flea2) |>
     tidyr::nest()
@@ -1041,7 +1313,7 @@ intersect_validation_polygons <- function(
     mutate(
       data = purrr::map(data, function(x) {
         x %>% rename_with(
-          .cols = c(layer, year_grb, value, label),
+          .cols = c(layer, year_grb, value, label, prop_in_settlement),
           .fn = \(x) paste0(x, "_", .$year_flea[1], recycle0 = TRUE)
         )
       }
@@ -1097,44 +1369,49 @@ intersect_validation_polygons <- function(
     st_collection_extract(type = "POLYGON") |>
     vect()
   out <- .filter_empty_geom(out)
-  group_by_cols <- c(
+
+  # --------------------------------------------------------------------
+  # MMU Enforcement: Longest Shared Border Assignment
+  # --------------------------------------------------------------------
+
+  group_cols <- c(
     "grts_rank", "stratum_name", "changecat", "labels",
     paste0("label_", input_years),
     paste0("label_", input_years, "_2")
   )
-  out_agg <-  aggregate(
-    out,
-    by = group_by_cols,
-    dissolve = TRUE
-  )
+  # need to isolate each validation polygons
+  # to avoid slivers from one stratum get dissolved into another stratum
+  stratum_cols <- c("grts_rank", "stratum_name", "changecat")
 
-  # combine small intersections with larger intersections
-  out_combined <- out_agg |>
-    st_as_sf() |>
-    group_by(grts_rank, stratum_name, changecat) |>
-    tidyr::nest() |>
-    mutate(
-      sv_input = purrr::map(data, vect),
-      sv_combined = purrr::map(
-        sv_input,
-        \(x) {
-          combine_small_intersections(
-            x,
-            area_threshold = area_too_small
-          )
-        }
-      )
+  # Get unique strata
+  strata_df <- unique(values(out)[, stratum_cols])
+
+  # Apply dissolve function to each stratum
+  processed_list <- vector(mode = "list", length = nrow(strata_df))
+  for (strat in seq_len(nrow(strata_df))) {
+    print(sprintf("Stratum number %s out of %s", strat, nrow(strata_df)))
+    # Subset to just this stratum
+    sub_poly <- filter_spatvector(out, strata_df[strat, ])
+    # Run dissolve function
+    # terra_dissolve_boundaries <- purrr::possibly(
+    #   terra_dissolve_boundaries, otherwise =  sub_poly
+    # )
+    processed_list[[strat]] <- terra_dissolve_boundaries(
+      polygons = sub_poly,
+      group_cols = group_cols,
+      mmu = mmu
     )
-
-  out_combined <- unnest_spatvector(out_combined, "sv_combined")
+  }
+  # Combine the results back into a single SpatVector
+  out_combined <- do.call(rbind, processed_list)
+  out_combined <- terra::unique(out_combined)
 
   return(out_combined)
 }
 
 crop_labeled_polygons <- function(
   pvp,
-  crop_with,
-  area_too_small = 10
+  crop_with
 ) {
   spsub <- pvp[crop_with]
   spsub <- st_as_sf(spsub) |> st_make_valid()
@@ -1145,28 +1422,14 @@ crop_labeled_polygons <- function(
     select(-ends_with(".1")) %>%
     filter(st_geometry_type(.) %in% c("POLYGON", "MULTIPOLYGON")) |>
     st_cast("MULTIPOLYGON") |>
-    st_cast("POLYGON")
+    st_cast("POLYGON") |>
+    vect()
 
-  # combine small intersections
-  cropped <- cropped |>
-    st_as_sf() |>
-    group_by(grts_rank, stratum_name, changecat) |>
-    tidyr::nest() |>
-    mutate(
-      sv_input = purrr::map(data, vect),
-      sv_combined = purrr::map(
-        sv_input,
-        \(x) {
-          combine_small_intersections(
-            x, area_threshold = area_too_small
-          )
-        }
-      )
-    )
+  # removed code that cleaned up small intersections
+  # the pvp object is already cleaned (geoms < mmu removed)
+  # any geoms < mmu resulting from cropping the 90x90 to 50x50 are kept
 
-  out_combined <- unnest_spatvector(cropped, "sv_combined")
-
-  return(out_combined)
+  return(cropped)
 }
 
 # helper function to combine small polygons with larger polygons
@@ -1174,9 +1437,9 @@ crop_labeled_polygons <- function(
 combineGeoms_ <- purrr::possibly(terra::combineGeoms)
 combine_small_intersections <- function(
     spatvec,
-    area_threshold = 10) {
+    mmu = 10) {
 
-  assertthat::assert_that(is.numeric(area_threshold) && area_threshold > 0)
+  assertthat::assert_that(is.numeric(mmu) && mmu > 0)
 
   # 1. Standardize and cleanup
   spatvec <- terra::snap(spatvec, tolerance = 0.1)
@@ -1187,14 +1450,14 @@ combine_small_intersections <- function(
   spatvec$tmp_area_calc <- expanse(spatvec)
 
   # Return early if clean
-  if (all(spatvec$tmp_area_calc >= area_threshold)) {
+  if (all(spatvec$tmp_area_calc >= mmu)) {
     spatvec$tmp_area_calc <- NULL
     return(spatvec)
   }
 
   # 2. Split Data
-  small_spatvec <- spatvec[spatvec$tmp_area_calc < area_threshold]
-  large_spatvec <- spatvec[spatvec$tmp_area_calc >= area_threshold]
+  small_spatvec <- spatvec[spatvec$tmp_area_calc < mmu]
+  large_spatvec <- spatvec[spatvec$tmp_area_calc >= mmu]
 
   # Clean up the area column
   large_spatvec$tmp_area_calc <- NULL

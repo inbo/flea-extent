@@ -333,6 +333,30 @@ list(
     )
   ),
   targets::tar_target(
+    name = habitatmap_terr_meta,
+    command = data.frame(
+      doi = c(
+        "10.5281/zenodo.3540740",
+        "10.5281/zenodo.13861955",
+        "10.5281/zenodo.13886579"
+      ),
+      version = c(
+        "habitatmap_terr_2018_v2",
+        "habitatmap_terr_2020_v2",
+        "habitatmap_terr_2023_v1"
+      ),
+      year_flea = c(2016, 2019, 2022)
+    )
+  ),
+  targets::tar_target(
+    name = zenodo_habitatmap_terr,
+    command = download_habitatmap_terr(
+      path_flea_data = flea_data,
+      meta = habitatmap_terr_meta
+    ),
+    pattern = map(habitatmap_terr_meta)
+  ),
+  targets::tar_target(
     name = zenodo_watersurface,
     command = download_watersurfaces(
       path_flea_data = flea_data,
@@ -350,6 +374,25 @@ list(
     ),
     pattern = cross(
       map(zenodo_watersurface, watersurfaces_meta),
+      validation_polygons
+    )
+  ),
+  targets::tar_target(
+    name = types_heath,
+    command = get_types_heath()
+  ),
+  # read INBO habitatmap_terr and crop with validation polygons
+  geotargets::tar_terra_vect(
+    name = habitatmap_terr_heath,
+    command = get_habitatmap_terr(
+      path_version = zenodo_habitatmap_terr,
+      polygons = validation_polygons,
+      meta = habitatmap_terr_meta,
+      types = types_heath,
+      min_phab = 50
+    ),
+    pattern = cross(
+      map(zenodo_habitatmap_terr, habitatmap_terr_meta),
       validation_polygons
     )
   ),
@@ -398,7 +441,7 @@ list(
       wsp_target = vp_water_grb_lbg_singletarget,
       lu_changecat = lu_changecats,
       input_years = input_years,
-      area_too_small = 10
+      mmu = 30
     ),
     pattern = map(lu_changecats)
   ),
@@ -406,8 +449,7 @@ list(
     name = prelabeled_validation_polygons_50,
     command = crop_labeled_polygons(
       pvp = prelabeled_validation_polygons,
-      crop_with = validation_polygons_50,
-      area_too_small = 10
+      crop_with = validation_polygons_50
     ),
     pattern = map(prelabeled_validation_polygons, validation_polygons_50)
   ),
