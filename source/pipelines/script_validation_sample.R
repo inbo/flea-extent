@@ -26,10 +26,12 @@ if (tar_active()) {
 tar_option_set(
   packages = c("tibble", "geotargets", "assertthat", "terra", "dplyr", "sf"),
   format = "qs",
-#  error = "null",
+  #  error = "null",
   memory = "transient",
   garbage_collection = TRUE,
-  controller = controller
+  controller = controller,
+  storage = "worker",
+  retrieval = "worker"
   #
 )
 
@@ -88,10 +90,6 @@ settlement_codes <- 101:106
 # lbg mapping codes
 lbg_mapping_flea_codes <- data.frame(
   flea_id = c(101, 104, 200, 300, 400, 500, 900)
-)
-
-lbg_symbols <- rlang::syms(
-  paste0("lbg_cropped_", lbg_mapping_flea_codes$flea_id)
 )
 
 # to be changed later: download the raster files from zenodo
@@ -292,7 +290,11 @@ list(
     # Result: lbg_cropped_101, lbg_cropped_104...
     geotargets::tar_terra_vect(
       name = lbg_cropped,
-      command = spatvector_crop(x = lbg, y = validation_polygons),
+      command = {
+        sc <- spatvector_crop(x = lbg, y = validation_polygons)
+        sc$year_flea <- stringr::str_extract(sc$layer, "\\d{4}") |> as.numeric()
+        sc
+      },
       # 'lbg' here refers to lbg_101 (which is already branched).
       # 'cross' will multiply lbg_101 branches by validation_polygons branches.
       pattern = cross(lbg, validation_polygons)
@@ -383,13 +385,14 @@ list(
   ),
   # read INBO habitatmap_terr and crop with validation polygons
   geotargets::tar_terra_vect(
-    name = habitatmap_terr_heath,
+    name = terr_cropped_500,
     command = get_habitatmap_terr(
       path_version = zenodo_habitatmap_terr,
       polygons = validation_polygons,
       meta = habitatmap_terr_meta,
       types = types_heath,
-      min_phab = 50
+      min_phab = 50, # selecteert alle eerste eenheden (tweede eenheid max 30%)
+      flea_value = 500
     ),
     pattern = cross(
       map(zenodo_habitatmap_terr, habitatmap_terr_meta),
@@ -407,8 +410,8 @@ list(
     pattern = map(watersurfaces_meta)
   ),
   geotargets::tar_terra_vect(
-    name = vp_water_grb_lbg,
-    command = combine_water_grb_lbg(
+    name = vp_water_grb_lbg_terr,
+    command = combine_sources(
       water = vp_water,
       settlements = grb_settlements_processed,
       lbg_101 = lbg_cropped_101,
@@ -418,27 +421,28 @@ list(
       lbg_400 = lbg_cropped_400,
       lbg_500 = lbg_cropped_500,
       lbg_900 = lbg_cropped_900,
+      terr_500 = terr_cropped_500,
       polygons = validation_polygons
     ),
     pattern = map(vp_water)
   ),
   geotargets::tar_terra_vect(
-    name = vp_water_grb_lbg_cleaned,
-    command = postprocess_water_grb_lbg(
-      water_grb_lbg = vp_water_grb_lbg,
+    name = vp_water_grb_lbg_terr_cleaned,
+    command = postprocess_prelabelling(
+      water_grb_lbg = vp_water_grb_lbg_terr,
       settlement_mask = settlement_masks
     ),
-    pattern = map(vp_water_grb_lbg, settlement_masks)
+    pattern = map(vp_water_grb_lbg_terr, settlement_masks)
   )
   ,
   geotargets::tar_terra_vect(
-    name = vp_water_grb_lbg_singletarget,
-    command = single_wsp(vp_water_grb_lbg_cleaned)
+    name = vp_water_grb_lbg_terr_singletarget,
+    command = single_wsp(vp_water_grb_lbg_terr_cleaned)
   ),
   geotargets::tar_terra_vect(
     name = prelabeled_validation_polygons,
     command = intersect_validation_polygons(
-      wsp_target = vp_water_grb_lbg_singletarget,
+      wsp_target = vp_water_grb_lbg_terr_singletarget,
       lu_changecat = lu_changecats,
       input_years = input_years,
       mmu = 30

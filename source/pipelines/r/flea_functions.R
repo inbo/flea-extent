@@ -605,13 +605,6 @@ spatvector_crop <- function(x, y) {
   # if y contains overlapping polygons dissolve them
   # this was needed in case validation polygons overlapped
   y <- terra::aggregate(y)
-  # catch case empty records
-  # can be removed when terra or geotargets deals with this natively
-  # https://github.com/ropensci/geotargets/issues/187
-  if (nrow(x) == 0) {
-    out <- .create_empty_geom(x, type = terra::geomtype(y))
-    return(out)
-  }
   out <- terra::crop(x, y)
   return(out)
 }
@@ -688,11 +681,16 @@ get_types_heath <- function() {
 }
 
 
-get_habitatmap_terr <- function(path_version, polygons, meta, types, min_phab) {
+get_habitatmap_terr <- function(
+    path_version, polygons, meta, types, min_phab, flea_value
+) {
   assertthat::assert_that(is.character(path_version), is.factor(types))
   assertthat::assert_that(inherits(polygons, "SpatVector"))
   assertthat::assert_that(is.data.frame(meta))
-  assertthat::assert_that(is.numeric(min_phab), min_phab > 0, min_phab <= 100)
+  assertthat::assert_that(
+    is.numeric(min_phab), min_phab > 0, min_phab <= 100,
+    is.numeric(flea_value)
+  )
 
   file_version <- switch(
     meta$version,
@@ -717,10 +715,11 @@ get_habitatmap_terr <- function(path_version, polygons, meta, types, min_phab) {
 
   hmtp <- vect(hmtp)
   hmtp <- spatvector_crop(x = hmtp, y = polygons)
-  hmtp$year_flea <- meta$year_flea
-  hmtp$layer <- basename(path_version)
-  hmtp$value <- NA
-
+  if (nrow(hmtp) > 0) {
+    hmtp$year_flea <- meta$year_flea
+    hmtp$layer <- basename(path_version)
+    hmtp$value <- flea_value
+  }
   return(hmtp)
 }
 
@@ -741,9 +740,11 @@ combine_grb_inbo_water <- function(grb_water, inbo_water, meta) {
 
 
 
-combine_water_grb_lbg <- function(
+combine_sources <- function(
     water, settlements, polygons,
-    lbg_101, lbg_104, lbg_200, lbg_300, lbg_400, lbg_500, lbg_900) {
+    lbg_101, lbg_104, lbg_200, lbg_300, lbg_400, lbg_500, lbg_900,
+    terr_500
+    ) {
 
   assertthat::assert_that(inherits(water, "SpatVector")) # a branch
   assertthat::assert_that(inherits(settlements, "SpatVector")) # a target
@@ -754,6 +755,7 @@ combine_water_grb_lbg <- function(
   assertthat::assert_that(inherits(lbg_400, "list")) # a pattern
   assertthat::assert_that(inherits(lbg_500, "list")) # a pattern
   assertthat::assert_that(inherits(lbg_900, "list")) # a pattern
+  assertthat::assert_that(inherits(terr_500, "list")) # a pattern
   assertthat::assert_that(inherits(polygons, "list")) # a pattern
 
   vp <- vect(polygons)
@@ -765,11 +767,13 @@ combine_water_grb_lbg <- function(
   lbg_500 <- vect(lbg_500) |> unique()
   lbg_900 <- vect(lbg_900) |> unique()
 
+  terr_500 <- vect(terr_500) |> unique()
+
   # get the validation year
   year_to_validate <- unique(water$year_flea)
   year_to_validate <- year_to_validate[!is.na(year_to_validate)]
 
-  # filter the lbg layers to only the validation year
+  # filter the layers to only the validation year
   lbg_101 <- lbg_101[grepl(year_to_validate, x = lbg_101$layer), ]
   lbg_104 <- lbg_104[grepl(year_to_validate, x = lbg_104$layer), ]
   lbg_200 <- lbg_200[grepl(year_to_validate, x = lbg_200$layer), ]
@@ -778,27 +782,34 @@ combine_water_grb_lbg <- function(
   lbg_500 <- lbg_500[grepl(year_to_validate, x = lbg_500$layer), ]
   lbg_900 <- lbg_900[grepl(year_to_validate, x = lbg_900$layer), ]
 
+  terr_500 <- terr_500[
+    terr_500$year_flea == year_to_validate,
+    c("polygon_id", "year_flea", "layer", "value")
+  ]
+
   all_types <- data.frame(
     colname = c(
       "grts_rank", "cell", "stratum_name",
       "changecat", "gml_id", "layer", "jaar", "lbl", "value", "year_flea",
       "agg_n", "polygon_id", "wfd_code", "hyla_code", "name", "wfd_type",
       "depth_class", "connectivity", "usage", "wfd_type_alternative",
-      "water_level_management", "GWSCOD_H", "GWSNAM_H"),
+      "water_level_management", "GWSCOD_H", "GWSNAM_H"
+    ),
     type = c(
       "numeric",
       "numeric", "character", "character", "character", "character",
       "numeric", "character", "numeric", "numeric", "numeric", "character",
       "character", "numeric", "character", "character", "character",
       "character", "character", "character", "character", "character",
-      "character")
+      "character"
+    )
   )
 
   vplist <- vector("list", nrow(vp))
   for (i in seq_along(vp)) {
     print(sprintf("%s out of %s done", i, nrow(vp)))
     vp_ <- vp[i]
-    vp_ <- makeValid(vp_) # Ensure base polygon is perfectly valid
+    vp_ <- makeValid(vp_) # Ensure base polygon is valid
 
     # Process Water
     w_ <- water[vp_]
@@ -831,6 +842,9 @@ combine_water_grb_lbg <- function(
     )
     if (nrow(lbg_) > 0) lbg_ <- makeValid(lbg_)
 
+    # Process habitatmap_terr
+    terr_500_ <- crop(terr_500[vp_], vp_)
+
     # Hierarchical Overlay (Z-Order)
     # 1. Initialize the base layer
     c2 <- vp_
@@ -838,6 +852,11 @@ combine_water_grb_lbg <- function(
     # 2. Sequentially cover only if the layer actually contains data
     if (nrow(lbg_) > 0) {
       c2 <- cover(c2, lbg_)
+      c2 <- makeValid(c2)
+    }
+
+    if (nrow(terr_500_) > 0) {
+      c2 <- cover(c2, terr_500_)
       c2 <- makeValid(c2)
     }
 
@@ -926,7 +945,7 @@ combine_water_grb_lbg <- function(
   return(vp_wa_se)
 }
 
-postprocess_water_grb_lbg <- function(
+postprocess_prelabelling <- function(
     water_grb_lbg,
     settlement_mask,
     mmu = 30
