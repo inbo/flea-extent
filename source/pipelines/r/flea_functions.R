@@ -318,9 +318,8 @@ process_water_wtz <- function(grb_wtz) {
       jaar = pmin(lubridate::year(BEGINDATUM),
                   lubridate::year(OPNDATUM), na.rm = TRUE),
       layer = "GRB:WTZ",
-      value = NA
+      value = ifelse(VHAG %in% c(-9, -8), 900, 800)
     )
-
 
   # select columns
   grb <- grb |>
@@ -678,6 +677,15 @@ get_types_heath <- function() {
       typeclass_name %in% c("Temperate heath and scrub", "Sclerophyllous scrub")
     ) |>
     pull(type)
+}
+get_types <- function(flea_id) {
+  if (flea_id == 500) {
+    n2khab::read_types() |>
+      filter(
+        typeclass_name %in% c("Temperate heath and scrub", "Sclerophyllous scrub")
+      ) |>
+      pull(type)
+  }
 }
 
 
