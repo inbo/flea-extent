@@ -87,15 +87,18 @@ layers_perceelgrens <- c(
 
 settlement_codes <- 101:106
 
-# lbg mapping codes
+# lbg mapping codes (for static branching)
 lbg_mapping_flea_codes <- data.frame(
   flea_id = c(101, 104, 200, 300, 400, 500, 900)
 )
 
+habitatmap_terr_mapping_flea_codes <- data.frame(
+  flea_id = c(500)
+)
 # to be changed later: download the raster files from zenodo
 
 # target list:
-list(
+sample_selection <- list(
   # names of maps
   tar_target(
     name = mapnames,
@@ -207,21 +210,15 @@ list(
       crs = 31370
     ),
     pattern = map(validation_sample)
-  ),
+  )
+)
+
+prelabelling_sources <- list(
   # add grb waterways
   tar_target(
     name = lyrs_waterways,
-    command = read_layernames(x = layers_water)
-  ),
-  # add grb settlements
-  tar_target(
-    name = lyrs_settlements,
-    command = read_layernames(x = layers_ruimtebeslag)
-  ),
-  # add grb parcel outlines
-  tar_target(
-    name = lyrs_parcels,
-    command = read_layernames(x = layers_perceelgrens)
+    command = read_layernames(x = layers_water),
+    description = "Name of GRB waterway layers"
   ),
   geotargets::tar_terra_vect(
     name = grb_waterways,
@@ -230,7 +227,14 @@ list(
       polygons = validation_polygons
     ),
     pattern = cross(lyrs_waterways, validation_polygons),
-    filetype = "GPKG"
+    filetype = "GPKG",
+    description = "GRB waterways vector data for each validation polygon"
+  ),
+  # add grb settlements
+  tar_target(
+    name = lyrs_settlements,
+    command = read_layernames(x = layers_ruimtebeslag),
+    description = "Name of GRB settlement layers"
   ),
   geotargets::tar_terra_vect(
     name = grb_settlements,
@@ -239,7 +243,14 @@ list(
       polygons = validation_polygons
     ),
     pattern = cross(lyrs_settlements, validation_polygons),
-    filetype = "GPKG"
+    filetype = "GPKG",
+    description = "GRB settlements vector data for each validation polygon"
+  ),
+  # add grb parcel outlines
+  tar_target(
+    name = lyrs_parcels,
+    command = read_layernames(x = layers_perceelgrens),
+    description = "Name of GRB parcel layers"
   ),
   geotargets::tar_terra_vect(
     name = grb_parcels,
@@ -248,8 +259,10 @@ list(
       polygons = validation_polygons
     ),
     pattern = cross(lyrs_parcels, validation_polygons),
-    filetype = "GPKG"
+    filetype = "GPKG",
+    description = "GRB parcels vector data for each validation polygon"
   ),
+  # Landbouwgebruikspercelen data
   targets::tar_target(
     name = lbg_mapping_df,
     command = mapping_lbg_to_flea(),
@@ -257,7 +270,8 @@ list(
   ),
   targets::tar_target(
     name = lbg_layers,
-    command = get_lbg_layernames(path_to_lbg)
+    command = get_lbg_layernames(path_to_lbg),
+    description = "Name of LBG layernames"
   ),
   tarchetypes::tar_map(
     values = lbg_mapping_flea_codes,
@@ -267,7 +281,8 @@ list(
       name = lbg_mapping, # The base name (becomes mapping_101, mapping_104, etc.)
       command = lbg_mapping_df$GWSCOD_H[
         lbg_mapping_df$FLEA == flea_id & !is.na(lbg_mapping_df$FLEA)
-      ]
+      ],
+      description = "GWSCOD_H mapping to flea code"
     ),
     # extract them from the LBG layers
     geotargets::tar_terra_vect(
@@ -284,7 +299,8 @@ list(
       ),
       # This applies dynamic branching to every static branch
       # in this case the lbg_layer for each year
-      pattern = map(lbg_layers)
+      pattern = map(lbg_layers),
+      description = "LBG vector data"
     ),
     # --- Step 3: Crop (Dynamic Branching: cross) ---
     # Result: lbg_cropped_101, lbg_cropped_104...
@@ -297,18 +313,22 @@ list(
       },
       # 'lbg' here refers to lbg_101 (which is already branched).
       # 'cross' will multiply lbg_101 branches by validation_polygons branches.
-      pattern = cross(lbg, validation_polygons)
+      pattern = cross(lbg, validation_polygons),
+      description = "LBG vector data cropped to validation polygons"
     )
   ),
+  # settlements processing
   geotargets::tar_terra_vect(
     name = grb_settlements_processed,
     command = process_settlement(
-      grb = grb_settlements)
+      grb = grb_settlements),
+    description = "Cover and assign codes 101 or 102 to GRB settlements. 101 = (GBG > GBA > KNW) > 102 = (WBN > SBN > TRN verhard)"
   ),
+  # GRB WTZ processing
   geotargets::tar_terra_vect(
     name = grb_water_wtz_processed,
     command = process_water_wtz(
-      grb = grb_waterways)
+      grb_wtz = grb_waterways)
   ),
   geotargets::tar_terra_vect(
     name = grb_parcels_processed,
@@ -379,26 +399,33 @@ list(
       validation_polygons
     )
   ),
-  targets::tar_target(
-    name = types_heath,
-    command = get_types_heath()
-  ),
-  # read INBO habitatmap_terr and crop with validation polygons
-  geotargets::tar_terra_vect(
-    name = terr_cropped_500,
-    command = get_habitatmap_terr(
-      path_version = zenodo_habitatmap_terr,
-      polygons = validation_polygons,
-      meta = habitatmap_terr_meta,
-      types = types_heath,
-      min_phab = 50, # selecteert alle eerste eenheden (tweede eenheid max 30%)
-      flea_value = 500
+  tarchetypes::tar_map(
+    values = habitatmap_terr_mapping_flea_codes,
+    names = "flea_id",
+    targets::tar_target(
+      name = types,
+      command = get_types(flea_id = flea_id)
     ),
-    pattern = cross(
-      map(zenodo_habitatmap_terr, habitatmap_terr_meta),
-      validation_polygons
+    # read INBO habitatmap_terr and crop with validation polygons
+    geotargets::tar_terra_vect(
+      name = terr_cropped,
+      command = get_habitatmap_terr(
+        path_version = zenodo_habitatmap_terr,
+        polygons = validation_polygons,
+        meta = habitatmap_terr_meta,
+        types = types,
+        min_phab = 50, # selecteert alle eerste eenheden (tweede eenheid max 30%)
+        flea_value = flea_id
+      ),
+      pattern = cross(
+        map(zenodo_habitatmap_terr, habitatmap_terr_meta),
+        validation_polygons
+      )
     )
-  ),
+  )
+)
+
+overlay_prelabel_sources <- list(
   # combine the GRB water layer with the INBO watersurfaces
   geotargets::tar_terra_vect(
     name = vp_water,
@@ -467,24 +494,10 @@ list(
     pattern = map(validation_polygons_50),
     deployment = "main"
   )
-  #,
-  #geotargets::tar_terra_vect(
-  #  name = grb_waterways_processed,
-  #  command = process_waterways(grb_waterways)
-  #)
+)
 
-
-
-  # apply majority filter, use 3 by 3 block
-
-
-  # merge the samples,check if locations were sampled > 1
-  # deduplicate them, keeping all metadata
-
-
-  # write out sampling polygons
-
-  # any other stuff that could be done automatically
-  # (maybe some validation steps)
-
+c(
+  sample_selection,
+  prelabelling_sources,
+  overlay_prelabel_sources
 )
