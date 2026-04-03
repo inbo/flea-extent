@@ -664,7 +664,7 @@ get_watersurfaces <- function(path_version, polygons, meta) {
   ws <- spatvector_crop(x = ws, y = polygons)
   ws$year_flea <- meta$year_flea
   ws$layer <- basename(path_version)
-  ws$value <- NA
+  ws$value <- NA_real_
   ws$area_name <- NULL
   ws$wfd_type_certain <- NULL
 
@@ -740,8 +740,11 @@ combine_grb_inbo_water <- function(grb_water, inbo_water, meta) {
 
   # cover: values of x that overlap with y are replaced by y
   grb_water <- aggregate(x = grb_water, by = names(grb_water))
-  water <- cover(x = grb_water, y = inbo_water)
+  grb_water <- makeValid(grb_water)
+  inbo_water <- makeValid(inbo_water)
+  water <- safe_cover(x = grb_water, y = inbo_water)
   water <- unique(water)
+  water <- makeValid(water)
   return(water)
 }
 
@@ -1638,3 +1641,21 @@ raster_to_polygons <- function(
   return(masked_f)
 }
 
+
+safe_cover <- function(x, y, ...) {
+  common <- intersect(names(x), names(y))
+  x_types <- sapply(values(x), function(col) paste(class(col), collapse = "_"))
+  y_types <- sapply(values(y), function(col) paste(class(col), collapse = "_"))
+  x_check <- x_types[names(x_types) %in% common][common]
+  y_check <- y_types[names(y_types) %in% common][common]
+  if (!identical(x_check, y_check)) {
+    stop(
+      sprintf(
+        "Type mismatch found for variables %s",
+        paste(names(x_check)[x_check != y_check], collapse = ", ")
+      )
+    )
+  }
+
+  cover(x, y, ...)
+}
