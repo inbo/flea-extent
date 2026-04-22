@@ -53,6 +53,7 @@ get_map <- function(gdb, name, cats, origin, grts) {
   map <- apply_cats(x = map, cats = cats, name = name)
   origin(map) <- origin
   map <- extend(map, grts)
+  map <- crop(map, grts)
   crs(map) <- crs(grts)
   map <- writeRaster(
     map,
