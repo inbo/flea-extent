@@ -253,10 +253,14 @@ get_grb <- function(layer, bbox) {
     wkt_filter = sf::st_as_text(bbox_sf)
   )
 
-  grb <- grb |>
-    sf::st_cast("GEOMETRYCOLLECTION") %>%
-    sf::st_collection_extract("LINESTRING") %>%
-    sf::st_cast("POLYGON")
+  if (nrow(grb) == 0) {
+    grb <- grb[0, 0]
+  } else {
+    grb <- grb |>
+      sf::st_cast("GEOMETRYCOLLECTION") |>
+      sf::st_collection_extract("LINESTRING") |>
+      sf::st_cast("POLYGON")
+  }
 
   grb <- terra::vect(grb)
 
@@ -283,12 +287,19 @@ get_grb_by_row <- function(layer, polygons) {
   namesvec <- polygons$grts_rank
   out <- setNames(out, nm = namesvec)
   for (i in seq_along(out)) {
+    print(i)
     bbox <- polygons[i, ]
     grb <- get_grb(layer = layer, bbox = bbox)
-    grb$grts_rank <-  namesvec[i]
+    if (nrow(grb) > 0) grb$grts_rank <-  namesvec[i]
     out[[as.character(namesvec[i])]] <- grb
   }
   out <- terra::vect(out)
+
+  # catch case empty records
+  if (nrow(out) == 0) {
+    return(out)
+  }
+
   out$layer <- layer
   # convert date(time) fields to ISO-8601 format
   time <- terra::datatype(out) == "time"
@@ -298,13 +309,6 @@ get_grb_by_row <- function(layer, polygons) {
       out[[i]] <-
         format(out[[i]], format = "%Y-%m-%dT%H:%M:%S.000Z", tz = "UTC")
     }
-  }
-  # catch case empty records
-  # can be removed when terra or geotargets deals with this natively
-  # https://github.com/ropensci/geotargets/issues/187
-  if (nrow(out) == 0) {
-    out <- .create_empty_geom(out, type = terra::geomtype(polygons))
-    return(out)
   }
 
   return(out)
