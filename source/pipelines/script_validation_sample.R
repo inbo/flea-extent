@@ -57,9 +57,9 @@ flea_data <- gsub(
   pattern = "flea-extent", replacement = "flea-data", x = git_root
 )
 input_names <- c(
-  "ecosysteemkaart_niv1_2016_v12",
-  "ecosysteemkaart_niv1_2019_v12",
-  "ecosysteemkaart_niv1_2022_v12"
+  "ecosysteemkaart_niv1_2016_v13",
+  "ecosysteemkaart_niv1_2019_v13",
+  "ecosysteemkaart_niv1_2022_v13"
 )
 input_years <- c(2016, 2019, 2022)
 path_to_gdb <- "Z:/Projects/PRJ_FLEA/flea_output.gdb"
@@ -252,16 +252,6 @@ prelabelling_sources <- list(
     command = read_layernames(x = layers_perceelgrens),
     description = "Name of GRB parcel layers"
   ),
-  geotargets::tar_terra_vect(
-    name = grb_parcels,
-    command = get_grb_by_row(
-      layer = lyrs_parcels,
-      polygons = validation_polygons
-    ),
-    pattern = cross(lyrs_parcels, validation_polygons),
-    filetype = "GPKG",
-    description = "GRB parcels vector data for each validation polygon"
-  ),
   # Landbouwgebruikspercelen data
   targets::tar_target(
     name = lbg_mapping_df,
@@ -329,11 +319,6 @@ prelabelling_sources <- list(
     name = grb_water_wtz_processed,
     command = process_water_wtz(
       grb_wtz = grb_waterways)
-  ),
-  geotargets::tar_terra_vect(
-    name = grb_parcels_processed,
-    command = process_parcels(
-      grb = grb_parcels)
   ),
   targets::tar_target(
     name = watersurfaces_meta,
