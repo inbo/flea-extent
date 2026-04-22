@@ -246,12 +246,6 @@ prelabelling_sources <- list(
     filetype = "GPKG",
     description = "GRB settlements vector data for each validation polygon"
   ),
-  # add grb parcel outlines
-  tar_target(
-    name = lyrs_parcels,
-    command = read_layernames(x = layers_perceelgrens),
-    description = "Name of GRB parcel layers"
-  ),
   # Landbouwgebruikspercelen data
   targets::tar_target(
     name = lbg_mapping_df,
