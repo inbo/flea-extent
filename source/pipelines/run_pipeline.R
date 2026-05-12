@@ -1,6 +1,7 @@
 ################
 # run pipeline #
 ################
+rstudioapi::restartSession()
 library(targets)
 
 Sys.setenv(TAR_PROJECT = "validation_sample")
