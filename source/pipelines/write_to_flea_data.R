@@ -188,7 +188,7 @@ pl |>
   write_sf(
     dsn = file.path(
       flea_data, "validation",
-      "test_validation_sample.gpkg"),
+      paste0(gsub("-", "", Sys.Date()), "_test_validation_sample.gpkg")),
     layer = "testset_30_validaties",
     delete_layer = TRUE
   )
