@@ -36,7 +36,7 @@ prelabeled_sf |>
           obj = xi,
           dsn = file.path(
             flea_data, "validation",
-            "test_validation_sample.gpkg"),
+            paste0(gsub("-", "", Sys.Date()), "_test_validation_sample.gpkg")),
           layer = paste0(layername, "_", i),
           delete_layer = TRUE)
       }
@@ -68,7 +68,7 @@ rasterlabeled_sf |>
           obj = xi,
           dsn = file.path(
             flea_data, "validation",
-            "test_validation_sample.gpkg"),
+            paste0(gsub("-", "", Sys.Date()), "_test_validation_sample.gpkg")),
           layer = paste0("cells_", layername, "_", i),
           delete_layer = TRUE)
       }
@@ -98,7 +98,7 @@ validation_poly_50_sf |>
           obj = xi,
           dsn = file.path(
             flea_data, "validation",
-            "test_validation_sample.gpkg"),
+            paste0(gsub("-", "", Sys.Date()), "_test_validation_sample.gpkg")),
           layer = paste0(layername, "_", i),
           delete_layer = TRUE)
       }
@@ -114,7 +114,7 @@ vs |>
   write_sf(
     dsn = file.path(
       flea_data, "validation",
-      "test_validation_sample.gpkg"),
+      paste0(gsub("-", "", Sys.Date()), "_test_validation_sample.gpkg")),
     layer = "validation_sample_all",
     delete_layer = TRUE
   )
@@ -200,7 +200,7 @@ vect(rasterlabeled) |>
   write_sf(
     dsn = file.path(
       flea_data, "validation",
-      "test_validation_sample.gpkg"),
+      paste0(gsub("-", "", Sys.Date()), "_test_validation_sample.gpkg")),
     layer = "test_cells_30_validaties",
     delete_layer = TRUE
   )
