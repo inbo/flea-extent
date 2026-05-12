@@ -1,0 +1,4 @@
+validation_sample:
+  script: C:/R/GitRepositories/flea-extent/source/pipelines/script_validation_sample.R
+  store: C:/R/GitRepositories/flea-extent/source/pipelines/store_validation_sample
+  use_crew: yes

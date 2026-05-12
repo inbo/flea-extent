@@ -1,0 +1,13 @@
+..generic:
+  git2rdata: 0.4.0
+  optimize: yes
+  NA string: NA
+  sorting: aangepaste_landgebruikskaart
+  hash: c19b8fd74e3c98900380bcadf443f33be990a602
+  data_hash: 41e35043f92219c1c8d1bbb9537b191ff58b37d7
+aangepaste_bodembedekkingskaart:
+  class: character
+aangepaste_landgebruikskaart:
+  class: character
+ecosysteemvoorraad_nara_niveau_2:
+  class: character

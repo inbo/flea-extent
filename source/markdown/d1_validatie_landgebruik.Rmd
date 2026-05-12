@@ -230,7 +230,7 @@ points_change <- as.data.frame(points_id) %>%
   dplyr::select(objectid, verand, verandoord)
 ```
 
-### Punten originele lg-klassen
+### Punten originele landgebruiksklassen
 
 ```{r}
 points_id_orig <- points %>%

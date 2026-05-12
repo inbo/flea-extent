@@ -1,0 +1,36 @@
+aangepaste_bodembedekkingskaart	aangepaste_landgebruikskaart	ecosysteemvoorraad_nara_niveau_2
+1 - Ruigte	1 - Ruigte	Grasland
+10 - Slik en schorre	10 - Slik en schorre	Estuarium
+11 - Akker	11 - Akker	Akker
+13 - Hoogstamboomgaard	13 - Hoogstamboomgaard	Grasland
+14 - Laagstamboomgaard	14 - Laagstamboomgaard	Akker
+15 - Blijvend cultuurgrasland	15 - Blijvend cultuurgrasland	Grasland
+2 - Loofbos	2 - Loofbos	Bos
+20 - Overig laag groen	20 - Overig laag groen	Grasland
+21 - Overig hoog groen	21 - Overig hoog groen	Bos
+22 - Weg	22 - Weg	Stedelijk en bebouwd gebied
+23 - Spoorweg	23 - Spoorweg	Stedelijk en bebouwd gebied
+24 - Water	24 - Zoetwater	Zoetwater
+25 - Overig	25 - Overig	Stedelijk en bebouwd gebied
+26 - Overgangswater	26 - Overgangswater	Estuarium
+27 - Marien	27 - Marien	Zee
+3 - Populieren	3 - Populieren	Bos
+30 - Struweel	30 - Struweel	Bos
+NA	31 - Huizen en tuinen	Stedelijk en bebouwd gebied
+NA	32 - Industrie	Stedelijk en bebouwd gebied
+NA	33 - Commerciële doeleinden	Stedelijk en bebouwd gebied
+NA	34 - Diensten	Stedelijk en bebouwd gebied
+NA	35 - Recreatie	Stedelijk en bebouwd gebied
+NA	36 - Landbouwgebouwen en -infrastructuur	Stedelijk en bebouwd gebied
+NA	37 - Overige bebouwde terreinen	Stedelijk en bebouwd gebied
+NA	38 - Overige onbebouwde terreinen	Stedelijk en bebouwd gebied
+NA	39 - Wegen en spoorwegen	Stedelijk en bebouwd gebied
+4 - Naaldbos	4 - Naaldbos	Bos
+NA	40 - Groeves	Stedelijk en bebouwd gebied
+NA	41 - Luchthavens	Stedelijk en bebouwd gebied
+5 - Alluviaal bos	5 - Alluviaal bos	Bos
+6 - Halfnatuurlijk grasland	6 - Halfnatuurlijk grasland	Grasland
+7 - Heide	7 - Heide	Heide en landduin
+8 - Kustduin	8 - Kustduin	Kustduin en strand
+9 - Moeras	9 - Moeras	Moeras
+19 - Gebouw	NA	NA

@@ -1,0 +1,565 @@
+---
+title: "Evaluatie van test validatieprotocol"
+author: "Hans Van Calster"
+date: "2026-01-11"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(googlesheets4)
+library(dplyr)
+library(ggplot2)
+library(sf)
+library(here)
+library(units)
+library(tidyr)
+
+flea_data <- gsub("extent", "data", here())
+
+gs4_auth("*.inbo.be")
+
+library(targets)
+library(terra)
+Sys.setenv(TAR_PROJECT = "validation_sample")
+conflicted::conflicts_prefer(dplyr::filter)
+library(INBOtheme)
+set_theme(theme_inbo(base_size = 9))
+```
+
+## Inlezen data
+
+```{r read-notes}
+notes <- read_sheet(ss = "1KkhhJgw9Gkru3XgA17d7YNz9fCG50f0c6yLysLVag6s")
+```
+
+```{r read-validation-data}
+validation_polys_po <- file.path(
+  flea_data,
+  "validation",
+  "test_validation_sample_30_originalworkflow_patrik_20260106.gpkg"
+) |>
+  read_sf(
+    layer = "test_validation_sample_30_originalworkflow_patrik_20260106"
+  )
+validation_polys_po <- validation_polys_po |>
+  rename(
+    prelabels = labels
+  ) |>
+  mutate(
+    newlabels = paste(label_2016, label_2019, label_2022, sep = "-"),
+    validator = "PO",
+    method = "polygons"
+  )
+# validation cells PO
+validation_cells_po <- file.path(
+  flea_data,
+  "validation",
+  "test_validation_30_rasterizedsamples_patrik_20260108.gpkg"
+) |>
+  read_sf(
+    layer = "test_validation_30_rasterizedsamples_patrik_20260108"
+  )
+
+validation_cells_po <- validation_cells_po |>
+  rename(
+    prelabels = label_label
+  ) |>
+  mutate(
+    newlabels = paste(label_2016, label_2019, label_2022, sep = "-"),
+    validator = "PO",
+    method = "cells"
+  )
+
+validation_cells_po <- validation_cells_po |>
+  dplyr::filter(!st_is_empty(validation_cells_po))
+
+# validation polys Steven
+validation_polys_sds <- file.path(
+  flea_data,
+  "validation",
+  "steven_ds",
+  "FLEA_testset_30_validatie_202512_sds.shp"
+) |>
+  read_sf()
+
+
+validation_polys_sds <- validation_polys_sds |>
+  rename(
+    prelabels = labels
+  ) |>
+  mutate(
+    newlabels = paste(label_2016, label_2019, label_2022, sep = "-"),
+    validator = "SDS",
+    method = "polygons"
+  )
+
+# validation cells Steven
+validation_cells_sds <- file.path(
+  flea_data,
+  "validation",
+  "steven_ds",
+  "FLEA_test_cells_30_validatie_202512_sds.shp"
+) |>
+  read_sf()
+
+validation_cells_sds <- validation_cells_sds |>
+  rename(
+    prelabels = label_labe
+  ) |>
+  mutate(
+    newlabels = paste(label_2016, label_2019, label_2022, sep = "-"),
+    validator = "SDS",
+    method = "cells"
+  )
+
+validation_cells <- bind_rows(
+  validation_cells_po,
+  validation_cells_sds |>
+    select(-fid_) |>
+    rename(
+      geom = geometry,
+      stratum_name = stratum_na,
+      area_labeled = area_label,
+      label_2016_2 = label_2017,
+      label_2019_2 = label_2020,
+      label_2022_2 = label_2023
+    )
+)
+
+
+validation_polys_sds <- validation_polys_sds |>
+  select(-fid_)
+names(validation_polys_sds) <- names(validation_polys_po)
+validation_polys_sds <- st_set_geometry(validation_polys_sds, "geom")
+
+validation_polys <- bind_rows(
+  validation_polys_po,
+  validation_polys_sds
+)
+
+design_meta <- validation_polys_po |>
+  distinct(grts_rank, stratum_name, changecat, area_labeled) |>
+  mutate(
+    stratum = sprintf(
+      "%s (%s)",
+      stringr::str_extract(stratum_name, "\\d+"),
+      changecat
+    )
+  )
+notes <- notes |>
+  left_join(design_meta)
+
+tar_load(validation_polygons_50)
+
+validation_polygons_50 <- vect(validation_polygons_50)
+
+```
+
+```{r check-validation-data}
+# prop polygonen met juist prelabel
+sum(validation_polys_po$prelabels == validation_polys_po$newlabels) / nrow(validation_polys_po)
+
+# check polygonen onvolledig gevalideerd
+onvolledig <- grepl("other", validation_polys_po$newlabels)
+validation_polys_po[
+  onvolledig, c("grts_rank", "label_2016", "label_2019", "label_2022")
+] |>
+  st_drop_geometry()
+
+# check oppervlakte
+validation_polys_po %>%
+  mutate(
+    area_m2 = st_area(.)
+  ) |>
+  st_drop_geometry() |>
+  group_by(grts_rank) |>
+  summarise(area_m2 = sum(area_m2)) |>
+  filter(
+    !between(as.numeric(area_m2), 2490, 2501)
+  )
+
+# prop polygonen met juist prelabel
+sum(is.na(validation_cells_po$prelabels))
+
+sum(
+  validation_cells_po$prelabels == validation_cells_po$newlabels, na.rm = TRUE
+) /
+  nrow(validation_cells_po)
+
+# check polygonen onvolledig gevalideerd
+onvolledig <- grepl("other", validation_cells_po$newlabels)
+validation_cells_po[
+  onvolledig, c("grts_rank", "label_2016", "label_2019", "label_2022")
+] |>
+  st_drop_geometry()
+
+# check oppervlakte
+validation_cells_po %>%
+  mutate(
+    area_m2 = st_area(.)
+  ) |>
+  st_drop_geometry() |>
+  group_by(grts_rank) |>
+  summarise(area_m2 = sum(area_m2)) |>
+  dplyr::filter(
+    !between(as.numeric(area_m2), 2490, 2501)
+  )
+
+# prop polygonen met juist prelabel
+sum(validation_polys_sds$prelabels == validation_polys_sds$newlabels) /
+  nrow(validation_polys_sds)
+
+# check polygonen onvolledig gevalideerd
+onvolledig <- grepl("other|water", validation_polys_sds$newlabels)
+validation_polys_sds[
+  onvolledig, c("grts_rank", "label_2016", "label_2019", "label_2022")
+] |>
+  st_drop_geometry()
+
+# check oppervlakte
+validation_polys_sds %>%
+  mutate(
+    area_m2 = st_area(.)
+  ) |>
+  st_drop_geometry() |>
+  group_by(grts_rank) |>
+  summarise(area_m2 = sum(area_m2)) |>
+  filter(
+    !between(as.numeric(area_m2), 2490, 2501)
+  )
+
+
+# prop polygonen met juist prelabel
+sum(validation_cells_sds$prelabels == validation_cells_sds$newlabels) /
+  nrow(validation_cells_sds)
+
+# check polygonen onvolledig gevalideerd
+onvolledig <- grepl("other", validation_cells_sds$newlabels)
+validation_cells_sds[
+  onvolledig, c("grts_rank", "label_2016", "label_2019", "label_2022")
+] |>
+  st_drop_geometry()
+
+# check oppervlakte
+validation_cells_sds %>%
+  mutate(
+    area_m2 = st_area(.)
+  ) |>
+  st_drop_geometry() |>
+  group_by(grts_rank) |>
+  summarise(area_m2 = sum(area_m2)) |>
+  filter(
+    !between(as.numeric(area_m2), 2490, 2501)
+  )
+
+
+nrow(validation_cells_po) == 30 * 25
+nrow(validation_cells_sds) == 30 * 25
+
+# check joins
+notes |>
+  anti_join(
+    bind_rows(validation_polys, validation_cells),
+    by = join_by(validator, method, grts_rank)
+  )
+```
+
+## Inschatting werklast
+
+```{r}
+glimpse(notes)
+summary(notes)
+```
+
+```{r timing-results-average}
+notes |>
+  ggplot() +
+  geom_point(
+    aes(x = method, y = time_minutes, group = grts_rank)
+  ) +
+  geom_line(
+    aes(x = method, y = time_minutes, group = grts_rank)
+  ) +
+  stat_summary(
+    fun.data = mean_cl_boot,
+    aes(x = method, y = time_minutes),
+    colour = INBOtheme::inbo_felrood
+  ) +
+  facet_wrap(~validator)
+```
+
+```{r timing-results-by-strata}
+notes |>
+  ggplot() +
+  geom_point(
+    aes(x = method, y = time_minutes, group = grts_rank, colour = stratum),
+    position = position_dodge(width = 0.2), alpha = 0.3
+  ) +
+  geom_line(
+    aes(x = method, y = time_minutes, group = grts_rank, colour = stratum),
+    position = position_dodge(width = 0.2), alpha = 0.3
+  ) +
+  stat_summary(
+    fun.data = mean_cl_boot,
+    aes(x = method, y = time_minutes, colour = stratum),
+    position = position_dodge(width = 0.2)
+  ) +
+  facet_wrap(~ validator)
+```
+
+```{r timings-extrapolation}
+# inschatting tijd nodig voor volledige validatie
+
+time_estimates <- values(validation_polygons_50) |>
+  as_tibble() |>
+  count(stratum_name, changecat) |>
+  mutate(
+    stratum_name = stringr::str_extract(stratum_name, "\\d+"),
+    level = ifelse(stratum_name %in% c(101:106), 2, 1),
+    days = ifelse(level == 1, 5 * n, 10 * n) / 60 / 7.36
+  )
+
+time_estimates |>
+  dplyr::filter(
+    !stratum_name %in% c("600", "1000")
+  ) |>
+  summarise(
+    n_halfway = sum(n) / 2,
+    n_all = sum(n),
+    days_halfway = sum(days) / 2,
+    days_all = sum(days),
+    pm_halfway = days_halfway / (160 / 12),
+    pm_all = days_all / (160 / 12)
+  ) |>
+  knitr::kable()
+```
+
+## Vergelijking tussen validators
+
+### Rastercel-gebaseerde validatie
+
+```{r compare-cells}
+compare_cells <- validation_cells |>
+  select(
+    validator, method, grts_rank, label_2016, label_2019, label_2022
+  ) |>
+  bind_cols(
+    as_tibble(st_coordinates(st_centroid(st_geometry(validation_cells))))
+  ) |>
+  pivot_longer(
+    cols = starts_with('label_'),
+    names_to = "year",
+    names_prefix = "label_",
+    values_to = "label"
+  ) |>
+  pivot_wider(
+    id_cols = c(grts_rank, X, Y, method, year, geom),
+    names_from = validator,
+    values_from = label
+  ) |>
+  mutate(
+    PO = readr::parse_number(PO),
+    SDS = readr::parse_number(SDS),
+    beoordeling = ifelse(PO == SDS, "zelfde", "verschillend"),
+    area = as_units(100, "m2")
+  ) |>
+  left_join(design_meta)
+
+compare_cells |>
+  st_drop_geometry() |>
+  group_by(PO, SDS, beoordeling) |>
+  summarise(
+    area = sum(area),
+    .groups = "drop"
+  ) |>
+  mutate(
+    percentage = as.numeric(area) * 100 / sum(as.numeric(area))
+  ) |>
+  arrange(beoordeling, -area) |>
+  knitr::kable(digits = 1)
+```
+
+```{r compare-cells-collapsed}
+compare_cells |>
+  st_drop_geometry() |>
+  group_by(beoordeling) |>
+  summarise(
+    area = sum(area)
+  ) |>
+  dplyr::filter(!is.na(beoordeling)) |>
+  knitr::kable(digits = 0)
+```
+
+```{r compare-cells-by-strata, warning=FALSE, out.width="100%"}
+compare_cells  |>
+  ggplot() +
+  geom_col(
+    aes(x = year, y = area, fill = beoordeling)
+  ) +
+  facet_wrap(vars(stratum))
+```
+
+```{r compare-cells-by-cell, warning=FALSE, out.width="100%"}
+compare_cells  |>
+  ggplot() +
+  geom_col(
+    aes(x = year, y = area, fill = beoordeling)
+  ) +
+  facet_wrap(~ sprintf("%s (%s)", stratum, grts_rank))
+```
+
+```{r compare-cells-by-ecosystem, warning=FALSE, out.width="100%"}
+compare_cells |>
+  ggplot() +
+  geom_col(
+    aes(x = year, y = area, fill = beoordeling)
+  ) +
+  facet_grid(vars(SDS), vars(PO)) +
+  guides(
+    x = guide_axis(check.overlap = TRUE),
+    y = guide_axis(check.overlap = TRUE)
+  )
+```
+
+### Polygoon-gebaseerde validatie
+
+```{r compare-polys}
+compare_polys <- st_make_valid(validation_polys_sds) |>
+  st_intersection(
+    st_make_valid(validation_polys_po)
+  ) %>%
+  mutate(
+    area = st_area(.),
+    id = seq_len(n())
+  ) |>
+#  st_drop_geometry() |>
+  select(
+    id,
+    grts_rank,
+    area,
+    label_2016_sds = label_2016,
+    label_2019_sds = label_2019,
+    label_2022_sds = label_2022,
+    label_2016_po = label_2016.1,
+    label_2019_po = label_2019.1,
+    label_2022_po = label_2022.1
+  ) |>
+  pivot_longer(
+    cols = starts_with('label_'),
+    names_to = c("year", "validator"),
+    names_prefix = "label_",
+    names_sep = "_",
+    values_to = "label"
+  ) |>
+  pivot_wider(
+    id_cols = c(id, grts_rank, area, year, geom),
+    names_from = validator,
+    values_from = label
+  ) |>
+  mutate(
+    beoordeling = ifelse(sds == po, "zelfde", "verschillend")
+  ) |>
+  left_join(design_meta)
+```
+
+```{r compare-polys-by-strata, warning=FALSE, out.width="100%"}
+compare_polys  |>
+  ggplot() +
+  geom_col(
+    aes(x = year, y = area, fill = beoordeling)
+  ) +
+  facet_wrap(vars(stratum))
+```
+
+```{r compare-polys-by-cells, warning=FALSE, out.width="100%"}
+compare_polys  |>
+  ggplot() +
+  geom_col(
+    aes(x = year, y = area, fill = beoordeling)
+  ) +
+  facet_wrap(~ sprintf("%s (%s)", stratum, grts_rank))
+```
+
+```{r compare-polys-by-ecosystems, warning=FALSE, out.width="100%"}
+compare_polys |>
+  ggplot() +
+  geom_col(
+    aes(x = year, y = area, fill = beoordeling)
+  ) +
+  facet_grid(vars(sds), vars(po)) +
+  guides(
+    x = guide_axis(check.overlap = TRUE),
+    y = guide_axis(check.overlap = TRUE)
+  )
+```
+
+
+## Zij-aan-zij vergelijking per 50 m x 50 m polygoon
+
+
+```{r maps, out.width="100%", fig.height=200/25.4}
+tar_load(catstable)
+
+comparison <- bind_rows(
+  compare_cells |> rename(po = PO, sds = SDS),
+  compare_polys |> 
+    mutate(
+      method = "polys",
+      po = as.numeric(po),
+      sds = as.numeric(sds)
+    )
+) |>
+  pivot_longer(
+    cols = c(po, sds),
+    names_to = "validator",
+    values_to = "value"
+  ) |>
+  left_join(catstable, by = join_by(value)) |>
+  mutate(
+    stratum = sprintf(
+      "%s (%s)",
+      stringr::str_extract(stratum_name, "\\d+"),
+      changecat
+    )
+  )
+
+flea_colours <- catstable$color
+names(flea_colours) <- catstable$label
+
+plot_map <- function(x, y, z) {
+  x |>
+    ggplot() +
+    geom_sf(
+      aes(fill = label),
+      colour = "white",
+      alpha = 0.8
+    ) +
+    facet_grid(
+      rows = vars(method, validator),
+      cols = vars(year)
+    ) +
+    scale_fill_manual(values = flea_colours) +
+    theme_void() +
+    labs(
+      title = sprintf("stratum = %s, grts_rank = %s", y, z)
+    )
+}
+
+comparison_nest <- comparison |>
+  nest(.by = c(grts_rank, stratum)) |>
+  mutate(
+    map = purrr::pmap(
+      .l = list(
+        x = data,
+        y = stratum,
+        z = grts_rank
+      ),
+      .f = plot_map
+    )
+  )
+
+comparison_nest$map
+```
+
+
