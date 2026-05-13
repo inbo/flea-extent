@@ -1,0 +1,49 @@
+{
+  "description": "<p>De tekst voor de verplichte samenvatting. Hou het <a href=\"https://overheid.vlaanderen.be/communicatie/heerlijk-helder\">Heerlijk Helder<\/a>.<\/p>",
+  "title": "Schatting van veranderingen in oppervlakte landgebruiksklassen aan de hand van referentiedata. Technisch rapport in het kader van het Flanders Ecosystem Accounting (FLEA) project.",
+  "shorttitle": "ecosysteemveranderingen",
+  "upload_type": "publication",
+  "access_right": "open",
+  "license": "CC-BY-4.0",
+  "language": "nld",
+  "keywords": [
+    "landgebruik; steekproefontwerp; aardobservatie"
+  ],
+  "publication_type": "publication-report",
+  "publisher": "Research Institute for Nature and Forest (INBO)",
+  "contributors": [
+    {
+      "name": "Van Calster, Hans",
+      "affiliation": "Research Institute for Nature and Forest (INBO)",
+      "orcid": "0000-0001-8595-8426",
+      "type": "contactperson"
+    },
+    {
+      "name": "Van Reeth, Wouter",
+      "affiliation": "Research Institute for Nature and Forest (INBO)",
+      "orcid": "0000-0002-9117-3198",
+      "type": "other"
+    },
+    {
+      "name": "Research Institute for Nature and Forest (INBO)",
+      "type": "rightsholder"
+    }
+  ],
+  "creators": [
+    {
+      "name": "Van Calster, Hans",
+      "affiliation": "Research Institute for Nature and Forest (INBO)",
+      "orcid": "0000-0001-8595-8426"
+    },
+    {
+      "name": "Carmen, Raïsa",
+      "affiliation": "Research Institute for Nature and Forest (INBO)",
+      "orcid": "0000-0003-1025-8702"
+    }
+  ],
+  "communities": [
+    {
+      "identifier": "inbo"
+    }
+  ]
+}
