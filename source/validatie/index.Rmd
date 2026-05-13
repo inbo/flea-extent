@@ -1,20 +1,21 @@
 ---
 title: "Schatting van veranderingen in oppervlakte landgebruiksklassen aan de hand van referentiedata"
 subtitle: "Technisch rapport in het kader van het Flanders Ecosystem Accounting (FLEA) project"
+shorttitle: "ecosysteemveranderingen"
 author:
   - name:
       given: "Hans"
       family: "Van Calster"
     email: "hans.vancalster@inbo.be"
     orcid: "0000-0001-8595-8426"
-    affiliation: "Research Institute for Nature and Forest (INBO)"
+    affiliation: "Instituut voor Natuur- en Bosonderzoek (INBO)"
     corresponding: true
   - name:
       given: Raïsa
       family: Carmen
     email: raisa.carmen@inbo.be
     orcid: 0000-0003-1025-8702
-    affiliation: Research Institute for Nature and Forest (INBO)
+    affiliation: Instituut voor Natuur- en Bosonderzoek (INBO)
     corresponding: false
 reviewer:
   - name:
@@ -22,28 +23,54 @@ reviewer:
       family: "Van Reeth"
     email: "wouter.vanreeth@inbo.be"
     orcid: "0000-0002-9117-3198"
-    affiliation: "Research Institute for Nature and Forest (INBO)"
-lang: nl
-style: INBO
+    affiliation: "Instituut voor Natuur- en Bosonderzoek (INBO)"
+github-repo: inbo/flea-extent
+year: 2026
+
 floatbarrier: subsubsection
-lof: TRUE
-lot: TRUE
 keywords: "landgebruik; steekproefontwerp; aardobservatie"
 community: "inbo"
-publication_type: report
-funder: Instituut voor Natuur- en Bosonderzoek (INBO)
-rightsholder: Instituut voor Natuur- en Bosonderzoek (INBO)
-bibliography: [references.yaml, references.bib]
-link-citations: TRUE
+publication_type: publication-report
+publisher: Research Institute for Nature and Forest (INBO) 
+funder:
+  - name:
+      given: Instituut voor Natuur- en Bosonderzoek (INBO)
+    email: info@inbo.be
+    ror: 00j54wy13
+rightsholder:
+  - name:
+      given: Instituut voor Natuur- en Bosonderzoek (INBO)
+    email: info@inbo.be
+    ror: 00j54wy13
+license: CC-BY-4.0
+client:
+  - INBO Brussel
+  - VAC Brussel ‐ Herman Teirlinck
+  - Havenlaan 88 bus 73
+  - 1000 Brussel
+  - https://www.vlaanderen.be/inbo
+client_logo: media/logo.jpg
+cooperation:
+  - INBO Brussel
+  - VAC Brussel ‐ Herman Teirlinck
+  - Havenlaan 88 bus 73
+  - 1000 Brussel
+  - https://www.vlaanderen.be/inbo
+cooperation_logo: media/logo.jpg
+style: INBO
+lang: nl-BE
+lot: TRUE
+lof: TRUE
+
 site: bookdown::bookdown_site
+link-citations: TRUE
+bibliography: [references.yaml, references.bib]
+
 output:
   INBOmd::gitbook: default
   INBOmd::pdf_report: default
   INBOmd::epub_book: default
-# Don't run the format below.
-# Only required for RStudio to recognise the project as a bookdown project.
-# Hence don't use 'Build all formats'.
-  bookdown::dontrun: default
+  bookdown::dont_run: default
 ---
 
 # Dankwoord {.unnumbered}
