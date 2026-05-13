@@ -3,7 +3,3 @@
 # set appendix = FALSE, when the report has no appendix
 INBOmd::references(appendix = TRUE)
 ```
-
-# Eerste hoofdstuk van de bijlage
-
-Inhoud van de eerste bijlage
