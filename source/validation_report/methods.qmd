@@ -1,0 +1,65 @@
+---
+bibliography: [references.yaml, references.bib]
+---
+
+# Materials and Methods
+
+## Land Use Typology
+
+*To be completed (TODO)*
+
+## Sampling Design
+
+* **Ecosystem Map:**
+    * Calculate the mode class within each block.
+    * This provides a stratification per class.
+        * Merge strata if necessary.
+        * Within each stratum, select a spatially balanced sample of $n$ clusters (= block of pixels = primary sampling unit or PSU).
+        * Within each block (PSU), evaluate each of the $M$ secondary sampling units (SSU) (= pixels).
+
+@cochran1977 provides the formula to determine the effect of cluster size when using cluster sampling to estimate a proportion:
+
+$$
+\begin{aligned}
+\text{total sum of squares} &= \text{within sum of squares} + \text{between sum of squares} \\
+NMP(1-P) &= M\sum_{i=1}^n{(p_i - P)^2} + Mp_i(1-p_i)
+\end{aligned}
+$$
+
+This relationship can be used to calculate the various variance components as a function of the cluster size $M$.
+This allows us to evaluate whether an optimal cluster size exists purely in terms of variance (disregarding costs for now).
+
+## Response Design
+
+### Definition of Ecosystems
+
+*To be completed*
+
+### Choice of Sampling Unit
+
+* **Primary Sampling Unit (PSU):** A square polygon (block) with dimensions of $\sqrt{n_2} \times \sqrt{n_2}$ pixels (for example, 9 $\times$ 9 pixels).
+* **Secondary Sampling Unit (SSU):** A 10 m $\times$ 10 m pixel.
+
+In practice, however, the procedure is as follows:
+
+* Select a block of $\sqrt{n_2} \times \sqrt{n_2} = n_2$ pixels.
+* The entire block is digitized (subdivided into polygons, with a primary and an alternative label assigned to each polygon).
+* This polygon map of the block is rasterized, and this rasterization provides the reference value for each pixel within a block.
+
+### Reference Data Used
+
+Regarding the **resolution of the aerial photographs (orthophotos)**, the medium-scale photographs from 2023 have a resolution of 15 cm.
+In the year 2000, this was still 1 m.
+Therefore, it is possible that the resolution evolved during the period from 2013 to 2022. As a result, photographs used to validate a 2013 ecosystem map might be less accurate than those available for 2022.
+
+## Analysis
+
+Due to the more complex sampling design (balancing precision and cost-efficiency), the standard formulas provided in @olofsson2014 will only apply at the PSU level.
+However, this sampling design retains the flexibility to calculate accuracy and area estimates for different scenarios in post-processing.
+For instance, if we define a PSU as a block of 9 $\times$ 9 pixels, we can:
+
+* Determine the label at the PSU level for both the reference data and the map, and subsequently process them using the formulas from @olofsson2014.
+    * The rules for determining this label must be explicitly defined (e.g., using a majority rule or a binary classification).
+* Determine the label on a subset of the PSU, such as the central 3 $\times$ 3 block of pixels, and process it identically.
+* Utilize all information (from all pixels) to perform validation at the pixel level; in this case, formulas from model-assisted survey sampling literature and/or estimators for cluster sampling will likely be required for the analysis.
+    * Here, too, a rule may be needed for assigning labels in the reference data when a polygon intersects a pixel.
