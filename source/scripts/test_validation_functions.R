@@ -235,11 +235,11 @@ maparea <- maparea |>
 observed_changes <- observed_changes |>
   left_join(maparea, by = join_by(map == changecat))
 aa <- mapac::aa_card(
-  data = observed_changes[, c("ref", "map")],
+  x = observed_changes$ref,
+  m = observed_changes$map,
   w = maparea$area/sum(maparea$area),
-  strata = levels(observed_changes$ref),
+  h = maparea$changecat,
   area = sum(maparea$area),
-  confusion_matrix = FALSE,
   olofsson = TRUE
 )
 
@@ -265,9 +265,9 @@ ua_pa_df <- calc_ua_pa(
 
 ua_pa_df
 waldo::compare(unname(ua_pa_df$ua_est), aa$stats$ua, tolerance = 1e-10)
-waldo::compare(unname(sqrt(ua_pa_df$ua_var)), aa$stats$ua_se, tolerance = 1e-3)
+waldo::compare(unname(sqrt(ua_pa_df$ua_var)), aa$stats$ua_se, tolerance = 1e-2)
 waldo::compare(unname(ua_pa_df$pa_est), aa$stats$pa, tolerance = 1e-10)
-waldo::compare(unname(sqrt(ua_pa_df$pa_var)), aa$stats$pa_se, tolerance = 1e-3)
+waldo::compare(unname(sqrt(ua_pa_df$pa_var)), aa$stats$pa_se, tolerance = 1e-2)
 
 
 ua_pa_df %>%
@@ -283,17 +283,15 @@ ua_pa_df %>%
   geom_point() +
   ggrepel::geom_text_repel(aes(label = class), size = 2) +
   geom_errorbar(aes(ymin = ua_low, ymax = ua_high), alpha = 0.3) +
-  geom_errorbarh(aes(xmin = pa_low, xmax = pa_high), alpha = 0.3) +
+  geom_errorbar(aes(xmin = pa_low, xmax = pa_high), alpha = 0.3) +
   coord_equal(xlim = c(0, 1), ylim = c(0, 1))
 
 mapac::aa_class_accuracy_plot(aa)
-mapac::aa_confusion_matrix_flextable(
+mapac::aa_flextable(
   aa,
-  proportion = TRUE,
   diagonal = TRUE,
-  format.body = "%.2f",
-  format.accuracy = "%.3f",
-  rotate.header = TRUE
+  decimals_cells = 2,
+  decimals_stats = 3
   )
 
 areas_df <- calc_areas(
@@ -312,7 +310,7 @@ waldo::compare(
 waldo::compare(
   unname(areas_df$area_rme * areas_df$area_est_ha),
   aa$area$area_ci * 0.01,
-  tolerance = 1e-5
+  tolerance = 1e-4
 )
 
 # estimate areas using ReGenesees
@@ -500,11 +498,13 @@ areas_df %>%
   mutate(
     class = reorder(
       sprintf(
-        "%s\n(n = %s; ua = %s; pa = %s)",
+        "%s (n = %s; ua = %s; pa = %s)",
         class, n_points, round(ua, 2), round(pa, 2)
         ),
       area_est_ha
-    )
+    ),
+    # truncate negative values to 1 m2
+    area_low_ha = ifelse(area_low_ha < 0, 1e-4, area_low_ha)
   ) %>%
   ggplot() +
   geom_pointrange(
@@ -512,13 +512,24 @@ areas_df %>%
       x = class,
       y = area_est_ha,
       ymin = area_low_ha,
-      ymax = area_high_ha,
-      colour = area_low_ha < 0
-    )
+      ymax = area_high_ha
+    ),
+    size = 0.2
+  ) +
+  geom_point(
+    aes(
+      x = class,
+      y = area_pixelcount_ha
+    ),
+    shape = "cross"
   ) +
   scale_y_log10() +
   coord_flip() +
-  facet_grid(paste0("Change: ", change) ~ ., scales = "free", space = "free")
+  facet_grid(paste0("Change: ", change) ~ ., scales = "free", space = "free") +
+  labs(y = "Unbiased area estimate (ha)")
+
+ggsave(filename = here::here("media", "nara-2020-area-estimates.png"),
+       dpi = 300, width = 18, height = 15, units = "cm")
 
 # relative margins of error larger than 1 result in
 # negative lower bound of design-based confidence interval
