@@ -13,316 +13,6 @@ source("packages.R")
 
 # Background
 
-## Land use typology
-
-### Flanders land use dataset and land use map
-
-@poelmans2019landgebruik and @poelmans2021 describe the data sources and methods used to produce the land use maps.
-The various data sources are combined into a **land use dataset**.
-This dataset consists of a combination of both GIS layers (vector and raster files) and other (spatial) databases.
-The land use dataset and its underlying data sources are updated every three years.
-The first year for which this is available is 2013.
-The state of a land use dataset in a given year will not necessarily accurately reflect the actual conditions everywhere in that year.
-It represents the last known - and thus potentially dated - state according to a specific data source.
-
-The **land use maps** are derived (raster) products based on the information in the land use datasets.
-The data are merged in a specific order into a geodatabase containing 4 raster layers with a 10 m resolution (1 are):
-
-- Level 1 land cover (22 classes)
-- Level 2 urbanized land use (39 classes)
-- Level 3 multifunctional land use (6 classes)
-- Level 4 port areas and military domains (2 classes)
-
-These layers are subsequently combined in a specific order into a single-layer, area-covering land use map.
-
-In @poelmans2019landgebruik and @poelmans2021, a methodology was used that resulted in a land use map with 18 classes.
-This method establishes several rules that determine what the land use map will look like:
-
-- The different land use classes, as well as a hierarchical system to cluster land uses at higher levels.
-- Which data sources are used for which land use classes.
-- Which aggregations are necessary (of classes within one of the data sources) and which combinations of data sources are required.
-- The order in which land uses are assigned to a raster cell.
-- The spatial resolution of the derived raster product.
-
-There is, therefore, flexibility in the exact method used, and the choices made depend on the purposes for which the map will be used.
-Care must only be taken to ensure that the same method is used when comparing land use maps from different years.
-
-The land use maps themselves, which are created based on the land use dataset by the VPO division of the Department of Environment and Spatial Development, are available on [Geopunt](https://www.vlaanderen.be/datavindplaats/catalogus/landgebruik-vlaanderen-toestand-2022).
-However, for FLEA, we will create ecosystem maps based on an ecosystem extent classification that differs from the classes of that land use map.
-
-### Ecosystem maps of Flanders used by NARA 2020
-
-For the Nature Report 2020 (NARA 2020), two "ecosystem maps" (one for 2013 and one for 2016) were created [@schneiders2020], utilizing a different methodology than the land use map discussed by @poelmans2019landgebruik and @poelmans2021.
-For the analyses in @schneiders2020, a classification into ten ecosystems (land uses) was used, and the land cover layer of the Flanders Land Use Dataset was adjusted as follows:
-
-- In the Scheldt estuary, mudflats and salt marshes were adjusted based on ecotope maps for 2013 and 2016, prioritizing mudflats and salt marshes over the water layer or other terrestrial classes (e.g., other low vegetation).
-- In the Yser and Scheldt estuaries, water in the tidal zone was reclassified into an additional transitional water class; the remaining water is considered freshwater.
-- The coastal water surface area was expanded to encompass the entire Belgian part of the North Sea and classified as marine.
-- The land cover class rough patches and scrub was split into rough patches and scrub based on the `BWK_natuur` raster layer.
-- Agricultural parcels registered as grassland in 2015 (or 2012) and for which a different crop was registered in one or more of the four preceding years were reclassified as cropland. As a result, grassland takes on the meaning of permanent (five-year) cultivated grassland. Steps 1 to 5 result in an adjusted land cover map with 25 classes.
-- The adjusted land cover map was then merged with levels 2 to 4 of the Flanders Land Use Dataset according to the procedure described in @poelmans2019landgebruik. Consequently, a limited area of most ecosystems is reclassified to urban and built-up areas. A deviation from the @poelmans2019landgebruik procedure was made for cells with a land cover of "other" (i.e., unknown) that fall outside the urbanized land use zone (land use dataset, level 2). For this analysis, those parcels were included in the urban and built-up area class. This leads to an adjusted land use map with 34 land use classes (see @tbl-nara2020-aanpassingen, column 2).
-- The adjusted land use map is reduced to an ecosystem map with 10 classes (see @tbl-nara2020-aanpassingen, column 3). This classification is based on an ecosystem typology proposed by the European Commission [@maes2013mapping; @maes2018mapping] and the guidelines of the Copernicus Land Monitoring Service.
-
-```{r}
-#| label: tbl-nara2020-aanpassingen
-#| tbl-cap: "Adjustments made to the land use map for NARA 2020 (in Dutch)."
-nara2020_aanpassingen <- git2rdata::read_vc(
-  "nara2020_aanpassingen_landgebruik",
-  here::here("../../data")
-) %>%
-  mutate(
-    across(
-      everything(),
-      ~ factor(
-        .x,
-        levels = stringr::str_sort(.x, numeric = TRUE) %>% unique()
-      )
-    )
-  ) %>%
-  arrange(aangepaste_bodembedekkingskaart)
-
-nara2020_aanpassingen %>%
-  rename(
-    `Adapted soil cover map` = aangepaste_bodembedekkingskaart,
-    `Adapted land use map` = aangepaste_landgebruikskaart,
-    `Ecosystem extent class NARA level 2` = ecosysteemvoorraad_nara_niveau_2
-  ) |> 
-  kable()
-
-```
-
-A subsequent project building upon this [@jocque2022] aimed to examine various improvement options for this land use map in a pilot project and to determine whether the improved maps effectively contributed to higher accuracy.
-Four different improvement options were tested, and their accuracy was evaluated and compared against the base map described above and used in @schneiders2020:
-
-- **Base map + forest:** For this map, the base map was improved using the *Boswijzer* (Forest Indicator, available for 2009, 2015, 2018). In practice, this means a step is added in the forest layer via the Digital Forest Indicator, prioritizing forests over other terrestrial classes (e.g., other low vegetation).
-- **Base map + grass:** Due to vegetation discoloration in dry years, low vegetation is often identified as "other". Permanent grassland in agricultural use is identified based on five consecutive agricultural declarations. However, the declaration does not confirm whether the grassland is ploughed up or not. Both land use types could be mapped more accurately by analyzing short-term time series of satellite images, similar to how the ploughing up of polder grasslands is monitored.
-- **Base map + soil sealing map (BAK):** The soil sealing map (BAK) has a 5 m x 5 m resolution and can be used to identify paved surfaces within the "other" class of the land use map. "Other" cells that overlap with the BAK remain "other", and the remaining cells become low vegetation.
-- **Base map + forest + grass + bak:** A combination of the three previous maps.
-
-### European guidelines
-
-In @jocque2022, a link is made between these land use maps and the possibilities they offer for reporting on ecosystem extent accounts according to the guidelines provided by "The System of Environmental-Economic Accounting—Ecosystem Accounting (SEEA EA)" [@seea2021].
-The SEEA EA framework provides the basis for compiling various ecosystem accounts, featuring the following five main ecosystem accounts:
-
-- Ecosystem extent account
-- Ecosystem condition account
-- Ecosystem services flow account in physical terms
-- Ecosystem services flow account in monetary terms
-- Monetary ecosystem asset account
-
-The ecosystem extent account forms the foundation for all subsequent ecosystem accounts and is therefore highly important.
-An ecosystem extent account measures the location and area of the different ecosystem types for a specific region.
-An ecosystem account typically covers a specific period.
-For this period, the ecosystem extent account reflects the state at the beginning and end of the period, as well as the area changes between ecosystems over this period (what has changed and what has remained the same?).
-
-The EEA proposes a three-tier approach to developing ecosystem extent accounts in Europe [@seea2021].
-Level I includes ecosystem classes that correspond and overlap with the broad ecosystem types developed in the MAES (Mapping and Assessment of Ecosystems and their Services) process (14 classes).
-Level II accounts provide a further subdivision of Level I ecosystem types and include 23 ecosystem categories.
-Level III accounts add even more resolution, further subdividing the Level II accounts, and include 30 ecosystem types.
-
-The 14 Level I classes are:
-
-1.  Artificial surfaces (including urban and associated areas)
-2.  Herbaceous crops
-3.  Woody crops
-4.  Multiple or layered crops
-5.  Grassland
-6.  Tree covered areas
-7.  Mangroves
-8.  Shrub covered areas
-9.  Shrubs and/or herbaceous vegetation, aquatic or regularly flooded
-10. Sparsely natural vegetated areas
-11. Terrestrial barren land
-12. Permanent snow and glaciers
-13. Inland water bodies
-14. Coastal water bodies and inter-tidal areas
-
-## Validation of Ecosystem Maps of Flanders used by NARA 2020
-
-### Approach
-
-```{r}
-validatieklassen <-
-  tibble(
-    nummer = 1:9,
-    class = c(
-      "Open nature",
-      "Forest",
-      "Grassland",
-      "Cropland",
-      "Urban",
-      "Low vegetation",
-      "High vegetation",
-      "Water",
-      "Other"
-    ) |> forcats::fct_inorder(),
-    klasse = c(
-      "Open natuur",
-      "Bos",
-      "Grasland",
-      "Akker",
-      "Urbaan",
-      "Laag groen",
-      "Hoog groen",
-      "Water",
-      "Overig"
-    ) |> forcats::fct_inorder()
-  )
-validatieklassen_namedvec <- as.character(validatieklassen$nummer)
-names(validatieklassen_namedvec) <- validatieklassen$klasse
-
-validatiepunten <- git2rdata::read_vc(
-  "validatiepunten",
-  here::here("../../data")
-) |>
-  as_tibble() %>%
-  janitor::clean_names() %>%
-  rename(
-    x2013_0 = x2013,
-    x2016_0 = x2016,
-    change_0 = change
-  ) %>%
-  pivot_longer(
-    cols = matches("^x|^change_"),
-    names_prefix = "x",
-    names_to = c("name", "validator"),
-    names_sep = "_"
-  ) %>%
-  dplyr::filter(value != "<Null>") %>%
-  pivot_wider(
-    names_from = name,
-    values_from = value
-  ) %>%
-  rename(
-    map_2013 = change2013,
-    map_2016 = change2016,
-    map_change = type,
-    ref_2013 = `2013`,
-    ref_2016 = `2016`,
-    ref_change = change
-  ) %>%
-  droplevels() %>%
-  mutate(
-    map_change = ifelse(
-      map_2013 == map_2016, "unchanged", "changed"
-    ) |> factor(),
-    ref_change = ifelse(
-      ref_2013 == ref_2016, "unchanged", "changed"
-    ) |> factor(),
-    ref_2013 = forcats::fct_relevel(ref_2013, levels(validatieklassen$klasse)),
-    ref_2016 = forcats::fct_relevel(ref_2016, levels(validatieklassen$klasse)),
-    map_2013 = forcats::fct_recode(
-      factor(map_2013),
-      !!!validatieklassen_namedvec[validatieklassen_namedvec != "8"]
-    ),
-    map_2016 = forcats::fct_recode(
-      factor(map_2016), !!!validatieklassen_namedvec
-    )
-  ) %>%
-  select(
-    objectid,
-    validatorid = validator,
-    map_2013, map_2016, map_change,
-    starts_with("ref"),
-    starts_with("point")
-  ) %>%
-  dplyr::filter(complete.cases(.))
-
-```
-
-The accuracy of the base map was previously examined using a validation dataset of 3,815 points in [this study](https://www.vlaanderen.be/inbo/backgroundindicatoren/landgebruiksverandering-validatie).
-The same validation set was used to test the improvement options from @jocque2022, which build upon the base map.
-
-- **Typology:** The original 25 land use classes were grouped into nine validation classes, though water is absent from the final validation set.
-
-```{r}
-kable(validatieklassen |> select(class))
-
-```
-
-- **Sampling unit:** 10 m x 10 m raster cell
-- **Sampling design:**
-  - Stratified random sampling.
-  - Proportionally distributed across the change classes based on their area share, with a minimum of 40 points for the classes with the smallest area [@olofsson2014].
-- **Sample size:** Based on a reliability estimate per change class and the proportion of each change class in the total area, a sample size of 3,815 points was determined (3,802 realized), of which 900 do not change land use according to the map (898 realized). In addition, for each evaluator, 30 points were cross-checked by a second evaluator to assess inter-evaluator variation (300 in total, though 304 checks were realized).
-
-```{r}
-validatiepunten %>%
-  select(objectid, starts_with("map")) %>%
-  mutate(
-    across(
-      matches("map_\\d{4}"),
-      \(x) factor(x, levels = validatieklassen$klasse, labels = validatieklassen$class)
-    )
-  ) |> 
-  summarize(
-    number_of_validations = n_distinct(objectid),
-    number_of_validator_checks = n() - n_distinct(objectid),
-    .by = c(map_change, map_2013, map_2016)
-  ) %>%
-  arrange(map_change, desc(number_of_validations)) %>%
-  gt::gt(
-    groupname_col = "map_change"
-  ) %>%
-  gt::summary_rows(
-    columns = c(number_of_validations, number_of_validator_checks),
-    fns = list(subtotal ~ sum(.))
-  ) %>%
-  gt::grand_summary_rows(
-    columns = c(number_of_validations, number_of_validator_checks),
-    fns = list(total ~ sum(.))
-  )
-
-```
-
-- **Response design:**
-  - The points were validated by ten evaluators based on aerial photographs and additional information from the attribute tables of the agricultural parcel database and the Biological Valuation Map (BWK).
-  - For each point, the evaluator noted whether the land use changed between 2013 and 2016, and what the land use was in both years.
-
-### Main Conclusions
-
-- **State:**
-  - User and producer accuracy:
-- **Changes (2013 to 2016):**
-  - User and producer accuracy:
-
-```{r}
-#| eval: false
-library(caret)
-
-validatiepunten <- validatiepunten %>%
-  mutate(
-    map_2013_2016 =
-      paste(abbreviate(map_2013), abbreviate(map_2016), sep = "-") |>
-       factor(),
-    ref_2013_2016 =
-      paste(abbreviate(ref_2013), abbreviate(ref_2016), sep = "-") |>
-      factor(levels = levels(map_2013_2016))
-  )
-
-# Create confusion matrix
-cm_2013 <- confusionMatrix(validatiepunten$map_2013, validatiepunten$ref_2013)
-cm_2016 <- confusionMatrix(validatiepunten$map_2016, validatiepunten$ref_2016)
-cm_2013_2016 <- confusionMatrix(
-  validatiepunten$map_2013_2016,
-  validatiepunten$ref_2013_2016
-)
-# View the confusion matrix
-print(cm_2013$table)
-print(cm_2016$table)
-print(cm_2013_2016$table)
-
-# Calculate user's accuracy (precision)
-ua_2013 <- cm_2013$byClass[, "Precision"]
-ua_2013_2016 <- cm_2013_2016$byClass[, "Precision"]
-# Calculate producer's accuracy (recall)
-pa_2013 <- cm_2013$byClass[, "Recall"]
-
-ua_2013
-pa_2013
-
-```
-
 ## Area and accuracy estimation of land cover
 
 The unbiased estimation land cover area and validation of land cover from a map requires a probabilistic sample [@strahler2008; @olofsson2014; @haub2015 and @stehman2019].
@@ -364,7 +54,6 @@ However, they cannot provide a clear explanation for these differences.
 
 @gu2020 argue that pixel-based accuracy estimates are inadvisable when positional accuracy is a concern.
 This issue worsens in heterogeneous landscapes and as the land use classification encompasses more classes.
-
 @gu2021 investigated the same effect for blocks of pixels and assert that this is preferable.
 
 @radoux2017 delve into the specific issues associated with polygon-based accuracy estimates.
@@ -394,7 +83,7 @@ The subsample size is not predetermined; rather, more subsamples are evaluated c
 - Systematic errors due to incorrect interpretation of the information in the aerial photograph.
 - Errors due to variability at the sub-sample level within a sampling unit.
 
-@see2022 Geo Wiki for crowd-sourcing reference data.
+Finally, @see2022 consider usage of Geo Wiki for crowd-sourcing reference data.
 
 ### Choices related to analysis
 
@@ -569,3 +258,293 @@ For instance, @tsendbazar2021 apply the following procedure to validate annual g
   - Consider the union of the three periods (any pixel where the land use was present in at least one of the three periods).
   - Consider stable states and changes to any other land use (thus, specific transitions from land use x to land use y are ignored). For three periods, stable is coded as "111". All possible changes are: "001", "010", "100", "011", "110", "101". This yields a maximum of 7 strata, but highly improbable changes are omitted (e.g., for artificial surfaces, only "111" (stable), "011" (increase from period 2), and "001" (increase in period 3) are considered).
 - Stratification: land uses $\times$ maximum 7 strata. Generally, for $K$ land uses and $p$ periods, we have a maximum of $K \times (2^p-1)$ strata.
+
+
+## Land use typology
+
+### Flanders land use dataset and land use map
+
+@poelmans2019landgebruik and @poelmans2021 describe the data sources and methods used to produce the land use maps.
+The various data sources are combined into a **land use dataset**.
+This dataset consists of a combination of both GIS layers (vector and raster files) and other (spatial) databases.
+The land use dataset and its underlying data sources are updated every three years.
+The first year for which this is available is 2013.
+The state of a land use dataset in a given year will not necessarily accurately reflect the actual conditions everywhere in that year.
+It represents the last known - and thus potentially dated - state according to a specific data source.
+
+The **land use maps** are derived (raster) products based on the information in the land use datasets.
+The data are merged in a specific order into a geodatabase containing 4 raster layers with a 10 m resolution (1 are):
+
+- Level 1 land cover (22 classes)
+- Level 2 urbanized land use (39 classes)
+- Level 3 multifunctional land use (6 classes)
+- Level 4 port areas and military domains (2 classes)
+
+These layers are subsequently combined in a specific order into a single-layer, area-covering land use map.
+
+In @poelmans2019landgebruik and @poelmans2021, a methodology was used that resulted in a land use map with 18 classes.
+This method establishes several rules that determine what the land use map will look like:
+
+- The different land use classes, as well as a hierarchical system to cluster land uses at higher levels.
+- Which data sources are used for which land use classes.
+- Which aggregations are necessary (of classes within one of the data sources) and which combinations of data sources are required.
+- The order in which land uses are assigned to a raster cell.
+- The spatial resolution of the derived raster product.
+
+There is, therefore, flexibility in the exact method used, and the choices made depend on the purposes for which the map will be used.
+Care must only be taken to ensure that the same method is used when comparing land use maps from different years.
+
+The land use maps themselves, which are created based on the land use dataset by the VPO division of the Department of Environment and Spatial Development, are available on [Geopunt](https://www.vlaanderen.be/datavindplaats/catalogus/landgebruik-vlaanderen-toestand-2022).
+However, for FLEA, we will create ecosystem maps based on an ecosystem extent classification that differs from the classes of that land use map.
+
+### Ecosystem maps of Flanders used by NARA 2020
+
+For the Nature Report 2020 (NARA 2020), two "ecosystem maps" (one for 2013 and one for 2016) were created [@schneiders2020], utilizing a different methodology than the land use map discussed by @poelmans2019landgebruik and @poelmans2021.
+For the analyses in @schneiders2020, a classification into ten ecosystems (land uses) was used, and the land cover layer of the Flanders Land Use Dataset was adjusted as follows:
+
+- In the Scheldt estuary, mudflats and salt marshes were adjusted based on ecotope maps for 2013 and 2016, prioritizing mudflats and salt marshes over the water layer or other terrestrial classes (e.g., other low vegetation).
+- In the Yser and Scheldt estuaries, water in the tidal zone was reclassified into an additional transitional water class; the remaining water is considered freshwater.
+- The coastal water surface area was expanded to encompass the entire Belgian part of the North Sea and classified as marine.
+- The land cover class rough patches and scrub was split into rough patches and scrub based on the `BWK_natuur` raster layer.
+- Agricultural parcels registered as grassland in 2015 (or 2012) and for which a different crop was registered in one or more of the four preceding years were reclassified as cropland. As a result, grassland takes on the meaning of permanent (five-year) cultivated grassland. Steps 1 to 5 result in an adjusted land cover map with 25 classes.
+- The adjusted land cover map was then merged with levels 2 to 4 of the Flanders Land Use Dataset according to the procedure described in @poelmans2019landgebruik. Consequently, a limited area of most ecosystems is reclassified to urban and built-up areas. A deviation from the @poelmans2019landgebruik procedure was made for cells with a land cover of "other" (i.e., unknown) that fall outside the urbanized land use zone (land use dataset, level 2). For this analysis, those parcels were included in the urban and built-up area class. This leads to an adjusted land use map with 34 land use classes (see @tbl-nara2020-aanpassingen, column 2).
+- The adjusted land use map is reduced to an ecosystem map with 10 classes (see @tbl-nara2020-aanpassingen, column 3). This classification is based on an ecosystem typology proposed by the European Commission [@maes2013mapping; @maes2018mapping] and the guidelines of the Copernicus Land Monitoring Service.
+
+```{r}
+#| label: tbl-nara2020-aanpassingen
+#| tbl-cap: "Adjustments made to the land use map for NARA 2020 (in Dutch)."
+nara2020_aanpassingen <- git2rdata::read_vc(
+  "nara2020_aanpassingen_landgebruik",
+  here::here("../../data")
+) %>%
+  mutate(
+    across(
+      everything(),
+      ~ factor(
+        .x,
+        levels = stringr::str_sort(.x, numeric = TRUE) %>% unique()
+      )
+    )
+  ) %>%
+  arrange(aangepaste_bodembedekkingskaart)
+
+nara2020_aanpassingen %>%
+  rename(
+    `Adapted soil cover map` = aangepaste_bodembedekkingskaart,
+    `Adapted land use map` = aangepaste_landgebruikskaart,
+    `Ecosystem extent class NARA level 2` = ecosysteemvoorraad_nara_niveau_2
+  ) |> 
+  kable()
+
+```
+
+A subsequent project building upon this [@jocque2022] aimed to examine various improvement options for this land use map in a pilot project and to determine whether the improved maps effectively contributed to higher accuracy.
+Four different improvement options were tested, and their accuracy was evaluated and compared against the base map described above and used in @schneiders2020:
+
+- **Base map + forest:** For this map, the base map was improved using the *Boswijzer* (Forest Indicator, available for 2009, 2015, 2018). In practice, this means a step is added in the forest layer via the Digital Forest Indicator, prioritizing forests over other terrestrial classes (e.g., other low vegetation).
+- **Base map + grass:** Due to vegetation discoloration in dry years, low vegetation is often identified as "other". Permanent grassland in agricultural use is identified based on five consecutive agricultural declarations. However, the declaration does not confirm whether the grassland is ploughed up or not. Both land use types could be mapped more accurately by analyzing short-term time series of satellite images, similar to how the ploughing up of polder grasslands is monitored.
+- **Base map + soil sealing map (BAK):** The soil sealing map (BAK) has a 5 m x 5 m resolution and can be used to identify paved surfaces within the "other" class of the land use map. "Other" cells that overlap with the BAK remain "other", and the remaining cells become low vegetation.
+- **Base map + forest + grass + bak:** A combination of the three previous maps.
+
+### European guidelines
+
+In @jocque2022, a link is made between these land use maps and the possibilities they offer for reporting on ecosystem extent accounts according to the guidelines provided by "The System of Environmental-Economic Accounting—Ecosystem Accounting (SEEA EA)" [@seea2021].
+The SEEA EA framework provides the basis for compiling various ecosystem accounts, featuring the following five main ecosystem accounts:
+
+- Ecosystem extent account
+- Ecosystem condition account
+- Ecosystem services flow account in physical terms
+- Ecosystem services flow account in monetary terms
+- Monetary ecosystem asset account
+
+The ecosystem extent account forms the foundation for all subsequent ecosystem accounts and is therefore highly important.
+An ecosystem extent account measures the location and area of the different ecosystem types for a specific region.
+An ecosystem account typically covers a specific period.
+For this period, the ecosystem extent account reflects the state at the beginning and end of the period, as well as the area changes between ecosystems over this period (what has changed and what has remained the same?).
+
+The EEA proposes a three-tier approach to developing ecosystem extent accounts in Europe [@seea2021].
+Level I includes ecosystem classes that correspond and overlap with the broad ecosystem types developed in the MAES (Mapping and Assessment of Ecosystems and their Services) process (14 classes).
+Level II accounts provide a further subdivision of Level I ecosystem types and include 23 ecosystem categories.
+Level III accounts add even more resolution, further subdividing the Level II accounts, and include 30 ecosystem types.
+
+The 14 Level I classes are:
+
+1.  Artificial surfaces (including urban and associated areas)
+2.  Herbaceous crops
+3.  Woody crops
+4.  Multiple or layered crops
+5.  Grassland
+6.  Tree covered areas
+7.  Mangroves
+8.  Shrub covered areas
+9.  Shrubs and/or herbaceous vegetation, aquatic or regularly flooded
+10. Sparsely natural vegetated areas
+11. Terrestrial barren land
+12. Permanent snow and glaciers
+13. Inland water bodies
+14. Coastal water bodies and inter-tidal areas
+
+## Validation of ecosystem maps of Flanders used by NARA 2020
+
+### Approach
+
+```{r}
+validatieklassen <-
+  tibble(
+    nummer = 1:9,
+    class = c(
+      "Open nature",
+      "Forest",
+      "Grassland",
+      "Cropland",
+      "Urban",
+      "Low vegetation",
+      "High vegetation",
+      "Water",
+      "Other"
+    ) |> forcats::fct_inorder(),
+    klasse = c(
+      "Open natuur",
+      "Bos",
+      "Grasland",
+      "Akker",
+      "Urbaan",
+      "Laag groen",
+      "Hoog groen",
+      "Water",
+      "Overig"
+    ) |> forcats::fct_inorder()
+  )
+validatieklassen_namedvec <- as.character(validatieklassen$nummer)
+names(validatieklassen_namedvec) <- validatieklassen$klasse
+
+validatiepunten <- git2rdata::read_vc(
+  "validatiepunten",
+  here::here("../../data")
+) |>
+  as_tibble() %>%
+  janitor::clean_names() %>%
+  rename(
+    x2013_0 = x2013,
+    x2016_0 = x2016,
+    change_0 = change
+  ) %>%
+  pivot_longer(
+    cols = matches("^x|^change_"),
+    names_prefix = "x",
+    names_to = c("name", "validator"),
+    names_sep = "_"
+  ) %>%
+  dplyr::filter(value != "<Null>") %>%
+  pivot_wider(
+    names_from = name,
+    values_from = value
+  ) %>%
+  rename(
+    map_2013 = change2013,
+    map_2016 = change2016,
+    map_change = type,
+    ref_2013 = `2013`,
+    ref_2016 = `2016`,
+    ref_change = change
+  ) %>%
+  droplevels() %>%
+  mutate(
+    map_change = ifelse(
+      map_2013 == map_2016, "unchanged", "changed"
+    ) |> factor(),
+    ref_change = ifelse(
+      ref_2013 == ref_2016, "unchanged", "changed"
+    ) |> factor(),
+    ref_2013 = forcats::fct_relevel(ref_2013, levels(validatieklassen$klasse)),
+    ref_2016 = forcats::fct_relevel(ref_2016, levels(validatieklassen$klasse)),
+    map_2013 = forcats::fct_recode(
+      factor(map_2013),
+      !!!validatieklassen_namedvec[validatieklassen_namedvec != "8"]
+    ),
+    map_2016 = forcats::fct_recode(
+      factor(map_2016), !!!validatieklassen_namedvec
+    )
+  ) %>%
+  select(
+    objectid,
+    validatorid = validator,
+    map_2013, map_2016, map_change,
+    starts_with("ref"),
+    starts_with("point")
+  ) %>%
+  dplyr::filter(complete.cases(.))
+
+```
+
+The accuracy of the base map was previously examined using a validation dataset of 3,815 points in [this study](https://www.vlaanderen.be/inbo/backgroundindicatoren/landgebruiksverandering-validatie).
+The same validation set was used to test the improvement options from @jocque2022, which build upon the base map.
+
+- **Typology:** The original 25 land use classes were grouped into nine validation classes, though water is absent from the final validation set @tbl-validatieklassen-nara2020.
+
+```{r}
+#| label: tbl-validatieklassen-nara2020
+#| tbl-cap: Validation classes used in in NARA 2020 validation
+kable(validatieklassen |> select(class))
+
+```
+
+- **Sampling unit:** 10 m x 10 m raster cell
+- **Sampling design:**
+  - Stratified random sampling.
+  - Proportionally distributed across the change classes based on their area share, with a minimum of 40 points for the classes with the smallest area [@olofsson2014].
+- **Sample size:** Based on a reliability estimate per change class and the proportion of each change class in the total area, a sample size of 3,815 points was determined (3,802 realized), of which 900 do not change land use according to the map (898 realized). In addition, for each evaluator, 30 points were cross-checked by a second evaluator to assess inter-evaluator variation (300 in total, though 304 checks were realized). See @tbl-validation-points-nara2020
+
+```{r}
+#| label: tbl-validation-points-nara2020
+#| tbl-cap: Sample size allocation across strata used in the validation study of NARA 2020  
+validatiepunten %>%
+  select(objectid, starts_with("map")) %>%
+  mutate(
+    across(
+      matches("map_\\d{4}"),
+      \(x) factor(x, levels = validatieklassen$klasse, labels = validatieklassen$class)
+    )
+  ) |> 
+  summarize(
+    number_of_validations = n_distinct(objectid),
+    number_of_validator_checks = n() - n_distinct(objectid),
+    .by = c(map_change, map_2013, map_2016)
+  ) %>%
+  arrange(map_change, desc(number_of_validations)) %>%
+  gt::gt(
+    groupname_col = "map_change"
+  ) %>%
+  gt::summary_rows(
+    columns = c(number_of_validations, number_of_validator_checks),
+    fns = list(subtotal ~ sum(.))
+  ) %>%
+  gt::grand_summary_rows(
+    columns = c(number_of_validations, number_of_validator_checks),
+    fns = list(total ~ sum(.))
+  )
+
+```
+
+- **Response design:**
+  - The points were validated by ten evaluators based on aerial photographs and additional information from the attribute tables of the agricultural parcel database and the Biological Valuation Map (BWK).
+  - For each point, the evaluator noted whether the land use changed between 2013 and 2016, and what the land use was in both years.
+
+### Main findings
+
+@fig-area-estimates-nara-2020 shows the results for the NARA 2020 validation.
+The results indicate that a validation sample can correct the naive biased estimates for area as obtained from pixel-counting times pixel area.
+The figure also shows that the amount of bias increases depending on how different user and producer accuracies are.
+For the no-change classes, the bias is small.
+For the changed classes, the bias can be substantial.
+We also see that change classes with low user accuracy estimated from a small sample size will result in a degenerate lower confidence bound.
+In almost all cases, user's accuracy was lower than producer's accuracy, resulting in an overestimation of the (pixelcount) map-based estimates.
+
+```{r}
+#| label: fig-area-estimates-nara-2020
+#| fig-cap: Area estimates and user and producer accuracy for 5 no-change classes and 20 changed classes (changes from 2013 to 2016). The unbiased estimates are indicated with a point and 95% confidence intervals. The biased estimate from pixel counting are indicated with a cross.
+
+knitr::include_graphics(here::here("media/nara-2020-area-estimates.png"))
+
+```
+
