@@ -286,7 +286,7 @@ ua_pa_df %>%
   geom_errorbar(aes(xmin = pa_low, xmax = pa_high), alpha = 0.3) +
   coord_equal(xlim = c(0, 1), ylim = c(0, 1))
 
-mapac::aa_class_accuracy_plot(aa)
+mapac::aa_plot_classes(aa)
 mapac::aa_flextable(
   aa,
   diagonal = TRUE,
@@ -614,7 +614,7 @@ areas_df %>%
 
 n_est <- data.frame(oa_ses = seq(0.001, 0.01, 0.001)) |>
   mutate(
-    n_tot = mapac::sample_size(
+    n_tot = mapac::aa_sample_size(
       oa_se = oa_ses,
       w = maparea$area / sum(maparea$area),
       ua = aa$stats$ua
@@ -751,17 +751,16 @@ mapfield <- mapdata |>
 
 # calculate accuracies for field
 aa_field <- mapac::aa_card(
-  data = validationdata[, c("Field_ref_changecat", "Field_map_changecat")] |>
-    as.data.frame(),
+  x = validationdata$Field_ref_changecat,
+  m = validationdata$Field_map_changecat,
   w = (mapfield$area / sum(mapfield$area))[order(mapfield$Field_changecat)],
-  strata = simplechange,
+  h = sort(mapfield$Field_changecat),
   area = sum(mapfield$area),
-  confusion_matrix = FALSE,
   olofsson = TRUE
 )
 
-mapac::aa_confusion_matrix_flextable(aa_field)
-mapac::aa_class_accuracy_plot(aa_field)
+mapac::aa_flextable(aa_field)
+mapac::aa_plot_classes(aa_field)
 
 aa_field2 <- mapac::aa_stratified(
   stratum = validationdata$map,
@@ -771,5 +770,5 @@ aa_field2 <- mapac::aa_stratified(
   N_h = (maparea$n)[order(maparea$changecat)]
 )
 
-mapac::aa_confusion_matrix_flextable(aa_field2)
-mapac::aa_class_accuracy_plot(aa_field2)
+mapac::aa_flextable(aa_field2)
+mapac::aa_plot_classes(aa_field2)
