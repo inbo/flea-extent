@@ -34,7 +34,7 @@ We review each of them in the following sections.
 
 ### Choices related to sampling design
 
-The most commonly recommended sampling design for accuracy and area estimation of land cover is a stratified random sampling design with proportional allocation of the total sample size across strata [@olofsson] and equal probability sampling within strata.
+The most commonly recommended sampling design for accuracy and area estimation of land cover is a stratified random sampling design with proportional allocation of the total sample size across strata [@olofsson2014] and equal probability sampling within strata.
 Usually, the allocation rule includes setting a minimum sample size to avoid small strata receiving too few samples.
 
 The within stratum equal probability sample can be a simple random sample without replacement, but for sampling spatial domains, this is better avoided and replaced by sample selection algorithms which ensure samples are well spread across the spatial domain of the stratum.
@@ -228,6 +228,45 @@ $$\hat{p_{\cdot k}} = \sum^q_{i=1}W_i\frac{n_{ik}}{n_{i\cdot}}$$ for which a 95%
 $$\mathrm{SE}(\hat{p}_{\cdot k}) = \sqrt{\sum_i w_i^2 \frac{\dfrac{n_{ik}}{n_{i\cdot}}\!\left(1 - \dfrac{n_{ik}}{n_{i\cdot}}\right)}{n_{i\cdot} - 1}} = \sqrt{\sum_i \frac{W_i \hat{p}_{ik} - \hat{p}_{ik}^2}{n_{i\cdot} - 1}}$$
 
 Multiplying these estimators by the total map area yields corresponding area estimations.
+
+To see the bridge between the formula for the post-stratification estimator, we need to extent the Bayes formulae to all mapped strata.
+The true proportion of a reference class $k$, $P(\text{reference} = k)$, can be expanded across all map strata $i = 1, \dots, q$:
+
+$$P(\text{reference} = k) = \sum_{i=1}^{q} P(\text{reference} = k | \text{map} = i) P(\text{map} = i)$$
+In the context of map validation:$P(\text{map} = i)$ is the known proportion of the map assigned to class $i$, denoted as the stratum weight $W_i$.
+$P(\text{reference} = k | \text{map} = i)$ is the conditional probability that a pixel mapped as $i$ is actually class $k$ on the ground.
+When $i = k$, this conditional probability is exactly the User's Accuracy ($UA_k$). 
+When $i \neq k$, it represents the classification error (commission error for class $i$).
+We estimate this conditional probability using the sample data within each stratum:
+
+$$P(\text{reference} = k | \text{map} = i) \approx \frac{n_{ik}}{n_{i\cdot}}$$
+Substituting these directly yields the Olofsson post-stratification estimator:
+
+$$\hat{p}_{\cdot k} = \sum_{i=1}^{q} W_i \frac{n_{ik}}{n_{i\cdot}}$$
+This same estimator naturally emerges from classical survey statistics.
+In a stratified random sampling design, unbiased totals are calculated using inverse probability weights.
+Let $N_i$ be the total number of pixels in map stratum $i$, and $n_{i\cdot}$ be the number of sampled pixels in that stratum.
+The inclusion probability for any pixel in stratum $i$ is $\pi_i = \frac{n_{i\cdot}}{N_i}$, making the design weight $w_i = \frac{N_i}{n_{i\cdot}}$.
+Let $y_{jk}$ be an indicator variable equalling 1 if the sampled pixel $j$ belongs to reference class $k$, and 0 otherwise.
+The Horvitz-Thompson estimator for the total area $\hat{A}_k$ of reference class $k$ sums the weights of all matching sample points:
+
+$$\hat{A}_k = \sum_{i=1}^{q} \sum_{j=1}^{n_{i\cdot}} w_i y_{jk} = \sum_{i=1}^{q} \frac{N_i}{n_{i\cdot}} n_{ik}$$
+
+To find the area proportion $\hat{p}_{\cdot k}$, we divide this estimated total by the total map area $N_{\text{tot}}$:
+
+$$\hat{p}_{\cdot k} = \frac{\hat{A}_k}{N_{\text{tot}}} = \sum_{i=1}^{q} \frac{N_i}{N_{\text{tot}}} \frac{n_{ik}}{n_{i\cdot}} = \sum_{i=1}^{q} W_i \frac{n_{ik}}{n_{i\cdot}}$$
+This demonstrates that the probability-based expansion and the design-based Horvitz-Thompson estimator are identical.
+This also means that we can leverage specialized survey sampling software to arrive at the estimates for areas and the accuracies.
+To do this, we need to cast the data to long-format data.
+The inverse probability weights inherently incorporate the map marginal totals and thus recover the known marginal totals per stratum.
+This allows survey packages to output the exact same unbiased area estimates and standard errors as the standard formulas found in @olofsson2014.
+While the remote sensing and map validation literature provides readily available formulas for simple or stratified random sampling, it often lacks explicit, easy-to-use formulas for more complex sampling strategies.
+The connection shown here to survey design theory and software considerably broadens the scope to more complex sampling strategies.
+For example, consider a two-stage (stratified) cluster sampling design.
+In such a scenario, we might first randomly select primary sampling units (e.g., $5 \times 5$ pixel blocks) within a stratum and then, in a second stage, validate the individual pixels within those blocks.
+We can then use tools like the `ReGenesees` or `survey` R packages to deal with the more complex design by specification of the primary cluster identifiers, stratification, and corresponding inclusion probabilities.
+Given the design specifications, the estimation functions from these packages will then calculate correct design-based estimators (means, totals, variances).
+
 
 ### Changes between maps or map time series
 

@@ -46,6 +46,9 @@ In practice, however, the procedure is as follows:
 * The entire block is digitized (subdivided into polygons, with a primary and an alternative label assigned to each polygon).
 * This polygon map of the block is rasterized, and this rasterization provides the reference value for each pixel within a block.
 
+
+This approach gives us a lot of freedom in the analysis stage (see @analysis).
+
 ### Reference Data Used
 
 Regarding the **resolution of the aerial photographs (orthophotos)**, the medium-scale photographs from 2023 have a resolution of 15 cm.
