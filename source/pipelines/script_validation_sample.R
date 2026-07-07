@@ -61,11 +61,19 @@ input_names <- c(
   "ecosysteemkaart_niv1_2019_v13",
   "ecosysteemkaart_niv1_2022_v13"
 )
+bronnenkaarten <- c(
+  "bronnenkaart_2016_v13",
+  "bronnenkaart_2019_v13",
+  "bronnenkaart_2022_v13"
+)
+
+
 input_years <- c(2016, 2019, 2022)
 path_to_gdb <- "Z:/Projects/PRJ_FLEA/flea_output.gdb"
 path_to_lbg <- "Z:/Projects/PRJ_FLEA/landbouwdata.gdb"
 path_to_lyr <- "Z:/Projects/PRJ_FLEA/ecosysteemkaart_niv1_v12.lyr"
 path_to_grts <- file.path(flea_data, "data/c-mon/flea_cmon_level15.tiff")
+path_to_sources_lyr <- "Z:/Projects/PRJ_FLEA/bronnenkaart_v13.lyr"
 
 layers_ruimtebeslag <- c(
   "GRB:WBN",
@@ -95,6 +103,8 @@ lbg_mapping_flea_codes <- data.frame(
 habitatmap_terr_mapping_flea_codes <- data.frame(
   flea_id = c(500)
 )
+
+
 # to be changed later: download the raster files from zenodo
 
 # target list:
@@ -122,6 +132,31 @@ sample_selection <- list(
       grts = fleagrts
     ),
     pattern = map(mapnames),
+    preserve_metadata = "zip"
+  ),
+  tar_target(
+    name = sourcenames,
+    command = input_maps(
+      names = bronnenkaarten
+    ),
+    description =
+      "Name of the rasterlayers encoding the source used to assign an ecosystem type"
+  ),
+  tar_target(
+    name = sourcestable,
+    command = get_lyrinfo(lyr = path_to_sources_lyr),
+    description = "categorical mapping for sources"
+  ),
+  tar_terra_rast(
+    name = maps_sources,
+    command = get_map(
+      gdb = path_to_gdb,
+      name = sourcenames,
+      cats = sourcestable,
+      origin = c(0, 0), # same as grts_origin (broken because of old qs R4.6 conflict)
+      grts = fleagrts
+    ),
+    pattern = map(sourcenames),
     preserve_metadata = "zip"
   ),
   # calculate masks
@@ -274,7 +309,7 @@ prelabelling_sources <- list(
       command = get_lbg(
         path_to_lbg = path_to_lbg,
         layer = lbg_layers,
-        from_fields = c("GWSCOD_H", "GWSNAM_H"),
+        from_fields = c("GWSCOD_H", "GWSNAM_H", "STAT_BGV"),
         where_field = "GWSCOD_H",
         # referencing 'lbg_mapping' here automatically resolves to 'lbg_mapping_101'
         # because they are in the same tar_map scope!

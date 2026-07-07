@@ -548,6 +548,22 @@ get_lbg <- function(
   assertthat::assert_that(assertthat::is.string(where_field))
   assertthat::assert_that(is.numeric(where_values))
 
+  # deal with "blijvend grasland"
+  # GWSCOD_H 9, 60, 63, 82, 660, 700, 745, 9823, 9827, 9828, 9829
+  # en STAT_BGV bevat "BG"-blijvend grasland worden ze als grasland beschouwd,
+  # zonder dit BG-veld zijn deze graslandteelten tijdelijk grasland en dus Cropland.
+  # 9 mapped naar 104 (laag groen)
+  # 9828 en 9829 mappen naar 300 (grasland)
+  # de rest van de graslandcodes mappen naar 200 (akkerland)
+  graslandcodes <- c(
+    "9", "60", "63", "82", "660", "700", "745", "9823", "9827", "9828", "9829"
+  )
+
+  # toevoegen igv flea 200 of 300
+  if (flea_value %in% c(200, 300)) {
+    where_values <- sort(unique(c(where_values, as.numeric(graslandcodes))))
+  }
+
   query <- paste0(
     "SELECT ",
     paste0(from_fields, collapse = ","),
@@ -573,6 +589,15 @@ get_lbg <- function(
       lbg[[i]] <-
         format(lbg[[i]], format = "%Y-%m-%dT%H:%M:%S.000Z", tz = "UTC")
     }
+  }
+
+  if (flea_value == 200) {
+    # remove permanent grassland from cropland
+    lbg <- lbg[!(lbg$GWSCOD_H %in% graslandcodes & lbg$STAT_BGV == "BG"), ]
+  }
+  if (flea_value == 300) {
+    # remove temporary grassland from grassland
+    lbg <- lbg[!(lbg$GWSCOD_H %in% graslandcodes & lbg$STAT_BGV != "BG"), ]
   }
 
   return(lbg)
