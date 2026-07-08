@@ -268,7 +268,7 @@ We can then use tools like the `ReGenesees` or `survey` R packages to deal with 
 Given the design specifications, the estimation functions from these packages will then calculate correct design-based estimators (means, totals, variances).
 
 
-### Changes between maps or map time series
+#### Changes between maps or map time series
 
 When evaluating changes between two or more maps, the challenges related to sampling design, response design, and analyses are further amplified because:
 
