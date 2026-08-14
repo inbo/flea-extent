@@ -10,6 +10,9 @@ editor:
 #| include: false
 source("packages.R")
 library(terra)
+library(sf)
+library(ggplot2)
+library(patchwork)
 ```
 
 # Materials and Methods
@@ -57,7 +60,7 @@ withr::with_dir(
 vs_conversions <- terra::extract(x = tm, y = vect(vs), raw = FALSE, bind = TRUE)
 vs_conversions_df <- values(vs_conversions) |>
   as_tibble() |>
-  rename(conversion = label) |> 
+  rename(conversion = label) |>
   mutate(
     stratum_code = stringr::str_extract(stratum_name, "^bc_(\\d+)_changecat", 1)
   ) |>
@@ -66,11 +69,11 @@ vs_conversions_df <- values(vs_conversions) |>
       select(value, ecosystem = label) |>
       mutate(value = as.character(value)),
     by = join_by(stratum_code == value)
-  ) |> 
+  ) |>
   count(stratum_code, ecosystem, changecat, conversion, name = "n_central_cell")
 
-vs_conversions_df |> 
-  mutate(stratum = paste(stratum_code, changecat)) |> 
+vs_conversions_df |>
+  mutate(stratum = paste(stratum_code, changecat)) |>
   group_by(stratum, ecosystem) |>
   arrange(desc(n_central_cell)) |>
   summarize(
@@ -79,7 +82,7 @@ vs_conversions_df |>
       sprintf("%s (%s)", conversion, n_central_cell)
     ),
     .groups = "drop"
-  ) |> 
+  ) |>
   select(ecosystem, stratum, n_total, conversions) |>
   kable(
     booktabs = TRUE
@@ -126,78 +129,54 @@ ecosystem_types <- data.frame(
     "11. Coastal beaches, dunes and wetlands",
     "12. Marine ecosystems (coastal waters, shelf and open ocean)"
   ),
-
   `EU description and source` = c(
     r"{**Description:** This class represent human habitats, i.e. ecosystems that are strongly modified by people and that are characterised by buildings and other man-made structures. It includes dispersed and dense residential, industrial, commercial, and transport areas, urban green areas, mineral and gravel extraction sites, dumping and construction sites. The class excludes peat extraction sites (classified under 'Inland wetlands'). The class has also been labelled 'urban ecosystems'. **Source:** Based on Maes et al., 2013.}",
-
     r"{**Description:** Croplands are food production areas including both intensively managed cropland, extensively managed cropland, and multifunctional areas. They include areas with perennial and annual crops, and agro-ecosystems with significant coverage of natural vegetation (agricultural mosaics). Cropland may include agro-forestry areas such as cork and holm oak stands (see respective classes at level 2). Small semi-natural elements which are associated with agricultural land use, such as hedges, ponds, grassy margins etc., are considered part of this ecosystem type. **Source:** Based on Maes et al., 2013.}",
-
     r"{**Description:** Grassland covers areas dominated by herbaceous vegetation (including in particular grasses and forbs, but also mosses and lichens) of two kinds -- modified grasslands (sown and used for grazing or hay and silage production) and (semi-)natural (extensively managed) grasslands. Grassland also includes some agroforestry area used for grazing, such as cork and holm oak stands or wooded pasture. Small semi-natural elements which are associated with agricultural land use, such as hedges, ponds, grassy margins etc. are considered part of this ecosystem type. **Source:** Based on Maes et al., 2013.}",
-
     r"{**Description:** Forests and woodlands include tree-dominated ecosystems with a canopy cover generally over 30% (in the temperate climate zone) or 10% (in boreal and Mediterranean climate zones) or vegetation where present trees can reach these thresholds in situ. For boreal and Mediterranean forest types a lower threshold is advisable due to extreme climatic conditions, which naturally limit the growth of trees and relative canopy cover. **Source:** Based on Maes et al., 2013.}",
-
     r"{**Description:** Heathland and shrub are areas with vegetation dominated by shrubs or dwarf shrubs, which may include dispersed trees with a canopy cover below 30%. They include natural ecosystems of predominantly harsh conditions as well as secondary ecosystems created by extensive human use. The class includes heathlands and sclerophyllous vegetation. **Source:** Based on Maes et al., 2013.}",
-
     r"{**Description:** Sparsely or unvegetated ecosystems have a low density of vegetation, with typically at least 70% of barren soil. They include degraded sparsely or degraded non-vegetated areas as well as ecosystems under extreme natural conditions which may be traditionally grazed. They include bare rocks, glaciers, inland dunes and sand plains. In spite of low vegetation density, the ecosystems may contain high biodiversity of species adapted to an extreme environment. **Source:** Based on Maes et al., 2013.}",
-
     r"{**Description:** Inland wetlands are areas that are year-round or seasonally strongly affected by water, in the form of temporary flooding or groundwater levels close to surface. This class includes natural, semi-natural or modified inland marshes as well as mires, bogs and fens, but excludes seasonally flooded grasslands and heathlands, for example. It also includes peat extraction sites. **Source:** Based on Maes et al., 2013.}",
-
     r"{**Description:** Permanent freshwater inland surface waters of linear character. These include natural water courses, such as rivers, streams etc., as well as anthropogenic structures built for transportation, drainage or water supply purposes, i.e., canals, ditches etc. **Source:** Based on Maes et al., 2013.}",
-
     r"{**Description:** Permanent freshwater inland surface waters composed of primarily non-linear water bodies. These include natural water bodies (lakes) as well as anthropogenic water bodies developed mainly for water supply or energy generation purposes. **Source:** Based on Maes et al., 2013.}",
-
     r"{**Description:** Marine inlets and transitional waters are ecosystems on the land-water interface under the influence of tides and with salinity higher than 0.5 permille. They include lagoons, estuaries and other transitional waters. **Source:** Based on Maes et al., 2013.}",
-
     r"{**Description:** The class coastal areas refers to land-based ecosystems close to the sea, with marine influences, such as salt spray and saline groundwater, and that may be flooded during high tide or extreme events. The class includes beaches, dunes (which may include wetland areas below the MMU in between rows of dunes) and coastal saltmarshes and salines. **Source:** Completes terrestrial ecosystem types from Maes et al., 2013.}",
-
     r"{**Description:** Marine ecosystems include all marine areas in the sea extent at low tide level or below mean sea level. This ranges from near-shore ecosystems to deep water marine ecosystems. Aligned with accounting principles, the ecosystem includes the whole water column including the seabed and the pelagic zone. **Source:** Completes Maes et al. 2013 with a marine ecosystem type.}"
   ),
-
   `Flemish description and source (in Dutch, to be reviewed, translation after review)` = c(
     r"{**1. Woongebieden en andere kunstmatige gebieden**
 **Beschrijving:** Alle gebieden met een in hoofdzaak artificiele bodembedekking ingevolge menselijke activiteiten: steden, dorpen, villawijken, industrieterreinen, recreatiegebieden, campings, (spoor)wegen, vliegvelden, serres, parkings, actieve groeves en stortplaatsen. Het bebouwd gebied omvat hierbij ook alle terreinen die aan deze gebouwen, wegen ... gelinkt zijn, zoals tuinen, parken, kerkhoven, volkstuintjes, sportvelden, terrils, groeves, waterbassins en recent vergraven terreinen (De Saeger et al., 2026). De definitie komt grotendeels overeen met het ruimtebeslag, 'ruimtebeslag', met uitzondering van waterlichamen (Poelmans et al., 2022). Stilstaande waters op percelen die tot het ruimtebeslag behoren (bv. tuinvijvers) of met een recreatieve functie (bv. recreatie) worden tot de kunstmatige gebieden gerekend. Stromend water (bv. rivieren, kanalen en grachten) maakt geen deel uit van het ruimtebeslag tenzij ze niet bovengronds waarneembaar zijn, bv. door inbuizing. Verharding wordt steeds bij ruimtebeslag gerekend.
 **Bron:** Landgebruiksbestand Vlaanderen (Poelmans et al., 2022, para. 6.2) en de Jaarlijkse Bodemafdekkingskaart (JaarBAK) van het departement Omgeving.}",
-
     r"{**2. Akkerland**
 **Beschrijving:** Alle eenjarige en meerjarige professionele landbouwteelten, inclusief tijdelijk grasland op percelen die de voorbije vijf jaar ook andere teelten dan grasland kenden. Dit omvat ook kweek van bomen en sierplanten, kleinfruit en laagstamboomgaarden. Teelten binnen een gebouw of permanente serre zijn deel van de landbouwinfrastructuur en behoren tot ecosysteem 1. Kleine landschapselementen op de akkerpercelen zoals hagen en houtkanten maken deel uit van het akkerland. Enkel landbouwpercelen geregistreerd in de inventaris van het departement Landbouw en Zeevisserij komen in aanmerking, niet de percelen beheer door hobbyboeren (Poelmans et al., 2022). Hoogstamboomgaarden buiten ruimtebeslag horen bij ecosysteem 3. Grasland. Moestuinen op residentiele of andere percelen binnen ruimtebeslag horen bij ecosysteem 1.
 **Bron:** Landgebruiksbestand Vlaanderen, niveau 1, klassen akker, laagstamboomgaard en tijdelijk grasland (Poelmans et al., 2022) en Landbouwgebruikspercelen. Voor een specifieke lijst van akkerteelten, zie bijlage.}",
-
     r"{**3. Grasland (weiland, halfnatuurlijk en natuurlijk grasland)**
 **Beschrijving:** Open biotopen gedomineerd door lage en hoge grassen en door lage, meerjarige kruiden. Vele graslanden zijn geperceleerd en meestal in professioneel of hobby-landbouwgebruik. Graslanden kennen meestal een jaarlijks beheer van maaien en/of begrazen. In verlaten graslanden of graslanden onder zeer extensieve begrazing kan een lage bedekking aan (jonge) bomen, struiken en bramen voorkomen (De Saeger et al., 2026). Hoogstamboomgaarden, binnendijkse zilte vegetaties, ingezaaide graslanden, door pitrus gedomineerde vegetaties met weinig moerasplanten, ... Tijdelijk grasland in professioneel landbouwgebruik dat deel uitmaakt van een teeltrotatie en dat niet de status 'BG - blijvend grasland' heeft, maakt deel uit van ecosysteem 2. Tot grasland behoren eveneens ruigten en pioniervegetaties: open biotopen gedomineerd door lage of hoge kruiden, soms kunnen ze een aandeel open bodem bevatten (De Saeger et al., 2026). Graslandvegetatie op percelen die tot het ruimtebeslag horen, zoals in tuinen, parken en bedrijventerreinen, behoren tot ecosysteem 1.
 **Bron:** Landgebruiksbestand Vlaanderen niv. 1 (Ruigte, Halfnatuurlijk grasland, Boomgaard hoogstam, Blijvend grasland, Overig laag groen en Overig (indien niet verhard)); Landbouwgebruikspercelen met graslandteelt en status 'BG-Blijvend Grasland', Biologische Waarderingskaart, Groenkaart en Jaarlijkse Bodemafdekkingskaart. Voor een specifieke lijst van graslandvegetatie en graslandteelten, zie bijlage.}",
-
     r"{**4. Bossen en bosgebieden**
 **Beschrijving:** Vegetatie gedomineerd (kroonprojectie >= 50%) door bomen; inclusief recente kapvlakten, jonge (her)aanplant, braamstruweel en hakhout, die niet op percelen van het ruimtebeslag (ecosysteem 1) liggen en geen professionele landbouwfunctie hebben. Aanplanten voor korte omloop hakhoutteelt (energiehoutakkers), kerstboomaanplantingen en kwekerij van (sier)bomen en struiken vallen onder ecosysteem 2 (De Saeger et al., 2026).
 **Bron:** Landgebruiksbestand Vlaanderen niv. 1 (Struweel, Loofbos, Populieren, Naaldbos, Alluviaal bos en Overig hoog groen) (Poelmans et al., 2022). Wanneer bos of bomen voorkomen in gebieden die tot het ruimtebeslag behoren of in professioneel landbouwgebruik zijn (bv. parken, tuinen, houtkanten), horen ze bij ecosystemen 1, 2 of 3. Doordat de methode van het Landgebruiksbestand Vlaanderen wordt gevolgd, wordt bij een afwijking tussen de Boswijzer en de Biologische Waarderingskaart, de Boswijzer gevolgd. Voor een specifieke lijst van bosvegetatie, zie bijlage.}",
-
     r"{**5. Heide en struiken**
 **Beschrijving:** Vegetatie gedomineerd door dwergstruiken (Calluna, Erica, Vaccinium, Genista) in een heidegebied, die niet op percelen van het ruimtebeslag (ecosysteem 1) ligt of op percelen met een professionele landbouwfunctie. Inclusief en plag- of brandplekken, en soortenarme, nagenoeg monospecifieke vegetaties gedomineerd door pijpenstrootje en/of bochtige smele, met afwezigheid of lage bedekking aan 'heideplanten' (struikhei, gewone dophei, beenbreek, veenpluis, ...). Meestal maken die deel uit van een groter 'heidegebied' (De Saeger et al., 2026).
 **Bron:** Landgebruiksbestand Vlaanderen, niveau 1 (Heide) en Biologische Waarderingskaart. Voor een specifieke lijst van heidevegetatie, zie bijlage.}",
-
     r"{**6. Ecosystemen met schaarse begroeiing**
 **Beschrijving:** Landduinen en zeer droge zandgronden met open stuifzand en/of (deels) begroeid met korstmossen, haarmossen, grijs kronkelsteeltje, buntgras, zandstruisgras, zandzegge, heidespurrie, vroege haver, zilverhaver, struikhei (De Saeger et al., 2026). Enkel indien zij niet op percelen van het ruimtebeslag (ecosysteem 1) liggen of op percelen met een professionele landbouwfunctie hebben.
 **Bron:** Landgebruiksbestand Vlaanderen, niveau 1 (Heide) en Biologische Waarderingskaart. Voor een specifieke lijst van landduinvegetatie, zie bijlage.}",
-
     r"{**7. Wetlands in het binnenland**
 **Beschrijving:** Vegetatie met > 30% moerasplanten (helofyten en hydrofyten); watertafel een groot deel van het jaar nabij of boven het maaiveld, in zoverre zij niet op percelen van het ruimtebeslag (ecosysteem 1) liggen of op percelen met een professionele landbouwfunctie. Veel voorkomende en indicatieve moerasplanten zijn: riet, liesgras, lisdodde, egelskop, mattenbies, heen, grote zeggen (moeras-, oever-, snavel-, scherpe zegge), holpijp, galigaan, waterdrieblad en wateraardbei (De Saeger et al., 2026).
 **Bron:** Landgebruiksbestand Vlaanderen, niveau 1 (Moeras) en Biologische Waarderingskaart. Voor een specifieke lijst van moerasvegetatie, zie bijlage.}",
-
     r"{**8. Rivieren en kanalen**
 **Beschrijving:** Natuurlijke waterlopen (rivieren en beken) en kunstmatige waterlopen (kanalen en grachten), die niet onder getijdeninvloed staan en waarvan de lengte in een richting minstens 10 m en in de dwarse richting 3m bedraagt (Poelmans et al., 2022, p. 10). Waterlopen die bovengronds niet waarneembaar zijn, bv. omdat ze zijn ingebuisd, worden tot ecosysteem 1 gerekend. Waterlopen onder getijdeninvloed worden tot ecosysteem 10 gerekend.
 **Bron:** Landgebruiksbestand Vlaanderen, niveau 1 (Water). Deze laag werd aangepast voor de stilstaande waters (toegerekend aan ecosysteem 9, o.b.v. Watervlakkenkaart) en voor de getijdengevoelige waterlopen (toegerekend aan ecosysteem 11, o.b.v. Moneos-data).}",
-
     r"{**9. Meren en waterbekkens**
 **Beschrijving:** Duidelijk begrensd stilstaand open water dat gedurende meerdere jaren een groot deel van het vegetatieseizoen aanwezig is en zich niet op percelen met ruimtebeslag (ecosysteem 1) bevindt. Het waterlichaam wordt als 'stilstaand' beschouwd als er geen visueel waarneembare stroming is, tenzij het waterlichaam een uitgesproken lineair traject heeft (Packet et al., 2018, pp. 11-13). Niet afgedekte opvangbekkens bij serres, tuin- en landbouwbedrijven en overstromingsbekkens worden als waterbekken beschouwd, net als overstromingsbekkens en wadi's die langer waterhoudend zijn. Zwembaden en waterreservoirs die een onderdeel vormen van een industriele installatie (bv. waterzuivering) worden niet tot ecosysteem 9 gerekend. Als het meer of waterbekken zich bevindt op een perceel dat tot ecosysteem 1 behoort (bv. een tuinvijver of een park) of als het een recreatieve functie heeft, wordt het tot ecosysteem 1 gerekend.
 **Bron:** Watervlakkenkaart INBO.}",
-
     r"{**10. Estuaria en overgangswateren**
 **Beschrijving:** Getijdengevoelig deel van de IJzer en van de Schelde en haar zijrivieren (Vanlierde et al., 2014). De getijdengevoelige zone van het Schelde-estuarium omvat de volledige brakwater-zoetwatergradient (Jochems et al., 2002; Van den Bergh et al., 2009). In de IJzer beperkt de getijdengevoelige zone zich tot aan het sluizencomplex 'Ganzepoot'. De estuaria omvatten naast de loop van de rivier ook de slikken en schorren, tot en met de supralitorale zone die op basis van tijdata gemiddeld vier maal per jaar overspoelt (Van Ryckegem et al., 2025). Ook het water binnen de kaaimuren van de zeehavens (Nieuwpoort, Blankenberge, Oostende) wordt tot de overgangswateren gerekend. Het Zwin beantwoordt aan de EU-definitie van ecosysteemtype '10.2 Estuaries and bays' en wordt daarom tot ecosysteem 10 gerekend. Het laagstrand, het gebied tussen de gemiddelde hoogwaterlijn en de gemiddelde laagwaterlijn (Vriens et al., 2011), beantwoordt aan de EU-definitie van ecosysteemtype '10.3.1 Intertidal flats' en wordt eveneens tot ecosysteem 10 gerekend. Dit geldt ook voor de slikken in het Zwin. In tegenstelling tot de brak- en zoetwaterschorren langsheen rivieren onder getijdeninvloed, staan de mariene schorren nabij de baai van Heist en in het Zwin rechtstreeks onder invloed van zeewater. Zij beantwoorden aan de EU-definitie van 11.4.1 Coastal saltmarshes en worden tot ecosysteem 11 gerekend.
 **Bron:** Het aquatisch deel van het getijdengevoelige deel van de Schelde en zijrivieren wordt bepaald op basis van de datalaag Watergang (Wtz) uit het GRB (Poelmans et al., 2022, pp. 40-41) en op basis van MONEOS-data, fysiotopen 'ondiep subtidaal', 'matig diep subtidaal', 'diep subtidaal' en 'zeer diep subtidaal' (Poelmans et al., 2022, pp. 40, 46). Het terrestrisch deel van het Schelde-estuarium is bepaald op basis van MONEOS-data, fysiotopen hoogslik, middelhoog slik en laag slik (voor de slikken) en hoog supralitoraal, supralitoraal (voor de schorren). De slikken en schorren van het IJzerestuarium zijn gebaseerd op de BWK, vegetatietypes ds en da (enkel buitendijks). De slikken van het Zwin zijn bepaald op basis van de BWK, vegetatietype ds. Het laagstrand is bepaald op basis van de BWK, vegetatietypes dl (strand, indien het veld INFO 'laagstrand' aangeeft), en dz (zandbank).}",
-
     r"{**11. Stranden, duinen en wetlands aan de kust**
 **Beschrijving:** Het strand vanaf de gemiddelde hoogwaterlijn (hoogstrand) en de kustduinen, met inbegrip van stuifduinen, duinen begroeid met lage vegetatie en struiken, en vochtige duinpannen, in zoverre zij niet op percelen van het ruimtebeslag (ecosysteem 1) liggen of op percelen met een professionele landbouwfunctie. Beboste duinen worden tot ecosysteem 4 gerekend.
 **Bron:** Landgebruiksbestand Vlaanderen, niveau 1 (Kustduin) en Biologische Waarderingskaart. Voor een specifieke lijst van strand- en kustduinvegetatie, zie bijlage.}",
-
     r"{**12. Mariene ecosystemen (kustwateren, continentaal plat en open oceaan)**
 **Beschrijving:** De zee vanaf de gemiddelde laagwaterlijn, met inbegrip van de Belgische territoriale wateren (12 zeemijl vanaf de kust) en de exclusieve economische zone (EEZ). De gemiddelde laagwaterlijn wordt afgeleid van de BWK en verandert continu door een wisselwerking van stranderosie en strandsuppletie.
 **Bron:** <ref toevoegen>}"
@@ -207,12 +186,13 @@ ecosystem_types <- data.frame(
 )
 
 kable(ecosystem_types, format = "html", align = "l", escape = FALSE) |>
-  kable_styling(bootstrap_options = c("striped", "hover"),
-                full_width = TRUE) |>
+  kable_styling(
+    bootstrap_options = c("striped", "hover"),
+    full_width = TRUE
+  ) |>
   column_spec(1, width = "18%") |>
   column_spec(2, width = "41%") |>
   column_spec(3, width = "41%")
-
 ```
 
 ```{r}
@@ -228,21 +208,14 @@ ecosystem_types_lvl2 <- data.frame(
     "1.5 Other artificial areas",
     ""
   ),
-
   `EU Description and Correspondence` = c(
     r"{**Description:** Also designated as continuous urban area or fabric. The continuous settlement area type is assigned when settlement structures and transport networks are dominating the surface area. At least 80% of the land surface in the ecosystem asset is covered by impermeable features such as buildings, roads and artificially surfaced areas. **Source:** CORINE 1.1.1. Continuous urban fabric}",
-
     r"{**Description:** Also designated as discontinuous urban area or fabric. The discontinuous settlement area type is assigned when settlement structures and transport networks associated with vegetated areas and bare surfaces are present and occupy significant surfaces in a discontinuous spatial pattern. The impermeable features such as buildings, roads and artificially surfaced areas range from 30 to 80% land coverage in the ecosystem asset. **Correspondence:** CORINE 1.1.2. Discontinuous urban fabric}",
-
     r"{**Description:** This includes land used for transport infrastructure such as roads, airports and ports, including associated areas (e.g. planted trees and bushes lines or spontaneous vegetation, such as grass verges), and artificial areas other than buildings that are used for commercial and industrial purposes including extraction sites, dump areas, and construction sites. **Correspondence:** CORINE 1.2. Industrial, commercial and transport, 1.3 Mine, dump and construction sites}",
-
     r"{**Description:** Areas with vegetation within or partly embraced by urban fabric. This class is assigned for urban greenery, which usually has recreational or ornamental character and is usually accessible for the public. Includes small urban water bodies. Areas with soil sealing above 30% should be moved to class 1.1 or 1.2. **Correspondence:** CORINE Primarily 1.4.1 Green urban areas, (1.4.2 Sport and leisure facilities)}",
-
     r"{**Description:** Areas that are artificial but do not fall under the other level 2 categories of settlements and artificial areas. This includes e.g. permanent green houses, cemeteries even if predominantly green. Countries should also record here types of artificial land of specific national importance, such as archaeological sites or others, if they do not belong to any of the level 2 categories 1.1-1.4. Countries should inform what they cover in this category in a footnote in the questionnaire. **Correspondence:** CORINE Components of: 1.4.2 Sport and leisure facilities, 1.4.1 Green urban areas, 1.1.2 Discontinuous urban fabric}",
-
     ""
   ),
-
   `Flemish Ecosystem Type level 2` = c(
     "1.1 Gebouwen in woongebieden en andere kunstmatige gebieden",
     "1.2 Andere verharding in woongebieden en andere kunstmatige gebieden",
@@ -251,23 +224,17 @@ ecosystem_types_lvl2 <- data.frame(
     "1.5 Stilstaand water in woongebieden en andere kunstmatige gebieden",
     "1.6 Onduidelijke bodembedekking in woongebieden en andere kunstmatige gebieden"
   ),
-
   `Flemish Description and Correspondence (in Dutch, to be reviewed, translation after review)` = c(
     r"{**Description:** Gebouwen met een residentiele, commerciele, industriele, openbare, recreatieve of transportfunctie, voor een andere vorm dienstverlening of voor landbouwdoeleinden, met inbegrip van permanente serres en landbouwinfrastructuur. Gebouwen omvatten ook wat het Grootschalig Referentiebestand (GRB) beschrijft als 'kunstwerken (KNW)' (Poelmans et al., 2022).
 **Correspondence:** Landgebruiksbestand Vlaanderen, niveau 1 (Gebouw).}",
-
     r"{**Description:** Door de mens gecreeerde verharding, andere dan gebouwen, op bebouwde percelen of als onderdeel van transportinfrastructuur.
 **Correspondence:** Landgebruiksbestand Vlaanderen, niveau 1 (Weg, Spoorweg en een deel van Overig), ofwel > 75% verhard volgens de Jaarlijkse Bodemafdekkingskaart.}",
-
     r"{**Description:** Alle delen van percelen met ruimtebeslag die minder dan 76% verhard zijn en met vegetatie lager dan 3 meter of een niet-begroeide bodem.
 **Correspondence:** Landgebruiksbestand Vlaanderen (Ruimtebeslag) en Groenkaart (vegetatie < 3m).}",
-
     r"{**Description:** Alle delen van percelen met ruimtebeslag die minder dan 76% verhard zijn en waarop bos of vegetatie hoger dan 3 meter voorkomt.
 **Correspondence:** Landgebruiksbestand Vlaanderen (Ruimtebeslag) en Groenkaart (vegetatie > 3m).}",
-
     r"{**Description:** Alle zones van percelen met ruimtebeslag met duidelijk begrensd stilstaand open water dat gedurende meerdere jaren een groot deel van het vegetatieseizoen aanwezig is. Het waterlichaam wordt als 'stilstaand' beschouwd als er geen visueel waarneembare stroming is, tenzij het waterlichaam een uitgesproken lineair traject heeft (Packet et al., 2018, pp. 11-13). Niet afgedekte opvangbekkens bij serres, tuin- en landbouwbedrijven en overstromingsbekkens worden als waterbekken beschouwd, net als overstromingsbekkens en wadi's die langer waterhoudend zijn. Zwembaden en waterreservoirs die een onderdeel vormen van een industriele installatie (bv. waterzuivering) worden niet tot ecosysteem 1.5 gerekend maar tot 1.2 of 1.1.
 **Correspondence:** Landgebruiksbestand Vlaanderen (Ruimtebeslag) en Watervlakkenkaart.}",
-
     r"{**Description:** Deel van het ruimtebeslag dat niet met zekerheid tot ecosysteem 1.1 tot 1.5 kan worden gerekend. Doorgaans gaat het om zones waarop zich verdorde vegetatie bevindt die niet als 'groen' wordt herkend op de groenkaart, en/of met een gedeeltelijke verharding < 76%, en waarvoor ook de BWK geen gegevens bevat.
 **Correspondence:** Landgebruiksbestand Vlaanderen (Ruimtebeslag), Jaarlijkse Bodemafdekkingskaart (< 76% verharding), Groenkaart (geen laag of hoog groen) en BWK (geen gegevens).}"
   ),
@@ -275,10 +242,11 @@ ecosystem_types_lvl2 <- data.frame(
   stringsAsFactors = FALSE
 )
 
-
 kable(ecosystem_types_lvl2, format = "html", align = "l", escape = FALSE) |>
-  kable_styling(bootstrap_options = c("striped", "hover"),
-                full_width = TRUE) |>
+  kable_styling(
+    bootstrap_options = c("striped", "hover"),
+    full_width = TRUE
+  ) |>
   column_spec(1, width = "14%") |>
   column_spec(2, width = "36%") |>
   column_spec(3, width = "14%") |>
@@ -287,16 +255,153 @@ kable(ecosystem_types_lvl2, format = "html", align = "l", escape = FALSE) |>
 
 ### Choice of Sampling Unit
 
-- **Primary Sampling Unit (PSU):** A square polygon (block) with dimensions of $\sqrt{n_2} \times \sqrt{n_2}$ pixels (for example, 9 $\times$ 9 pixels).
-- **Secondary Sampling Unit (SSU):** A 10 m $\times$ 10 m pixel.
+For each selected raster cell (10 m $\times$ 10 m) (GRTS sample selection procedure), we defined: 
 
-In practice, however, the procedure is as follows:
+- **Primary Sampling Unit (PSU):** A square polygon (block) with dimensions of $5 \times 5$ raster cells (centered around the GRTS selected raster cell).
+- **Secondary Sampling Units (SSU):** All 10 m $\times$ 10 m raster cells within the PSU.
 
-- Select a block of $\sqrt{n_2} \times \sqrt{n_2} = n_2$ pixels.
-- The entire block is digitized (subdivided into polygons, with a primary and an alternative label assigned to each polygon).
-- This polygon map of the block is rasterized, and this rasterization provides the reference value for each pixel within a block.
+In practice, the entire PSU block is digitized.
+Digitization consists of subdividing the 50 m $\times$ 50 m polygon (PSU) into smaller polygons, with a primary and an (optional) alternative label assigned to each polygon).
+Each subdivision is determined by desktop interpretation of orthophotos corresponding to the years for which FLEA maps are available (2016 - 2019 - 2021).
+Every change of ecosystem type within a given year is a subdivision and every change of ecosystem type between years is a subdivision (see @fig-example-polygon).
+The resulting attribute table for each subdivision polygon needs to be filled in with validation ecosystem labels for 2016, 2019 and 2021.
 
-This approach gives us a lot of freedom in the analysis stage (see @analysis).
+To speed up the validation work, the 50 m $\times$ 50 m polygons are subdivided programmatically based on source layers for ecosystem types that can be easily recognized, such as buildings.
+
+This approach gives us a lot of freedom in the analysis stage (see @sec-analysis).
+
+```{r}
+#| label: fig-example-polygon
+#| fig-cap: Example of a 50 m x 50 m validation polygon and how it will be subdivided based on changes in ecosystem types between and within years.
+
+psu_matrix <- matrix(
+  c(0, 0, 50, 0, 50, 50, 0, 50, 0, 0), ncol = 2, byrow = TRUE
+)
+psu <- st_polygon(list(psu_matrix)) %>% st_sfc()
+
+rast10 <- sf::st_make_grid(psu, offset = c(0, 0), n = 5)
+
+# Create mock ecosystem data for 2016
+p16_1 <- st_polygon(list(matrix(c(0, 0, 25, 0, 25, 50, 0, 50, 0, 0),
+                                ncol = 2, byrow = TRUE)))
+p16_2 <- st_polygon(list(matrix(c(25, 0, 50, 0, 50, 50, 25, 50, 25, 0),
+                                ncol = 2, byrow = TRUE)))
+eco_2016 <- st_sf(
+  ecosystem = c("Forest", "Grassland") |>
+    factor(levels = c("Built-up", "Forest", "Agriculture", "Grassland")),
+  jaar = 2016,
+  geometry = st_sfc(p16_1, p16_2)
+)
+
+# ecosystem data for 2019
+p19_1 <- st_polygon(list(matrix(c(0, 0, 50, 0, 50, 30, 0, 30, 0, 0),
+                                ncol = 2, byrow = TRUE)))
+p19_2 <- st_polygon(list(matrix(c(0, 30, 50, 30, 50, 50, 0, 50, 0, 30),
+                                ncol = 2, byrow = TRUE)))
+eco_2019 <- st_sf(
+  ecosystem = c("Forest", "Agriculture") |>
+    factor(levels = c("Built-up", "Forest", "Agriculture", "Grassland")),
+  jaar = 2019,
+  geometry = st_sfc(p19_1, p19_2)
+)
+
+# ecosystem data for 2021
+# Scenario: A 15x15m building is constructed in the bottom-left corner.
+# The rest of the PSU is mapped as Forest.
+p21_bldg <- st_polygon(
+  list(matrix(c(0, 0, 15, 0, 15, 15, 0, 15, 0, 0),
+              ncol = 2, byrow = TRUE))
+  ) %>% st_sfc()
+p21_rest <- st_difference(eco_2019$geometry, p21_bldg) # The rest of the PSU
+eco_2021 <- st_sf(
+  ecosystem = c("Built-up", "Forest", "Agriculture") |>
+    factor(levels = c("Built-up", "Forest", "Agriculture", "Grassland")),
+  jaar = 2021,
+  geometry = c(p21_bldg, p21_rest)
+)
+
+# Calculate the intersections (The programmatic subdivision)
+inter_16_19 <- st_intersection(eco_2016, eco_2019) |> suppressWarnings()
+final_subdivisions <- st_intersection(inter_16_19, eco_2021) |>
+  suppressWarnings() |>
+  st_collection_extract("POLYGON")
+final_subdivisions$poly_id <- seq_len(nrow(final_subdivisions))
+final_subdivisions$area_m2 <- st_area(final_subdivisions)
+final_subdivisions <- final_subdivisions |>
+  mutate(
+    conversion = sprintf(
+      "%s%s%s",
+      str_sub(ecosystem, end = 1),
+      str_sub(ecosystem.1, end = 1),
+      str_sub(ecosystem.2, end = 1)
+      )
+  )
+
+colours <- c(
+  "Forest" = topo.colors(4)[1],
+  "Grassland" = topo.colors(4)[2],
+  "Agriculture" =  topo.colors(4)[3],
+  "Built-up" = topo.colors(4)[4]
+)
+my_levels <- c("Built-up", "Forest", "Agriculture", "Grassland")
+ordered_colours <- unname(colours[my_levels]) 
+
+dummy_df <- data.frame(
+  ecosystem = factor(
+    c("Built-up", "Forest", "Agriculture", "Grassland"), 
+    levels = c("Built-up", "Forest", "Agriculture", "Grassland")
+  )
+)
+
+shared_scale <- scale_fill_manual(
+  name = "Ecosystem",
+  values = colours,
+  drop = FALSE,
+  guide = guide_legend(override.aes = list(alpha = 0.7))
+)
+
+# Plotting the results using ggplot2 and patchwork
+# Map the actual data, but TURN OFF its legend
+plot_2016 <- ggplot() +
+  geom_sf(data = eco_2016,
+          aes(fill = ecosystem), alpha = 0.7, show.legend = FALSE) +
+  geom_sf(data = rast10, fill = NA, linetype = "dotted") +
+  # Add the dummy data as an invisible rectangle at coordinate (0,0) to force a perfect legend
+  geom_rect(data = dummy_df, aes(xmin = 0, xmax = 0, ymin = 0, ymax = 0, fill = ecosystem), alpha = 0) +
+  shared_scale +
+  theme_void() +
+  ggtitle("2016 ecosystems")
+
+plot_2019 <- ggplot() +
+  geom_sf(data = eco_2019,
+          aes(fill = ecosystem), alpha = 0.7, show.legend = FALSE) +
+  geom_sf(data = rast10, fill = NA, linetype = "dotted") +
+  geom_rect(data = dummy_df, aes(xmin = 0, xmax = 0, ymin = 0, ymax = 0, fill = ecosystem), alpha = 0) +
+  shared_scale +
+  theme_void() +
+  ggtitle("2019 ecosystems")
+
+plot_2021 <- ggplot() +
+  geom_sf(data = eco_2021,
+          aes(fill = ecosystem), alpha = 0.7, show.legend = FALSE) +
+  geom_sf(data = rast10, fill = NA, linetype = "dotted") +
+  geom_rect(data = dummy_df, aes(xmin = 0, xmax = 0, ymin = 0, ymax = 0, fill = ecosystem), alpha = 0) +
+  shared_scale +
+  theme_void() +
+  ggtitle("2021 ecosystems")
+
+plot_final <- ggplot(final_subdivisions) +
+  geom_sf(fill = "gray90", color = "black", linewidth = 0.8) +
+  geom_sf_text(aes(label = conversion), size = 4, fontface = "bold") +
+  geom_sf(data = rast10, fill = NA, linetype = "dotted") +
+  theme_void() +
+  ggtitle("Final subdivisions", subtitle = "Intersection of all years")
+
+# Combine into a 2x2 grid
+plot_2016 + plot_2019 + plot_2021 + plot_final +
+  plot_layout(ncol = 2, guides = "collect") 
+```
+
 
 ### Reference Data Used
 
