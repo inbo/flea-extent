@@ -356,36 +356,38 @@ dummy_df <- data.frame(
 shared_scale <- scale_fill_manual(
   name = "Ecosystem",
   values = colours,
-  drop = FALSE,
-  guide = guide_legend(override.aes = list(alpha = 0.7))
+  drop = FALSE
 )
 
 # Plotting the results using ggplot2 and patchwork
 # Map the actual data, but TURN OFF its legend
 plot_2016 <- ggplot() +
-  geom_sf(data = eco_2016,
-          aes(fill = ecosystem), alpha = 0.7, show.legend = FALSE) +
+  geom_sf(
+    data = eco_2016,
+    aes(fill = ecosystem),
+    alpha = 0.7,
+    show.legend = TRUE) +
   geom_sf(data = rast10, fill = NA, linetype = "dotted") +
-  # Add the dummy data as an invisible rectangle at coordinate (0,0) to force a perfect legend
-  geom_rect(data = dummy_df, aes(xmin = 0, xmax = 0, ymin = 0, ymax = 0, fill = ecosystem), alpha = 0) +
   shared_scale +
   theme_void() +
   ggtitle("2016 ecosystems")
 
 plot_2019 <- ggplot() +
   geom_sf(data = eco_2019,
-          aes(fill = ecosystem), alpha = 0.7, show.legend = FALSE) +
+          aes(fill = ecosystem),
+          alpha = 0.7,
+          show.legend = TRUE) +
   geom_sf(data = rast10, fill = NA, linetype = "dotted") +
-  geom_rect(data = dummy_df, aes(xmin = 0, xmax = 0, ymin = 0, ymax = 0, fill = ecosystem), alpha = 0) +
   shared_scale +
   theme_void() +
   ggtitle("2019 ecosystems")
 
 plot_2021 <- ggplot() +
   geom_sf(data = eco_2021,
-          aes(fill = ecosystem), alpha = 0.7, show.legend = FALSE) +
+          aes(fill = ecosystem),
+          alpha = 0.7,
+          show.legend = TRUE) +
   geom_sf(data = rast10, fill = NA, linetype = "dotted") +
-  geom_rect(data = dummy_df, aes(xmin = 0, xmax = 0, ymin = 0, ymax = 0, fill = ecosystem), alpha = 0) +
   shared_scale +
   theme_void() +
   ggtitle("2021 ecosystems")
