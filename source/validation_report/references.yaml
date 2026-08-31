@@ -19,6 +19,21 @@ references:
   title: Landgebruik en ruimtebeslag in Vlaanderen, toestand 2019
   type: report
   URL: "https://archief-algemeen.omgeving.vlaanderen.be/xmlui/bitstream/handle/acd/449392/Landgebruik_en_Ruimtebeslag_2019_def_correctie.pdf?sequence=1&isAllowed=y"
+- id: poelmans2023
+  author:
+  - family: Poelmans
+    given: Lien
+  - family: Janssens
+    given: Liliane
+  - family: Hambsch
+    given: Lorenz
+  issued: 2023
+  publisher: Flemish Planning Bureau for the Environment and Spatial Development
+  title: Landgebruik en ruimtebeslag in Vlaanderen, toestand 2022
+  type: report
+  URL: "https://archief.onderzoek.omgeving.vlaanderen.be/Onderzoek-6426438"
+  language: Dutch
+  number-of-pages: 105
 - id: wickham2021
   author:
   - family: Wickham
