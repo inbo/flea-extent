@@ -24,7 +24,7 @@ lang: en-GB
 flandersqmd:
   entity: INBO
   level: 2
-  title: Validation and estimation of changes in areas of land cover classes based
+  title: Validation and estimation of changes in extent of ecosystem classes based
     on reference data
   subtitle: Technical report for Flanders Ecosystem Accounting (FLEA) project
   shorttitle: flea-extent-validation
