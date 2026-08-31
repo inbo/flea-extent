@@ -74,7 +74,7 @@ vs_conversions_df <- values(vs_conversions) |>
 
 vs_conversions_df |>
   mutate(stratum = paste(stratum_code, changecat)) |>
-  group_by(stratum, ecosystem) |>
+  group_by(stratum, ecosystem, stratum_code) |>
   arrange(desc(n_central_cell)) |>
   summarize(
     n_total = sum(n_central_cell),
@@ -83,11 +83,28 @@ vs_conversions_df |>
     ),
     .groups = "drop"
   ) |>
+  arrange(as.numeric(stratum_code)) |>
   select(ecosystem, stratum, n_total, conversions) |>
-  kable(
-    booktabs = TRUE
+  gt::gt(
+    groupname_col = "ecosystem"
   ) |>
-  kableExtra::collapse_rows(valign = "top")
+  gt::cols_label(
+    stratum = "Stratum",
+    n_total = "Total",
+    conversions = "Conversions"
+  ) |>
+  gt::cols_width(
+    stratum ~ gt::px(90),
+    n_total ~ gt::px(50),
+    conversions ~ gt::px(320)
+  ) |>
+  gt::tab_options(
+    table.font.size = "small",
+    data_row.padding = gt::px(3),
+    row_group.font.weight = "bold",
+    row_group.padding = gt::px(4),
+    latex.use_longtable = TRUE
+  )
 ```
 
 
@@ -214,6 +231,7 @@ This approach gives us a lot of freedom in the analysis stage (see @sec-analysis
 ```{r}
 #| label: fig-example-polygon
 #| fig-cap: Example of a 50 m x 50 m validation polygon and how it will be subdivided based on changes in ecosystem types between and within years.
+#| out.width: "100%"
 
 psu_matrix <- matrix(
   c(0, 0, 50, 0, 50, 50, 0, 50, 0, 0), ncol = 2, byrow = TRUE
@@ -353,7 +371,7 @@ In the year 2000, this was still 1 m.
 Therefore, it is possible that the resolution evolved during the period from 2013 to 2022.
 As a result, photographs used to validate a 2013 ecosystem map might be less accurate than those available for 2022.
 
-## Analysis
+## Analysis {#sec-analysis}
 
 Due to the more complex sampling and response design (balancing precision and cost-efficiency), the standard formulas provided in @olofsson2014 will only apply at the PSU level.
 However, this sampling design retains the flexibility to calculate accuracy and area estimates for different scenarios in post-processing.

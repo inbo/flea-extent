@@ -575,8 +575,18 @@ validatiepunten %>%
   gt::grand_summary_rows(
     columns = c(number_of_validations, number_of_validator_checks),
     fns = list(total ~ sum(.))
+  ) %>%
+  gt::cols_label(
+    map_2013 = "Map 2013",
+    map_2016 = "Map 2016",
+    number_of_validations = "Validations",
+    number_of_validator_checks = "Validator Checks"
+  ) %>%
+  gt::tab_options(
+    table.font.size = "small", 
+    data_row.padding = gt::px(3),
+    latex.use_longtable = TRUE
   )
-
 ```
 
 - **Response design:**
@@ -596,6 +606,7 @@ In almost all cases, user's accuracy was lower than producer's accuracy, resulti
 ```{r}
 #| label: fig-area-estimates-nara-2020
 #| fig-cap: Area estimates and user and producer accuracy for 5 no-change classes and 20 changed classes (changes from 2013 to 2016). The unbiased estimates are indicated with a point and 95% confidence intervals. The biased estimate from pixel counting are indicated with a cross.
+#| out.width: "100%"
 
 knitr::include_graphics(here::here("media/nara-2020-area-estimates.png"))
 
