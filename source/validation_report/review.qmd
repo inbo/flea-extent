@@ -49,11 +49,11 @@ Spatially balanced random samples can then be selected from the master sample us
 
 @stehman2011 discuss the influence of the sampling unit choice on the outcomes of accuracy estimates.
 They compare pixels, blocks of pixels, and polygons as potential alternative sampling units.
-They conclude that this choice significantly impacts Overall Accuracy (OA), User's Accuracy (UA), and Producer's Accuracy (PA).
-However, they cannot provide a clear explanation for these differences.
+They conclude that this choice significantly impacts Overall Accuracy (OA), User's Accuracy (UA), and Producer's Accuracy (PA) (see @sec-validation for an explanation of these validation metrics).
+However, they do not provide a clear explanation for these differences.
 
 @gu2020 argue that pixel-based accuracy estimates are inadvisable when positional accuracy is a concern.
-This issue worsens in heterogeneous landscapes and as the land use classification encompasses more classes.
+This issue worsens in heterogeneous landscapes and as the ecosystem classification encompasses more classes.
 @gu2021 investigated the same effect for blocks of pixels and assert that this is preferable.
 
 @radoux2017 delve into the specific issues associated with polygon-based accuracy estimates.
@@ -90,10 +90,10 @@ Finally, @see2022 consider usage of Geo Wiki for crowd-sourcing reference data.
 In a design-based inference context, the inference or analysis must reflect the way the data are collected (sampling + response design).
 Given the dual purpose of validation and area estimation, we focus first on validation and then on area estimation.
 
-#### Validation: interpreting a confusion matrix in terms of accuracy
+#### Validation: interpreting a confusion matrix in terms of accuracy {#sec-validation}
 
 A confusion matrix is a $K \times K$ cross-tabulation used to compare two classifications that utilize an identical set of $K$ classification labels.
-In the context of validation and accuracy estimation of an ecosystem map, one set is the ecosystem itself, and the other is a reference dataset for which it can be assumed the error rate is negligible compared to the ecosystem map.
+In the context of validation and accuracy estimation of an ecosystem map, one set represents the mapped ecosystem classes, and the other is a reference dataset for which it can be assumed the classification error rate is negligible compared to the map.
 
 In practice, obtaining a reference dataset for the entire region of interest (the ROI, which normally coincides with the map) is infeasible.
 Therefore, a random sample is required for the reference dataset, and direct comparison between the map and the reference is only possible for this sample.
@@ -155,12 +155,15 @@ vb %>%
 ```
 
 In this toy example, we glossed over the recommendation to normalize the confusion matrix in such a way that instead of representing pixel (raster cell) counts, the numbers should represent estimated proportions of area [@olofsson2014].
-In this way we obtain a map-relevant confusion matrix, meaning that each $p_{ij}$ is weighted by area proportions for each stratum (map class).
+In this way we obtain a map-relevant confusion matrix, meaning that each $p_{ij}$ is weighted by area proportions for each stratum (map class) ($i$ indexes rows or mapped ecosystem strata and $j$ indexes columns or ecosystems as determined by the reference method).
 The row totals and column totals should sum to one.
 For a simple random sample, a systematic sample and a stratified random sample that uses the map classes as strata, the estimator for the proportions of area equals:
 
 $$\hat{p_{ij}} = W_i\frac{n_{ij}}{n_{i\cdot}}$$ where $W_i$ is the weight equal to the known map area proportion of stratum $i$ (pixel count stratum divided by total pixel count).
 This is the post-stratification estimator.
+Note that $W_i$ is not calculated from the cells of the matrix (which only represent information from the probabilistic sample), but from the full map.
+The resulting normalized confusion or error matrix for the toy example is shown in @tbl-map-relevant-error-matrix.
+Extra columns are added to the table to show that we know the mapped totals, from which $W_i$ is calculate, and the sample totals for each row.
 
 ```{r}
 #| label: tbl-map-relevant-error-matrix
@@ -170,7 +173,7 @@ vb_normalized |>
     booktabs = TRUE,
     col.names = c("", "Forest", "Water", "Urban",  
                   "W_i", "Map total", "(Sample) total"),
-    digits = 2
+    digits = 3
   )  |>
   add_header_above(c(" ", "Reference Data" = 3, "", "", ""), bold = TRUE) |>
   column_spec(1, bold = TRUE, border_right = TRUE) |>
@@ -178,6 +181,26 @@ vb_normalized |>
   row_spec(3, hline_after = TRUE) |>
   pack_rows("Map Data", 1, 3)
 ```
+
+Given the normalized confusion matrix, the three accuracy metrics can be estimated as follows:
+
+$$\begin{align}
+\text{OA} &= \sum_{j=1}^{q} \hat{p}_{jj} \\
+\text{UA}_i &= \frac{\hat{p}_{ii}}{\sum_{j=1}^{q} \hat{p}_{ij}} = \frac{\hat{p}_{ii}}{\hat{p}_{i\cdot}} \\
+\text{PA}_j &= \frac{\hat{p}_{jj}}{\sum_{i=1}^{q} \hat{p}_{ij}} = \frac{\hat{p}_{jj}}{\hat{p}_{\cdot j}}
+\end{align}$$
+
+where $q$ represents the total number of map classes, $\hat{p}_{i\cdot}$ is the sum of the estimated area proportions for mapped row $i$ (they are _calibrated_ to equal $W_i$), and $\hat{p}_{\cdot j}$ is the sum of the estimated area proportions for reference column $j$.
+Since the $W_i$ are calibrated to equal $\hat{p}_{i\cdot}$, plugging $\hat{p}_{ii} = W_i\frac{n_{ii}}{n_{i\cdot}}$ into the equation for UA, yields $\text{UA}_i = \frac{n_{ii}}{n_{i\cdot}}$.
+This shows that for UA, it doesn't matter whether it is calculated from the normalized or the unnormalized confusion matrix.
+This is not the case for $PA$.
+Let us recalculate the accuracy estimates based on these formulae to show this:
+
+- For forest, UA is $\frac{0.385}{0.385}=100\%$ and PA is $\frac{0.385}{0.479}=80.4\%$.
+- For water, UA is $\frac{0.094}{0.188}=50\%$, and PA is $\frac{0.094}{0.201}=46.8\%$. 
+- For urban, UA is $\frac{0.321}{0.427}=75\%$, and PA is $\frac{0.321}{0.321}=100\%$.
+
+While the UA estimates remain exactly the same as before, we see that PA has been recalibrated based on the map strata weights.
 
 #### Unbiased area estimation
 
