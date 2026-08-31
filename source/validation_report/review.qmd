@@ -13,15 +13,15 @@ source("packages.R")
 
 # Background
 
-## Area and accuracy estimation of land cover
+## Area and accuracy estimation of ecosystem classes
 
-The unbiased estimation land cover area and validation of land cover from a map requires a probabilistic sample [@strahler2008; @olofsson2014; @haub2015 and @stehman2019].
-The same sample can serve the dual purpose of validation (how good is the map) and estimation (what area of a particular land cover can be estimated by combining information from the map with information from the sample).
+The unbiased estimation ecosystem extent and validation of ecosystem classes from a map requires a probabilistic sample [@strahler2008; @olofsson2014; @haub2015 and @stehman2019].
+The same sample can serve the dual purpose of validation (how good is the map) and estimation (what area of a particular ecosystem can be estimated by combining information from the map with information from the sample).
 
-A map here is taken to be a raster of a given resolution (expressed in meters in x and y direction) that covers the entire area of interest and where raster cell values encode information about which land cover is present at a certain time.
+A map here is taken to be a raster of a given resolution (expressed in meters in x and y direction) that covers the entire area of interest and where raster cell values encode information about which ecosystem is present at a certain time.
 
-It is well known that raw raster cell counts can provide misleading (biased) estimators for land cover area (calculated as the number of raster cells containing the land cover type multiplied by the cell area) [@olofsson2014].
-To know this potential bias, a probabilistic sample of raster cells needs to be checked with a validation protocol that can be expected to provide a land cover ground truth.
+It is well known that raw raster cell counts can provide misleading (biased) estimators for ecosystem area (calculated as the number of raster cells containing the ecosystem type multiplied by the cell area) [@olofsson2014].
+To know this potential bias, a probabilistic sample of raster cells needs to be checked with a validation protocol that can be expected to provide an ecosystem ground truth.
 
 A lot of decisions need to be made upfront when designing such a procedure.
 They include:
@@ -34,7 +34,7 @@ We review each of them in the following sections.
 
 ### Choices related to sampling design
 
-The most commonly recommended sampling design for accuracy and area estimation of land cover is a stratified random sampling design with proportional allocation of the total sample size across strata [@olofsson2014] and equal probability sampling within strata.
+The most commonly recommended sampling design for accuracy and area estimation of ecosystem classes is a stratified random sampling design with proportional allocation of the total sample size across strata [@olofsson2014] and equal probability sampling within strata.
 Usually, the allocation rule includes setting a minimum sample size to avoid small strata receiving too few samples.
 
 The within stratum equal probability sample can be a simple random sample without replacement, but for sampling spatial domains, this is better avoided and replaced by sample selection algorithms which ensure samples are well spread across the spatial domain of the stratum.
@@ -93,9 +93,9 @@ Given the dual purpose of validation and area estimation, we focus first on vali
 #### Validation: interpreting a confusion matrix in terms of accuracy
 
 A confusion matrix is a $K \times K$ cross-tabulation used to compare two classifications that utilize an identical set of $K$ classification labels.
-In the context of validation and accuracy estimation of a land use or land cover map, one set is the land use or land cover map itself, and the other is a reference dataset for which it can be assumed the error rate is negligible compared to the land use map.
+In the context of validation and accuracy estimation of an ecosystem map, one set is the ecosystem itself, and the other is a reference dataset for which it can be assumed the error rate is negligible compared to the ecosystem map.
 
-In practice, obtaining a reference dataset for the entire region of interest (the ROI, which normally coincides with the map) is unfeasible.
+In practice, obtaining a reference dataset for the entire region of interest (the ROI, which normally coincides with the map) is infeasible.
 Therefore, a random sample is required for the reference dataset, and direct comparison between the map and the reference is only possible for this sample.
 
 A fictional example of a confusion matrix is shown in @tbl-accuraatheidsmatrixvb.
@@ -221,7 +221,7 @@ $$P(\text{reference}=A) = \frac{UA}{PA}P(\text{map} = A)$$
 
 In the literature about unbiased area estimation, formulae can be found assuming a sampling design (most often stratified random sampling).
 These formulae can be seen as special cases of the above connection established via Bayes rule.
-The most commonly used estimator for the area proportion of a land cover class $k$ is the post-stratification estimator [@olofsson2014]:
+The most commonly used estimator for the area proportion of a ecosystem class $k$ is the post-stratification estimator [@olofsson2014]:
 
 $$\hat{p_{\cdot k}} = \sum^q_{i=1}W_i\frac{n_{ik}}{n_{i\cdot}}$$ for which a 95% confidence interval can be constructed using the standard error:
 
@@ -339,7 +339,7 @@ However, for FLEA, we will create ecosystem maps based on an ecosystem extent cl
 ### Ecosystem maps of Flanders used by NARA 2020
 
 For the Nature Report 2020 (NARA 2020), two "ecosystem maps" (one for 2013 and one for 2016) were created [@schneiders2020], utilizing a different methodology than the land use map discussed by @poelmans2019landgebruik and @poelmans2021.
-For the analyses in @schneiders2020, a classification into ten ecosystems (land uses) was used, and the land cover layer of the Flanders Land Use Dataset was adjusted as follows:
+For the analyses in @schneiders2020, a classification into ten ecosystems was used, and the land cover layer of the Flanders Land Use Dataset was adjusted as follows:
 
 - In the Scheldt estuary, mudflats and salt marshes were adjusted based on ecotope maps for 2013 and 2016, prioritizing mudflats and salt marshes over the water layer or other terrestrial classes (e.g., other low vegetation).
 - In the Yser and Scheldt estuaries, water in the tidal zone was reclassified into an additional transitional water class; the remaining water is considered freshwater.
