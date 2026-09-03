@@ -26,7 +26,6 @@ if (tar_active()) {
 tar_option_set(
   packages = c("tibble", "geotargets", "assertthat", "terra", "dplyr", "sf"),
   format = "qs",
-  #  error = "null",
   memory = "transient",
   garbage_collection = TRUE,
   controller = controller,
@@ -43,7 +42,8 @@ tar_config_set(
   store = file.path(targets_project_dir, "store_validation_sample"),
   config = "_targets.yaml",
   project = "validation_sample",
-  use_crew = TRUE)
+  use_crew = TRUE
+)
 
 # Run the R scripts in the r/ folder with your custom functions:
 tar_source(
@@ -69,11 +69,13 @@ bronnenkaarten <- c(
 
 
 input_years <- c(2016, 2019, 2022)
+# nolint start
 path_to_gdb <- "Z:/Projects/PRJ_FLEA/flea_output.gdb"
 path_to_lbg <- "Z:/Projects/PRJ_FLEA/landbouwdata.gdb"
 path_to_lyr <- "Z:/Projects/PRJ_FLEA/ecosysteemkaart_niv1_v12.lyr"
 path_to_grts <- file.path(flea_data, "data/c-mon/flea_cmon_level15.tiff")
 path_to_sources_lyr <- "Z:/Projects/PRJ_FLEA/bronnenkaart_v13.lyr"
+# nolint end
 
 layers_ruimtebeslag <- c(
   "GRB:WBN",
@@ -100,7 +102,7 @@ lbg_mapping_flea_codes <- data.frame(
   flea_id = c(101, 104, 200, 300, 400, 500, 900)
 )
 
-habitatmap_terr_mapping_flea_codes <- data.frame(
+habitatmap_terr_mapping_flea_codes <- data.frame(# nolint: object_length_linter.
   flea_id = c(500)
 )
 
@@ -140,7 +142,8 @@ sample_selection <- list(
       names = bronnenkaarten
     ),
     description =
-      "Name of the rasterlayers encoding the source used to assign an ecosystem type"
+      "Name of the rasterlayers encoding the source used to
+    assign an ecosystem type"
   ),
   tar_target(
     name = sourcestable,
@@ -153,7 +156,8 @@ sample_selection <- list(
       gdb = path_to_gdb,
       name = sourcenames,
       cats = sourcestable,
-      origin = c(0, 0), # same as grts_origin (broken because of old qs R4.6 conflict)
+      #same as grts_origin
+      origin = c(0, 0),
       grts = fleagrts
     ),
     pattern = map(sourcenames),
@@ -297,7 +301,8 @@ prelabelling_sources <- list(
     names = "flea_id",
     # get the unique GWSCOD_H that map to flea_ids
     targets::tar_target(
-      name = lbg_mapping, # The base name (becomes mapping_101, mapping_104, etc.)
+      #The base name (becomes mapping_101, mapping_104, etc.)
+      name = lbg_mapping,
       command = lbg_mapping_df$GWSCOD_H[
         lbg_mapping_df$FLEA == flea_id & !is.na(lbg_mapping_df$FLEA)
       ],
@@ -311,7 +316,8 @@ prelabelling_sources <- list(
         layer = lbg_layers,
         from_fields = c("GWSCOD_H", "GWSNAM_H", "STAT_BGV"),
         where_field = "GWSCOD_H",
-        # referencing 'lbg_mapping' here automatically resolves to 'lbg_mapping_101'
+        # referencing 'lbg_mapping' here automatically resolves to
+        # 'lbg_mapping_101'
         # because they are in the same tar_map scope!
         where_values = lbg_mapping,
         flea_value = flea_id
@@ -340,14 +346,17 @@ prelabelling_sources <- list(
   geotargets::tar_terra_vect(
     name = grb_settlements_processed,
     command = process_settlement(
-      grb = grb_settlements),
-    description = "Cover and assign codes 101 or 102 to GRB settlements. 101 = (GBG > GBA > KNW) > 102 = (WBN > SBN > TRN verhard)"
+      grb = grb_settlements
+    ),
+    description = "Cover and assign codes 101 or 102 to GRB settlements.
+    101 = (GBG > GBA > KNW) > 102 = (WBN > SBN > TRN verhard)"
   ),
   # GRB WTZ processing
   geotargets::tar_terra_vect(
     name = grb_water_wtz_processed,
     command = process_water_wtz(
-      grb_wtz = grb_waterways)
+      grb_wtz = grb_waterways
+    )
   ),
   targets::tar_target(
     name = watersurfaces_meta,
@@ -428,7 +437,7 @@ prelabelling_sources <- list(
         polygons = validation_polygons,
         meta = habitatmap_terr_meta,
         types = types,
-        min_phab = 50, # selecteert alle eerste eenheden (tweede eenheid max 30%)
+        min_phab = 50, #selecteert alle eerste eenheden (tweede eenheid max 30%)
         flea_value = flea_id
       ),
       pattern = cross(

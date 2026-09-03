@@ -1,3 +1,5 @@
+# nolint start: object_usage_linter.
+
 input_maps <- function(names) {
   assert_that(is.character(names))
   return(names)
@@ -58,7 +60,8 @@ get_map <- function(gdb, name, cats, origin, grts) {
   map <- writeRaster(
     map,
     tempfile(fileext = ".tif"),
-    datatype = "INT2U", overwrite = TRUE)
+    datatype = "INT2U", overwrite = TRUE
+  )
   return(map)
 }
 
@@ -87,7 +90,7 @@ binary_change <- function(data, lg_values, mapnames) {
       purrr::list_transpose() %>%
       purrr::map_chr(
         .f = \(x) paste(x, collapse = "")
-    )
+      )
   }
   bind_cols(data, binary)
 }
@@ -176,7 +179,7 @@ add_changecats_tempstrat <- function(tempstrat, cats, mapnames) {
           .keep = "none"
         ),
       by = join_by(
-         year_value == value
+        year_value == value
       )
     )
 
@@ -196,10 +199,10 @@ add_changecats_tempstrat <- function(tempstrat, cats, mapnames) {
     rowwise() %>%
     mutate(stable = all(
       c_across(starts_with("value_")) == first(c_across(starts_with("value_")))
-        ) %>%
-        if_else("stable", "changed") %>%
-        as.factor()
-      ) %>%
+    ) %>%
+      if_else("stable", "changed") %>%
+      as.factor()
+    ) %>%
     ungroup() %>%
     mutate(
       across(
@@ -238,4 +241,4 @@ calc_mask <- function(maps, values) {
   return(my_mask)
 }
 
-
+# nolint end: object_usage_linter.

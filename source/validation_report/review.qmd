@@ -551,14 +551,16 @@ kable(validatieklassen |> select(class))
 ```{r}
 #| label: tbl-validation-points-nara2020
 #| tbl-cap: Sample size allocation across strata used in the validation study of
-#|  NARA 2020 
+#|  NARA 2020
 validatiepunten %>%
   select(objectid, starts_with("map")) %>%
   mutate(
     across(
       matches("map_\\d{4}"),
-      \(x) {factor(x, levels = validatieklassen$klasse,
-                  labels = validatieklassen$class)}
+      \(x) {
+        factor(x, levels = validatieklassen$klasse,
+               labels = validatieklassen$class)
+      }
     )
   ) |>
   summarize(

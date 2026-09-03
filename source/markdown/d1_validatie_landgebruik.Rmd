@@ -89,7 +89,8 @@ points <- punten %>%
   as_tibble() %>%
   mutate(
     across(where(is.factor), ~as.character(.)),
-    across(where(is.character), ~na_if(., "<Null>"))) %>%
+    across(where(is.character), ~na_if(., "<Null>"))
+  ) %>%
   # Alle <Null> omzetten in NA
   gather(key = klasse, value = oordeel, X2013:change.9) %>%
   # Van breed formaat naar lang formaat
@@ -169,7 +170,6 @@ points <- punten %>%
 
 points_id <- points %>%
   # puntenset met 1 waarde per objectid
-  # filter(klasse != "verandering") %>%
   spread(klasse, oordeelval) %>%
   group_by(objectid, eval) %>%
   summarise(
@@ -235,7 +235,6 @@ points_change <- as.data.frame(points_id) %>%
 ```{r}
 points_id_orig <- points %>%
   # puntenset met 1 waarde per objectid
-  # filter(klasse != "verandering") %>%
   rename(lu2013map = lu2013, lu2016map = lu2016, verandmap = verandering) %>%
   spread(klasse, oordeel) %>%
   group_by(objectid, eval) %>%
@@ -422,14 +421,17 @@ validation <- function(ma, maparea) {
   # variance of producer's accuracy (Eq. 7 in Olofsson et al. 2014)
   n_j <- array(0, dim = length(dyn))
   aftersumsign <- array(0, dim = length(dyn))
-  for (cj in seq_len(length(dyn))) {
+  for (cj in seq_along(dyn)) {
     n_j[cj] <- sum(maparea / ni * ma[, cj], na.rm = TRUE)
-    aftersumsign[cj] <- sum(maparea[-cj]^2 * ma[-cj, cj] / ni[-cj] *
-      (1 - ma[-cj, cj] / ni[-cj]) /
-      (ni[-cj] - 1), na.rm = TRUE)
+    aftersumsign[cj] <- sum(
+      maparea[-cj]^2 * ma[-cj, cj] / ni[-cj] *
+        (1 - ma[-cj, cj] / ni[-cj]) /
+        (ni[-cj] - 1), na.rm = TRUE
+    )
   }
-  v_pa <- 1 / n_j^2 * (maparea^2 * (1 - pa)^2 * ua * (1 - ua) / (ni - 1) +
-    pa^2 * aftersumsign)
+  v_pa <- 1 / n_j^2 *
+    (maparea^2 * (1 - pa)^2 * ua * (1 - ua) / (ni - 1) +
+       pa^2 * aftersumsign)
   v_pa[is.nan(v_pa)] <- 0
 
   ### Estimate area
@@ -440,9 +442,11 @@ validation <- function(ma, maparea) {
 
   # standard errors of the area estimation (Eq. 10 in Olofsson et al. 2014)
   v_propareaest <- array(0, dim = length(dyn))
-  for (cj in seq_len(length(dyn))) {
-    v_propareaest[cj] <- sum((propmaparea * propma[, cj] - propma[, cj]^2) /
-      (rowSums(ma) + 0.001 - 1)) # + 0.001 voor klassen met maar 1 punt
+  for (cj in seq_along(dyn)) {
+    v_propareaest[cj] <- sum(
+      (propmaparea * propma[, cj] - propma[, cj]^2) /
+        (rowSums(ma) + 0.001 - 1)
+    ) # + 0.001 voor klassen met maar 1 punt
   }
   v_propareaest[is.na(v_propareaest)] <- 0
 
@@ -611,7 +615,7 @@ Daardoor is het niet mogelijk om statistisch onderbouwde uitspraken te doen over
 plot_val <- ov_val %>%
   dplyr::select(class, area_ha, adj_area, ci_adj_area, ua, pa) %>%
   mutate(conf.low = adj_area - ci_adj_area, conf.high = adj_area +
-    ci_adj_area) %>%
+           ci_adj_area) %>%
   mutate(signif0 = ifelse(conf.low <= 0, "", "*")) %>%
   separate(class, c("lu13", "lu16"), sep = "_", remove = FALSE) %>%
   mutate(lu13_lang = recode(lu13,
@@ -786,10 +790,12 @@ theme_set(theme_inbo())
 
 bar_lu <- ggplot(
   plot_lu %>%
-    dplyr::filter(!class %in% c(
-    "A_A", "B_B", "G_G", "HG_HG", "LG_LG",
-    "O_O", "ON_ON", "U_U"
-  )),
+    dplyr::filter(
+      !class %in% c(
+        "A_A", "B_B", "G_G", "HG_HG", "LG_LG",
+        "O_O", "ON_ON", "U_U"
+      )
+    ),
   aes(
     x = class, y = adj_area,
     text = paste(

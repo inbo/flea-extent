@@ -237,7 +237,7 @@ observed_changes <- observed_changes |>
 aa <- mapac::aa_card(
   x = observed_changes$ref,
   m = observed_changes$map,
-  w = maparea$area/sum(maparea$area),
+  w = maparea$area / sum(maparea$area),
   h = maparea$changecat,
   area = sum(maparea$area),
   olofsson = TRUE
@@ -292,7 +292,7 @@ mapac::aa_flextable(
   diagonal = TRUE,
   decimals_cells = 2,
   decimals_stats = 3
-  )
+)
 
 areas_df <- calc_areas(
   maparea = maparea$area,
@@ -329,8 +329,8 @@ sum(aa$area$area) - sum(prop_area_h$area)
 # the variable oa is needed for estimation
 svydata <- observed_changes |>
   mutate(
-    weights = 1/ ips,
-    ids = paste0("id_", 1:n()),
+    weights = 1 / ips,
+    ids = paste0("id_", seq_len(n())),
     ones = 1,
     oa = as.numeric(map == ref)
   ) |>
@@ -348,27 +348,29 @@ design <- ReGenesees::e.svydesign(
   ids = ~ ids,
   strata = ~ map,
   weights = ~ weights,
-  fpc = ~ ips)
+  fpc = ~ ips
+)
 
 # create dataframe containing marginal population totals
-df.pop <- ReGenesees::pop.template(
+df_pop <- ReGenesees::pop.template(
   data = svydata,
   calmodel = ~ map - 1
 ) # see what the template should look like
-ReGenesees::pop.desc(df.pop)
-df.pop <- maparea |>
+ReGenesees::pop.desc(df_pop)
+df_pop <- maparea |>
   select(changecat, area) |>
   pivot_wider(
     names_from = changecat,
     names_prefix = "map",
-    values_from = area) |>
+    values_from = area
+  ) |>
   as.data.frame()
 
 # calibrate on map marginal totals
 # this adds the calibration weights to the design
 cal <- ReGenesees::e.calibrate(
   design = design,
-  df.population = df.pop,
+  df_population = df_pop,
   calmodel = ~ map - 1
 )
 summary(cal)
@@ -393,10 +395,11 @@ cal_ref_areas <- ReGenesees::svystatTM(
   y =  ~ ref,
   estimator = "Total",
   conf.int = TRUE,
-  deff = TRUE)
+  deff = TRUE
+)
 # note that above with y = ~ map would just recover known marginal totals (SE=0)
 waldo::compare(aa$area$area, cal_ref_areas$Total, tolerance = 1e-10)
-waldo::compare(aa$area$area_ci, 1.96*cal_ref_areas$SE, tolerance = 1e-4)
+waldo::compare(aa$area$area_ci, 1.96 * cal_ref_areas$SE, tolerance = 1e-4)
 
 
 # can we estimate the areas also via Bayes formula?
@@ -427,22 +430,24 @@ abline(0, 1)
 # because our survey data are in long format, we can
 # represent n_ik as a vector of ones in combi with by = ~ref
 # to obtain the same as before using either an expression in svystatL or
-cal_ref_areas_checkL <- ReGenesees::svystatL(
+cal_ref_areas_checkl <- ReGenesees::svystatL(
   design = cal,
   expr =  expression(ones),
   by = ~ ref,
   conf.int = TRUE,
-  deff = TRUE)
-cal_ref_areas_checkTM <- ReGenesees::svystatTM(
+  deff = TRUE
+)
+cal_ref_areas_checktm <- ReGenesees::svystatTM(
   design = cal,
   y =  ~ ones,
   by = ~ ref,
   conf.int = TRUE,
-  deff = TRUE)
-waldo::compare(cal_ref_areas_checkL$ones, cal_ref_areas$Total)
-waldo::compare(cal_ref_areas_checkTM$Total.ones, cal_ref_areas$Total)
-waldo::compare(cal_ref_areas_checkL$SE.ones, cal_ref_areas$SE)
-waldo::compare(cal_ref_areas_checkTM$SE.Total.ones, cal_ref_areas$SE)
+  deff = TRUE
+)
+waldo::compare(cal_ref_areas_checkl$ones, cal_ref_areas$Total)
+waldo::compare(cal_ref_areas_checktm$Total.ones, cal_ref_areas$Total)
+waldo::compare(cal_ref_areas_checkl$SE.ones, cal_ref_areas$SE)
+waldo::compare(cal_ref_areas_checktm$SE.Total.ones, cal_ref_areas$SE)
 
 # can it also be used to calculate OA, UA and PA?
 # OA: YES
@@ -451,7 +456,8 @@ cal_oa <- ReGenesees::svystatTM(
   y =  ~ oa,
   estimator = "Mean",
   conf.int = TRUE,
-  deff = TRUE)
+  deff = TRUE
+)
 waldo::compare(aa$accuracy[1], cal_oa$Mean, tolerance = 1e-10)
 waldo::compare(aa$accuracy[2], cal_oa$SE, tolerance = 1e-5)
 
@@ -463,9 +469,10 @@ cal_ua <- ReGenesees::svystatTM(
   by = ~ map,
   estimator = "Mean",
   conf.int = TRUE,
-  deff = TRUE)
+  deff = TRUE
+)
 waldo::compare(aa$stats$ua, cal_ua$Mean.oa, tolerance = 1e-10)
-waldo::compare(aa$stats$ua_se, cal_ua$SE.Mean.oa, tolerance = 1e-2) # more conservative
+waldo::compare(aa$stats$ua_se, cal_ua$SE.Mean.oa, tolerance = 1e-2)
 hist(aa$stats$ua_se -  cal_ua$SE.Mean.oa)
 plot(aa$stats$ua_se, cal_ua$SE.Mean.oa)
 abline(0, 1)
@@ -477,7 +484,8 @@ cal_pa <- ReGenesees::svystatTM(
   by = ~ ref,
   estimator = "Mean",
   conf.int = TRUE,
-  deff = TRUE)
+  deff = TRUE
+)
 waldo::compare(aa$stats$pa, cal_pa$Mean.oa, tolerance = 1e-10)
 waldo::compare(aa$stats$pa_se, cal_pa$SE.Mean.oa, tolerance = 1e-2)
 hist(aa$stats$pa_se -  cal_pa$SE.Mean.oa)
@@ -500,7 +508,7 @@ areas_df %>%
       sprintf(
         "%s (n = %s; ua = %s; pa = %s)",
         class, n_points, round(ua, 2), round(pa, 2)
-        ),
+      ),
       area_est_ha
     ),
     # truncate negative values to 1 m2
@@ -640,10 +648,11 @@ n_est |>
 # recode into gain, loss, stable presence
 
 binary_change <- function(
-    data,
-    lg,
-    year1 = "lg2013_label",
-    year2 = "lg2016_label") {
+  data,
+  lg,
+  year1 = "lg2013_label",
+  year2 = "lg2016_label"
+) {
   binary <- vector("list", length = length(lg))
   binary <- setNames(binary, lg)
   for (i in lg) {
@@ -652,11 +661,11 @@ binary_change <- function(
       stringr::str_detect(data[[year2]], i) %>% as.numeric()
     )
   }
-  bind_cols(data, binary)
+  dplyr::bind_cols(data, binary)
 }
 
 categorize_land_use_change <- function(b) {
-  case_when(
+  dplyr::case_when(
     # Stable conditions
     grepl("^0+$", b) ~ "Stable absence",
     grepl("^1+$", b) ~ "Stable presence",

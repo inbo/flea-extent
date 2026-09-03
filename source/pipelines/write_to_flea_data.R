@@ -9,7 +9,7 @@ Sys.setenv(TAR_PROJECT = "validation_sample")
 prelabeled <- tar_read(prelabeled_validation_polygons_50)
 rasterlabeled <- tar_read(raster_labeled_validation_polygons_50)
 
-flea_data <- "C:/R/GitRepositories/flea-data"
+flea_data <- "C:/R/GitRepositories/flea-data" # nolint: absolute_path_linter.
 flea_validation <- fs::dir_create(
   file.path(flea_data, "validation_test2")
 )
@@ -36,9 +36,11 @@ prelabeled_sf |>
           obj = xi,
           dsn = file.path(
             flea_validation,
-            paste0(gsub("-", "", Sys.Date()), "_test_validation_sample.gpkg")),
+            paste0(gsub("-", "", Sys.Date()), "_test_validation_sample.gpkg")
+          ),
           layer = paste0(layername, "_", i),
-          delete_layer = TRUE)
+          delete_layer = TRUE
+        )
       }
     }
   )
@@ -69,9 +71,11 @@ rasterlabeled_sf |>
           obj = xi,
           dsn = file.path(
             flea_validation,
-            paste0(gsub("-", "", Sys.Date()), "_test_validation_sample.gpkg")),
+            paste0(gsub("-", "", Sys.Date()), "_test_validation_sample.gpkg")
+          ),
           layer = paste0("cells_", layername, "_", i),
-          delete_layer = TRUE)
+          delete_layer = TRUE
+        )
       }
     }
   )
@@ -99,9 +103,11 @@ validation_poly_50_sf |>
           obj = xi,
           dsn = file.path(
             flea_validation,
-            paste0(gsub("-", "", Sys.Date()), "_test_validation_sample.gpkg")),
+            paste0(gsub("-", "", Sys.Date()), "_test_validation_sample.gpkg")
+          ),
           layer = paste0(layername, "_", i),
-          delete_layer = TRUE)
+          delete_layer = TRUE
+        )
       }
     }
   )
@@ -115,7 +121,8 @@ vs |>
   write_sf(
     dsn = file.path(
       flea_validation,
-      paste0(gsub("-", "", Sys.Date()), "_test_validation_sample.gpkg")),
+      paste0(gsub("-", "", Sys.Date()), "_test_validation_sample.gpkg")
+    ),
     layer = "validation_sample_all",
     delete_layer = TRUE
   )
@@ -142,20 +149,26 @@ lapply(
 )
 
 # bronnenkaarten wegschrijven
-write_categorical_raster <- function(x, filename, datatype = "INT1U", overwrite = TRUE) {
-  writeRaster(x, filename = filename, datatype = datatype, overwrite = overwrite)
+write_categorical_raster <- function(
+  x, filename, datatype = "INT1U", overwrite = TRUE
+) {
+  writeRaster(
+    x, filename = filename, datatype = datatype, overwrite = overwrite
+  )
 
   rat <- cats(x)[[1]]
   if (is.null(rat)) return(invisible(filename))
 
-  label_col <- setdiff(names(rat), c("value", "color", "red", "green", "blue"))[1]
+  label_col <- setdiff(
+    names(rat), c("value", "color", "red", "green", "blue")
+  )[1]
 
   # Prepend a transparent/nodata entry for position 0
   color_entries <- c(
-    '      <Entry c1="0" c2="0" c3="0" c4="0"/>',   # position 0 = nodata, transparent
+    "      <Entry c1='0' c2='0' c3='0' c4='0'/>",
     mapply(
       function(r, g, b) {
-        sprintf('      <Entry c1="%d" c2="%d" c3="%d" c4="255"/>',  # no idx needed
+        sprintf("      <Entry c1='%d' c2='%d' c3='%d' c4='255'/>",
                 r, g, b)
       },
       rat$red, rat$green, rat$blue,
@@ -168,7 +181,7 @@ write_categorical_raster <- function(x, filename, datatype = "INT1U", overwrite 
       sprintf('        <Row index="%d"><F>%d</F><F>%s</F></Row>',
               i,        # 0-based row position
               val,      # pixel value in the Value field
-              xmlEscape(lbl))
+              xml_escape(lbl))
     },
     seq_len(nrow(rat)) - 1L,   # i: 0, 1, 2, ...
     rat$value,                  # val: 1, 2, 3, ...
@@ -176,18 +189,23 @@ write_categorical_raster <- function(x, filename, datatype = "INT1U", overwrite 
     SIMPLIFY = TRUE
   )
   xml <- paste0(
-    '<PAMDataset>\n',
-    '  <PAMRasterBand band="1">\n',
-    '    <GDALRasterAttributeTable tableType="thematic">\n',
-    '      <FieldDefn index="0"><Name>Value</Name><Type>0</Type><Usage>0</Usage></FieldDefn>\n',
-    '      <FieldDefn index="1"><Name>', label_col, '</Name><Type>2</Type><Usage>2</Usage></FieldDefn>\n',
+    "<PAMDataset>\n",
+    "  <PAMRasterBand band='1'>\n",
+    "    <GDALRasterAttributeTable tableType='thematic'>\n",
+    paste0(
+      "      <FieldDefn index='0'><Name>Value</Name>",
+      "<Type>0</Type><Usage>0</Usage></FieldDefn>\n"
+    ),
+    "      <FieldDefn index='1'><Name>",
+    label_col,
+    "</Name><Type>2</Type><Usage>2</Usage></FieldDefn>\n",
     paste(rat_rows, collapse = "\n"), "\n",
-    '    </GDALRasterAttributeTable>\n',
-    '    <ColorTable palette="RGB">\n',
+    "    </GDALRasterAttributeTable>\n",
+    "    <ColorTable palette='RGB'>\n",
     paste(color_entries, collapse = "\n"), "\n",
-    '    </ColorTable>\n',
-    '  </PAMRasterBand>\n',
-    '</PAMDataset>\n'
+    "    </ColorTable>\n",
+    "  </PAMRasterBand>\n",
+    "</PAMDataset>\n"
   )
 
   writeLines(xml, paste0(filename, ".aux.xml"))
@@ -198,27 +216,28 @@ write_categorical_raster <- function(x, filename, datatype = "INT1U", overwrite 
 write_qml <- function(rat, filename, label_col) {
   items <- mapply(function(val, lbl, col) {
     sprintf(
-      '        <paletteEntry alpha="255" color="%s" label="%s" value="%d"/>',
-      col, htmlEscape(lbl), val)
+      "        <paletteEntry alpha='255' color='%s' label='%s' value='%d'/>",
+      col, html_escape(lbl), val
+    )
   }, rat$value, rat[[label_col]], rat$color, SIMPLIFY = TRUE)
 
   qml <- paste0(
-    '<!DOCTYPE qgis PUBLIC \'http://mrcc.com/qgis.dtd\' \'SYSTEM\'>\n',
-    '<qgis version="3.0" styleCategories="Symbology">\n',
-    '  <pipe>\n',
-    '    <rasterrenderer band="1" type="paletted" opacity="1">\n',
-    '      <colorPalette>\n',
+    "<!DOCTYPE qgis PUBLIC 'http://mrcc.com/qgis.dtd' 'SYSTEM'>\n",
+    "<qgis version=\"3.0\" styleCategories=\"Symbology\">\n",
+    "  <pipe>\n",
+    "    <rasterrenderer band=\"1\" type=\"paletted\" opacity=\"1\">\n",
+    "      <colorPalette>\n",
     paste(items, collapse = "\n"), "\n",
-    '      </colorPalette>\n',
-    '    </rasterrenderer>\n',
-    '  </pipe>\n',
-    '</qgis>\n'
+    "      </colorPalette>\n",
+    "    </rasterrenderer>\n",
+    "  </pipe>\n",
+    "</qgis>\n"
   )
 
   writeLines(qml, paste0(tools::file_path_sans_ext(filename), ".qml"))
 }
 
-htmlEscape <- function(x) {
+html_escape <- function(x) {
   x <- gsub("&",  "&amp;",  x)
   x <- gsub("<",  "&lt;",   x)
   x <- gsub(">",  "&gt;",   x)
@@ -226,7 +245,7 @@ htmlEscape <- function(x) {
   x
 }
 
-xmlEscape <- function(x) {
+xml_escape <- function(x) {
   x <- gsub("&",  "&amp;",  x)
   x <- gsub("<",  "&lt;",   x)
   x <- gsub(">",  "&gt;",   x)
@@ -335,12 +354,13 @@ pl |>
   write_sf(
     dsn = file.path(
       flea_validation,
-      paste0(gsub("-", "", Sys.Date()), "_test_validation_sample.gpkg")),
+      paste0(gsub("-", "", Sys.Date()), "_test_validation_sample.gpkg")
+    ),
     layer = "testset_30_validaties",
     delete_layer = TRUE
   )
 
-
+# nolint start
 # vect(rasterlabeled) |>
 #   st_as_sf() |>
 #   inner_join(selectie) |>
@@ -351,6 +371,7 @@ pl |>
 #     layer = "test_cells_30_validaties",
 #     delete_layer = TRUE
 #   )
+# nolint end
 
 
 plotjes <- pl |>
@@ -381,6 +402,7 @@ selected_table_data |>
   ) |>
   knitr::kable()
 
+# nolint start
 # # check for one
 # plotjes |>
 #   ungroup() |>
@@ -417,3 +439,4 @@ selected_table_data |>
 # vp_water_grb_lbg_terr_singletarget |>
 #   st_as_sf() |>
 #   filter(stratum_name == "bc_104_changecat", changecat == "Loss", grts_rank == 3363)
+# nolint end
