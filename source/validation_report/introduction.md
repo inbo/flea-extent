@@ -7,7 +7,7 @@ toc: false
 Over a period of 2.5 years, Flanders Ecosystem Accounting (FLEA) aims to combine INBO expertise to develop and critically evaluate ecosystem accounts.
 These accounts comprise international statistics on the extent, condition, and services of ecosystems.
 The data and variables required to compile the extent and condition modules are closely linked to data flows used for BWK (Biological Valuation Map), Natura 2000, and WFD (Water Framework Directive) reporting. They also align with several recent European regulations, including LULUCF, the Nature Restoration Law, and the Soil Restoration Law.
-Developing these statistics serves as a lever for mainstreaming biodiversity into other policy areas.
+Developing these statistics serves as a lever for main-streaming biodiversity into other policy areas.
 This can be achieved, among other ways, by better integrating biodiversity data with national economic accounts.
 EU Regulation 2024/3024 introducing new modules for environmental-economic accounts, the European Biodiversity Strategy for 2030, the SDGs, and the targets of the Kunming-Montreal Global Biodiversity Framework make this development more imperative and urgent—for instance, for national biodiversity strategies and action plans.
 By 2026, FLEA aims to deliver an ecosystem extent account along with its associated indicators.
@@ -25,6 +25,6 @@ The European Commission, which contributed to this framework, developed it into 
 This regulation mandates triennial reporting on ecosystem extent and condition and annual reporting on ecosystem services from 2026, with 2024 as the first reference year.
 The development and implementation of these accounts have been on the international and European biodiversity policy agendas for years, including the (unfulfilled) Aichi targets, the European 2010 target, and the Biodiversity Strategy for 2020.
 The Sustainable Development Goals, the European Biodiversity Strategy for 2030, and the Kunming-Montreal Global Biodiversity Framework also explicitly mention it in their texts and targets.
-The purpose of these statistics is, among other things, to better connect biodiversity data with national economic accounts and economic decision-making, thereby supporting the mainstreaming of biodiversity policy.
+The purpose of these statistics is, among other things, to better connect biodiversity data with national economic accounts and economic decision-making, thereby supporting the main-streaming of biodiversity policy.
 After all, reversing biodiversity loss cannot be achieved solely through policy and management measures within the environmental sector itself; it requires fundamental changes in other policy domains.
 Ecosystem accounting is one of the key levers to make that happen.

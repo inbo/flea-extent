@@ -126,7 +126,7 @@ We list the 12 ecosystem level 1 classes below together with the level 2 subdivi
 
 1. Settlements and other artificial areas
 
->Area that is used as residential area, for commercial or industrial activities, services, recreation or transport. It includes not only buildings and sealed soil, but also the parts of parcels linked to those buildings which are covered with natural vegetation (e.g. lawns, trees) or standing waters (e.g. ponds in gardens an urban parks). This ecosystem equals what is considered to be ‘land take’ (in dutch: ruimtebeslag), with the exception of running waters (rivers, streams, canals or ditches). Ecologically valuable natural vegetation heathland, inland wetland or dune grasslands occurring on settlements (e.g. recreation area and campings) is also classified under settlements.
+>Area that is used as residential area, for commercial or industrial activities, services, recreation or transport. It includes not only buildings and sealed soil, but also the parts of parcels linked to those buildings which are covered with natural vegetation (e.g. lawns, trees) or standing waters (e.g. ponds in gardens an urban parks). This ecosystem equals what is considered to be ‘land take’, with the exception of running waters (rivers, streams, canals or ditches). Ecologically valuable natural vegetation heathland, inland wetland or dune grasslands occurring on settlements (e.g. recreation area and campings) is also classified under settlements.
 
 Subdivided into its level 2 components:
 
@@ -143,11 +143,11 @@ Subdivided into its level 2 components:
 
 3. Grassland (pastures, semi-natural and natural grasslands)
 
->Area that is dominated by low and high grasses or by muti-annual forbs (in dutch: ruigte), provided that it is not part of settlements and other artificial areas (e.g. gardens or parks). The area may be used for professional farming, hobby farming, may be under nature management or abandoned. Grassland parcels used for professional farming only are considered grassland if there has been a grassland crop for at least five consecutive years, otherwise they are considered as cropland. Small landscape elements around croplands, like grassy margins, hedges and tree rows are considered part of this ecosystem. Also high stem fruit orchards are classified as grassland, if they are not part of settlements.
+>Area that is dominated by low and high grasses or by muti-annual forbs, provided that it is not part of settlements and other artificial areas (e.g. gardens or parks). The area may be used for professional farming, hobby farming, may be under nature management or abandoned. Grassland parcels used for professional farming only are considered grassland if there has been a grassland crop for at least five consecutive years, otherwise they are considered as cropland. Small landscape elements around croplands, like grassy margins, hedges and tree rows are considered part of this ecosystem. Also high stem fruit orchards are classified as grassland, if they are not part of settlements.
 
 4. Forest and woodland
 
->Vegetation dominated by trees (canopy cover ≥ 50%), including recent clear-cuts, young (re)plantations, bramble scrub, and coppice. Also woodland shrub (in dutch: struweel), an ecological succession stage between grassland and a mature forest, is classified under forest and woodland. Forest stands on parcels that belong to settlements, e.g. urban parks, are not included. Plantations for short-rotation coppice (energy wood plantations), Christmas tree plantations, and nurseries for (ornamental) trees and shrubs fall under ecosystem 2. Cropland. 
+>Vegetation dominated by trees (canopy cover ≥ 50%), including recent clear-cuts, young (re)plantations, bramble scrub, and coppice. Also woodland shrub, an ecological succession stage between grassland and a mature forest, is classified under forest and woodland. Forest stands on parcels that belong to settlements, e.g. urban parks, are not included. Plantations for short-rotation coppice (energy wood plantations), Christmas tree plantations, and nurseries for (ornamental) trees and shrubs fall under ecosystem 2. Cropland. 
 
 5. Heathland and shrub
 
