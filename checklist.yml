@@ -4,10 +4,6 @@ allowed:
   warnings: []
   notes:
   - motivation: Can be added with add_badge() in a later stage
-    value: no DOI badge found in README.md
-  - motivation: Not yet needed
-    value: No version information found in README.md
-  - motivation: Can be added with add_badge() in a later stage
     value: no website badge found in README.md
 required:
 - CITATION
@@ -32,3 +28,4 @@ pak:
 - davidsjoberg/ggsankey
 - git::https://scm.cms.hu-berlin.de/pflugmad/mapac.git
 - DiegoZardetto/ReGenesees
+gha_install: []
