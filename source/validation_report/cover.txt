@@ -1,4 +1,4 @@
-Titel: Validation and estimation of changes in areas of land cover classes based on reference data
+Titel: Validation and estimation of changes in extent of ecosystem classes based on reference data
 Subtitel: Technical report for Flanders Ecosystem Accounting (FLEA) project
 Auteur(s): Hans Van Calster, Raïsa Carmen
 Contactpersoon: hans.vancalster@inbo.be
