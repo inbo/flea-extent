@@ -1,8 +1,10 @@
 <!-- badges: start -->
+![Language: en-GB](https://img.shields.io/badge/language-en--GB-c04384)
 ![GitHub](https://img.shields.io/github/license/inbo/flea-extent)
 ![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/inbo/flea-extent/check_project.yml?branch=main)
 ![GitHub repo size](https://img.shields.io/github/repo-size/inbo/flea-extent)
-[![CC BY 4.0](https://img.shields.io/badge/License-CC_BY_4.0-brightgreen)](https://raw.githubusercontent.com/inbo/checklist/refs/heads/main/inst/generic_template/cc_by_4_0.md)
+![version: 0.0.0](https://img.shields.io/badge/version-0.0.0-c04384)
+[![CC BY 4.0](https://img.shields.io/badge/License-CC_BY_4.0-brightgreen)](https://raw.githubusercontent.com/inbo/citeme/refs/heads/main/inst/licenses/cc_by_4_0.md)
 <!-- badges: end -->
 
 # Flanders Ecosystem Accounting
@@ -10,10 +12,11 @@
 [Van Calster, Hans![ORCID logo](https://info.orcid.org/wp-content/uploads/2019/11/orcid_16x16.png)](https://orcid.org/0000-0001-8595-8426)[^aut][^cre][^inbo.be];
 [Stevens, Maarten![ORCID logo](https://info.orcid.org/wp-content/uploads/2019/11/orcid_16x16.png)](https://orcid.org/0000-0003-2251-2878)[^aut][^inbo.be];
 [Van Reeth, Wouter![ORCID logo](https://info.orcid.org/wp-content/uploads/2019/11/orcid_16x16.png)](https://orcid.org/0000-0002-9117-3198)[^aut][^inbo.be];
-[Research Institute for Nature and Forest (INBO)](mailto:info%40inbo.be)[^cph][^fnd];
+[Research Institute for Nature and Forest (INBO)](mailto:info%40inbo.be)[^cph][^fnd][^pbl];
 
 [^cph]: copyright holder
 [^fnd]: funder
+[^pbl]: publisher
 [^aut]: author
 [^cre]: contact person
 [^inbo.be]: Research Institute for Nature and Forest (INBO)
