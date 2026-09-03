@@ -46,7 +46,11 @@ The allocation of the 240 sampling units to the "gained", "lost" and "other comp
 ```{r}
 #| label: tbl-conversions
 #| include: true
-#| tbl-cap: Allocation of sample size among strata. The conversions within each change class (gain, loss or other complex pattern) are also given. The numbers between brackets indicate the breakdown of the total sample size within that stratum for each specific conversion.
+#| tbl-cap: Allocation of sample size among strata.
+#|  The conversions within each change class (gain, loss or other complex
+#|   pattern) are also given.
+#|  The numbers between brackets indicate the breakdown of the total sample size
+#|   within that stratum for each specific conversion.
 withr::with_dir(
   rprojroot::find_root(rprojroot::is_git_root),
   {
@@ -185,7 +189,11 @@ Combining the level 1 and level 2 that are considered for validation and area es
 
 ```{r}
 #| label: tbl-16-ecosystem-types
-#| tbl-cap: The 16 level 1 and level 2 ecosystem types considered for area and accuracy estimation. The 'value' column is a short code to refer to the ecosystem. The 'colour' column has the hexadecimal codes that are used to colour code the ecosystems in maps.
+#| tbl-cap: The 16 level 1 and level 2 ecosystem types considered for area and
+#|  accuracy estimation.
+#|  The 'value' column is a short code to refer to the ecosystem.
+#|  The 'colour' column has the hexadecimal codes that are used to colour code
+#|   the ecosystems in maps.
 
 ct <- tar_read(catstable)
 get_text_color <- function(hex_codes) {
@@ -198,7 +206,7 @@ get_text_color <- function(hex_codes) {
 }
 
 ct |>
-  rename(colour = color) |> 
+  rename(colour = color) |>
   kable(
     booktabs = TRUE
   ) |>
@@ -231,7 +239,8 @@ This approach gives us a lot of freedom in the analysis stage (see @sec-analysis
 
 ```{r}
 #| label: fig-example-polygon
-#| fig-cap: Example of a 50 m x 50 m validation polygon and how it will be subdivided based on changes in ecosystem types between and within years.
+#| fig-cap: Example of a 50 m x 50 m validation polygon and how it will be
+#|  subdivided based on changes in ecosystem types between and within years.
 #| out.width: "100%"
 
 psu_matrix <- matrix(
@@ -271,7 +280,8 @@ eco_2019 <- st_sf(
 p21_bldg <- st_polygon(
   list(matrix(c(0, 0, 15, 0, 15, 15, 0, 15, 0, 0),
               ncol = 2, byrow = TRUE))
-  ) %>% st_sfc()
+) %>%
+  st_sfc()
 p21_rest <- st_difference(eco_2019$geometry, p21_bldg) # The rest of the PSU
 eco_2021 <- st_sf(
   ecosystem = c("Built-up", "Forest", "Agriculture") |>
@@ -294,7 +304,7 @@ final_subdivisions <- final_subdivisions |>
       str_sub(ecosystem, end = 1),
       str_sub(ecosystem.1, end = 1),
       str_sub(ecosystem.2, end = 1)
-      )
+    )
   )
 
 colours <- c(
@@ -304,11 +314,11 @@ colours <- c(
   "Built-up" = topo.colors(4)[4]
 )
 my_levels <- c("Built-up", "Forest", "Agriculture", "Grassland")
-ordered_colours <- unname(colours[my_levels]) 
+ordered_colours <- unname(colours[my_levels])
 
 dummy_df <- data.frame(
   ecosystem = factor(
-    c("Built-up", "Forest", "Agriculture", "Grassland"), 
+    c("Built-up", "Forest", "Agriculture", "Grassland"),
     levels = c("Built-up", "Forest", "Agriculture", "Grassland")
   )
 )
@@ -326,7 +336,8 @@ plot_2016 <- ggplot() +
     data = eco_2016,
     aes(fill = ecosystem),
     alpha = 0.7,
-    show.legend = TRUE) +
+    show.legend = TRUE
+  ) +
   geom_sf(data = rast10, fill = NA, linetype = "dotted") +
   shared_scale +
   theme_void() +
@@ -361,7 +372,7 @@ plot_final <- ggplot(final_subdivisions) +
 
 # Combine into a 2x2 grid
 plot_2016 + plot_2019 + plot_2021 + plot_final +
-  plot_layout(ncol = 2, guides = "collect") 
+  plot_layout(ncol = 2, guides = "collect")
 ```
 
 

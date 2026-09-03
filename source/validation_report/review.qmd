@@ -131,15 +131,15 @@ vb <- data.frame(
 
 # known maptotals (pixelcount)
 maptotals <- c(450, 220, 500)
-vb_normalized <- vb |> 
+vb_normalized <- vb |>
   dplyr::filter(rows != "Total") |>
   mutate(
     maptotal = maptotals,
     w_i = maptotal / sum(maptotal),
     across(c(forest, water, urban), \(x) w_i * (x / total)),
     .before = total
-  ) |> 
-  janitor::adorn_totals() |> 
+  ) |>
+  janitor::adorn_totals() |>
   relocate(w_i, .after = urban)
 
 
@@ -173,7 +173,7 @@ Extra columns are added to the table to show that we know the mapped totals, fro
 vb_normalized |>
   kable(
     booktabs = TRUE,
-    col.names = c("", "Forest", "Water", "Urban",  
+    col.names = c("", "Forest", "Water", "Urban",
                   "W_i", "Map total", "(Sample) total"),
     digits = 3
   )  |>
@@ -397,7 +397,7 @@ nara2020_aanpassingen %>%
     `Adapted soil cover map` = aangepaste_bodembedekkingskaart,
     `Adapted land use map` = aangepaste_landgebruikskaart,
     `Ecosystem extent class NARA level 2` = ecosysteemvoorraad_nara_niveau_2
-  ) |> 
+  ) |>
   kable()
 
 ```
@@ -550,15 +550,17 @@ kable(validatieklassen |> select(class))
 
 ```{r}
 #| label: tbl-validation-points-nara2020
-#| tbl-cap: Sample size allocation across strata used in the validation study of NARA 2020  
+#| tbl-cap: Sample size allocation across strata used in the validation study of
+#|  NARA 2020 
 validatiepunten %>%
   select(objectid, starts_with("map")) %>%
   mutate(
     across(
       matches("map_\\d{4}"),
-      \(x) factor(x, levels = validatieklassen$klasse, labels = validatieklassen$class)
+      \(x) {factor(x, levels = validatieklassen$klasse,
+                  labels = validatieklassen$class)}
     )
-  ) |> 
+  ) |>
   summarize(
     number_of_validations = n_distinct(objectid),
     number_of_validator_checks = n() - n_distinct(objectid),
@@ -583,7 +585,7 @@ validatiepunten %>%
     number_of_validator_checks = "Validator Checks"
   ) %>%
   gt::tab_options(
-    table.font.size = "small", 
+    table.font.size = "small",
     data_row.padding = gt::px(3),
     latex.use_longtable = TRUE
   )
@@ -605,10 +607,13 @@ In almost all cases, user's accuracy was lower than producer's accuracy, resulti
 
 ```{r}
 #| label: fig-area-estimates-nara-2020
-#| fig-cap: Area estimates and user and producer accuracy for 5 no-change classes and 20 changed classes (changes from 2013 to 2016). The unbiased estimates are indicated with a point and 95% confidence intervals. The biased estimate from pixel counting are indicated with a cross.
+#| fig-cap: Area estimates and user and producer accuracy for 5 no-change
+#|  classes and 20 changed classes (changes from 2013 to 2016).
+#|  The unbiased estimates are indicated with a point and 95% confidence
+#|  intervals.
+#|  The biased estimate from pixel counting are indicated with a cross.
 #| out.width: "100%"
 
 knitr::include_graphics(here::here("media/nara-2020-area-estimates.png"))
-
 ```
 
