@@ -24,12 +24,9 @@ spelling:
   - LICENSE.md
   - nca_validatingextend
   - source/checklist.R
-  - source/validatie/LICENSE.md
-  - source/validatie/000_abstract.Rmd
   other:
     nl-BE:
     - source/markdown/d1_validatie_landgebruik.Rmd
-    - source/validatie
     - source/pipelines/check_validation_testset.Rmd
 pak:
 - davidsjoberg/ggsankey
