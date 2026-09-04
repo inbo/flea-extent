@@ -37,7 +37,7 @@ slyr <- xml2::read_xml(
 
 catstable <- xml2::xml_find_all(
   x = slyr, ".//pipe//rasterrenderer//colorPalette"
-  ) |>
+) |>
   xml2::xml_contents() |>
   purrr::map(xml2::xml_attrs) |>
   purrr::map_df(~ as.list(.)) |>

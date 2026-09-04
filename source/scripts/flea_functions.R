@@ -10,11 +10,12 @@
 #'
 #' @examples
 point_to_gridcell <- function(
-    xy,
-    cell_width_m = 500,
-    point_position =
-      c("center", "lowerleft", "upperleft", "lowerright", "upperright"),
-    crs = 31370) {
+  xy,
+  cell_width_m = 500,
+  point_position =
+    c("center", "lowerleft", "upperleft", "lowerright", "upperright"),
+  crs = 31370
+) {
   point_position <- match.arg(point_position)
 
   if (point_position != "center") stop(point_position, " not yet implemented")
@@ -59,8 +60,9 @@ point_to_gridcell <- function(
 #'
 #' @export
 extract_sample_helper <- function(
-    rast,
-    n) {
+  rast,
+  n
+) {
   require("terra")
   require("sf")
 
@@ -110,12 +112,13 @@ extract_sample_helper <- function(
 #'
 #' @export
 extract_sample <- function(
-    stratum_raster,
-    fleagrts,
-    stratum_name,
-    ntot,
-    nmin,
-    min_stratum_size) {
+  stratum_raster,
+  fleagrts,
+  stratum_name,
+  ntot,
+  nmin,
+  min_stratum_size
+) {
   require("terra")
   require("dplyr")
   require("tibble")

@@ -8,7 +8,6 @@ Sys.setenv(TAR_PROJECT = "validation_sample")
 
 # check status
 tar_visnetwork(targets_only = TRUE, physics = TRUE)
-#tar_manifest() |> View()
 
 # check reason if any is outdated
 tar_sitrep() |> dplyr::filter(dplyr::if_any(.cols = !c(name)))
@@ -16,38 +15,38 @@ tar_sitrep() |> dplyr::filter(dplyr::if_any(.cols = !c(name)))
 # run the pipeline
 px <- tar_make(as_job = TRUE, use_crew = TRUE)
 
+# nolint start
 # # run with profiling
 # results <- profvis::profvis(
 #   targets::tar_make(
-#     callr_function = NULL, # Do not run the pipeline behind a callr::r() process.
-#     use_crew = FALSE, # Disable parallel computing with crew (optional)
-#     as_job = FALSE # Do not run the pipeline in a Posit Workbench / RStudio background job.
+#     callr_function = NULL,
+#     use_crew = FALSE,
+#     as_job = FALSE
 #   )
 # )
-# print(results, aggregate = TRUE) # aggregate = TRUE is crucial for interpretable flame graphs.
-
+# aggregate = TRUE is crucial for interpretable flame graphs.
+# print(results, aggregate = TRUE)
+# nolint end
 
 tar_progress_summary()
 tar_poll()
 
 # stop process
-# ps::ps_kill(px$as_ps_handle())
+# ps::ps_kill(px$as_ps_handle()) # nolint: commented_code_linter.
 
 ####################
 # inspect pipeline #
 ####################
 
-#targets::tar_prune()
+#targets::tar_prune() # nolint: commented_code_linter.
 
 mt <- targets::tar_meta(
   fields = error,
   complete_only = TRUE
 )
 mt
-#View(mt)
 wn <- targets::tar_meta(fields = warnings, complete_only = TRUE)
 wn
-#View(wn)
 targets::tar_visnetwork(
   label = c("description", "time", "size"),
   targets_only = TRUE, physics = TRUE
@@ -60,8 +59,6 @@ log_file <- "log.txt"
 log_data <- log_read(log_file)
 log_plot(log_data, metric = "resident")
 
-#tar_load_globals()
-#tar_load(names = c(mapnames, catstable, grts_ext, grts_origin))
 
 tar_read(mapnames)
 ct <- tar_read(catstable)
@@ -92,7 +89,7 @@ terra::compareGeom(grts, ml[[1]])
 waldo::compare(
   terra::crs(grts),
   terra::crs(ml[[1]])
-  )
+)
 
 tm <- targets::tar_read(temporal_map)
 tm
@@ -123,7 +120,7 @@ terra::vect(vs) |>
   sf::st_drop_geometry() |>
   dplyr::count(grts_rank, name = "times_selected") |>
   dplyr::count(times_selected) |>
-  dplyr::mutate(prop = n/ sum(n))
+  dplyr::mutate(prop = n / sum(n))
 
 terra::vect(vs) |>
   sf::st_as_sf(crs = 31370) |>
@@ -170,7 +167,8 @@ grb_water <- terra::vect(grb_water) |>
 
 grb_water_set <- dplyr::bind_rows(
   grb_water,
-  grb_set)
+  grb_set
+)
 
 grb_water_set |>
   mapview::mapview(zcol = "source", alpha.regions = 0.2) +
@@ -214,7 +212,7 @@ process_settlement(grb = grb_settlements)
 debugonce(get_grb_by_row)
 test <- get_grb_by_row(
   layer = "GRB:ADP",
-  polygons = tar_read(validation_polygons_6e7d3123e950eb4d)[1:2,]
+  polygons = tar_read(validation_polygons_6e7d3123e950eb4d)[1:2, ]
 )
 targets::tar_load_globals()
 targets::tar_workspace("vp_water_settlements_5319be99c3d05901")
@@ -230,11 +228,13 @@ test <- combine_water_settlements(
 targets::tar_load_globals()
 targets::tar_load(
   names = c(
-  grb_settlements_processed,
-  vp_water,
-  validation_polygons,
-  lbg_101_cropped,
-  lbg_104_cropped))
+    grb_settlements_processed,
+    vp_water,
+    validation_polygons,
+    lbg_101_cropped,
+    lbg_104_cropped
+  )
+)
 
 debugonce(combine_water_settlements)
 test <-  combine_water_settlements(

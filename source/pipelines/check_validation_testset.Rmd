@@ -158,7 +158,8 @@ validation_polygons_50 <- vect(validation_polygons_50)
 
 ```{r check-validation-data}
 # prop polygonen met juist prelabel
-sum(validation_polys_po$prelabels == validation_polys_po$newlabels) / nrow(validation_polys_po)
+sum(validation_polys_po$prelabels == validation_polys_po$newlabels) /
+  nrow(validation_polys_po)
 
 # check polygonen onvolledig gevalideerd
 onvolledig <- grepl("other", validation_polys_po$newlabels)
@@ -348,7 +349,7 @@ compare_cells <- validation_cells |>
     as_tibble(st_coordinates(st_centroid(st_geometry(validation_cells))))
   ) |>
   pivot_longer(
-    cols = starts_with('label_'),
+    cols = starts_with("label_"),
     names_to = "year",
     names_prefix = "label_",
     values_to = "label"
@@ -433,7 +434,6 @@ compare_polys <- st_make_valid(validation_polys_sds) |>
     area = st_area(.),
     id = seq_len(n())
   ) |>
-#  st_drop_geometry() |>
   select(
     id,
     grts_rank,
@@ -446,7 +446,7 @@ compare_polys <- st_make_valid(validation_polys_sds) |>
     label_2022_po = label_2022.1
   ) |>
   pivot_longer(
-    cols = starts_with('label_'),
+    cols = starts_with("label_"),
     names_to = c("year", "validator"),
     names_prefix = "label_",
     names_sep = "_",
@@ -503,7 +503,7 @@ tar_load(catstable)
 
 comparison <- bind_rows(
   compare_cells |> rename(po = PO, sds = SDS),
-  compare_polys |> 
+  compare_polys |>
     mutate(
       method = "polys",
       po = as.numeric(po),
@@ -531,13 +531,13 @@ plot_map <- function(x, y, z) {
   x |>
     ggplot() +
     geom_sf(
-      aes(fill = label),
+      aes(fill = label), # nolint: object_usage_linter.
       colour = "white",
       alpha = 0.8
     ) +
     facet_grid(
-      rows = vars(method, validator),
-      cols = vars(year)
+      rows = vars(method, validator), # nolint: object_usage_linter.
+      cols = vars(year) # nolint: object_usage_linter.
     ) +
     scale_fill_manual(values = flea_colours) +
     theme_void() +

@@ -1,3 +1,5 @@
+# nolint start: object_usage_linter, cyclocomp_linter.
+
 #' Convert a single point location to a grid cell polygon
 #'
 #' @param xy a `SpatVector` with geometry type points
@@ -10,11 +12,12 @@
 #'
 #' @examples
 point_to_gridcell <- function(
-    xy,
-    cell_width_m = 500,
-    point_position =
-      c("center", "lowerleft", "upperleft", "lowerright", "upperright"),
-    crs = 31370) {
+  xy,
+  cell_width_m = 500,
+  point_position =
+    c("center", "lowerleft", "upperleft", "lowerright", "upperright"),
+  crs = 31370
+) {
   point_position <- match.arg(point_position)
 
   if (point_position != "center") stop(point_position, " not yet implemented")
@@ -51,8 +54,8 @@ point_to_gridcell <- function(
 #' numbers
 #' @param n The number of points to extract
 #'
-#' @return `SpatVector` object containing the extracted points with their values,
-#'         cell numbers, coordinates, and assigned stratum name
+#' @return `SpatVector` object containing the extracted points with their values
+#'         , cell numbers, coordinates, and assigned stratum name
 #'
 #' @importFrom terra extract as.points
 #' @importFrom sf st_as_sf
@@ -63,8 +66,9 @@ point_to_gridcell <- function(
 #'
 #' @export
 extract_sample_helper <- function(
-    rast,
-    n) {
+  rast,
+  n
+) {
 
   # Extract values, exclude NA
   extracted <- terra::extract(
@@ -106,9 +110,10 @@ extract_sample_helper <- function(
 #'
 #' @export
 separate_grts_strata <- function(
-    stratum_raster,
-    fleagrts,
-    stratum_name) {
+  stratum_raster,
+  fleagrts,
+  stratum_name
+) {
 
   # assertions
   assertthat::assert_that(inherits(stratum_raster, "SpatRaster"))
@@ -158,11 +163,12 @@ separate_grts_strata <- function(
 #' @return A `SpatVector`
 #'
 extract_sample <- function(
-    separate_grts,
-    stratum_name,
-    ntot,
-    nmin,
-    min_stratum_size) {
+  separate_grts,
+  stratum_name,
+  ntot,
+  nmin,
+  min_stratum_size
+) {
   assertthat::assert_that(inherits(separate_grts, "SpatRaster"))
   assertthat::assert_that(is.numeric(ntot), ntot > 0)
   assertthat::assert_that(is.numeric(nmin), nmin < ntot)
@@ -367,7 +373,8 @@ process_settlement <- function(grb) {
       col = lbl,
       c(LBLTYPE, LBLFNCT),
       na.rm = TRUE,
-      remove = FALSE) |>
+      remove = FALSE
+    ) |>
     dplyr::mutate(
       jaar = pmin(lubridate::year(BEGINDATUM),
                   lubridate::year(OPNDATUM), na.rm = TRUE)
@@ -384,7 +391,8 @@ process_settlement <- function(grb) {
         layer %in% c("GRB:GBG", "GRB:GBA", "GRB:KNW") ~ 101,
         layer %in% c(
           "GRB:WBN",
-          "GRB:SBN") |
+          "GRB:SBN"
+        ) |
           (layer == "GRB:TRN" & LBLBDMBD == "verhard") ~ 102,
         TRUE ~ NA
       )
@@ -404,10 +412,12 @@ process_settlement <- function(grb) {
   # deal with overlapping polygons
   # within same grts_rank
   grb <- grb |>
-    arrange(value, factor(
-      layer,
-      levels = c(
-        "GRB:GBG", "GRB:GBA", "GRB:KNW", "GRB:WBN", "GRB:SBN", "GRB:TRN"
+    arrange(
+      value,
+      factor(
+        layer,
+        levels = c(
+          "GRB:GBG", "GRB:GBA", "GRB:KNW", "GRB:WBN", "GRB:SBN", "GRB:TRN"
         )
       )
     )
@@ -541,12 +551,29 @@ get_lbg_layernames <- function(path_to_lbg) {
 }
 
 get_lbg <- function(
-    path_to_lbg, layer, from_fields, where_field, where_values, flea_value) {
+  path_to_lbg, layer, from_fields, where_field, where_values, flea_value
+) {
 
   assertthat::assert_that(assertthat::is.string(layer))
   assertthat::assert_that(is.character(from_fields))
   assertthat::assert_that(assertthat::is.string(where_field))
   assertthat::assert_that(is.numeric(where_values))
+
+  # deal with "blijvend grasland"
+  # GWSCOD_H 9, 60, 63, 82, 660, 700, 745, 9823, 9827, 9828, 9829
+  # en STAT_BGV bevat "BG"-blijvend grasland worden ze als grasland beschouwd,
+  # zonder dit BG-veld zijn deze graslandteelten tijdelijk grasland dus Cropland
+  # 9 mapped naar 104 (laag groen)
+  # 9828 en 9829 mappen naar 300 (grasland)
+  # de rest van de graslandcodes mappen naar 200 (akkerland)
+  graslandcodes <- c(
+    "9", "60", "63", "82", "660", "700", "745", "9823", "9827", "9828", "9829"
+  )
+
+  # toevoegen igv flea 200 of 300
+  if (flea_value %in% c(200, 300)) {
+    where_values <- sort(unique(c(where_values, as.numeric(graslandcodes))))
+  }
 
   query <- paste0(
     "SELECT ",
@@ -575,13 +602,24 @@ get_lbg <- function(
     }
   }
 
+  if (flea_value == 200) {
+    # remove permanent grassland from cropland
+    lbg <- lbg[!(lbg$GWSCOD_H %in% graslandcodes & lbg$STAT_BGV == "BG"), ]
+  }
+  if (flea_value == 300) {
+    # remove temporary grassland from grassland
+    lbg <- lbg[!(lbg$GWSCOD_H %in% graslandcodes & lbg$STAT_BGV != "BG"), ]
+  }
+
   return(lbg)
 }
 
 
 #' Helper functions to deal with empty records in `tar_terra_vect`
 .create_empty_geom <- function(x, type) {
-  type <- match.arg(gsub("S$", "", toupper(type)), c("POINT", "LINE", "POLYGON"))
+  type <- match.arg(
+    gsub("S$", "", toupper(type)), c("POINT", "LINE", "POLYGON")
+  )
   if (nrow(x) == 0) {
     empty <- terra::vect(paste(type, "EMPTY"), crs = terra::crs(x))
     cols <- as.data.frame(x)[1, ]
@@ -662,7 +700,7 @@ get_watersurfaces <- function(path_version, polygons, meta) {
     file = file_version,
     version = basename(path_version),
     fix_geom = TRUE
-    )
+  )
   ws <- vect(ws)
 
   ws <- spatvector_crop(x = ws, y = polygons)
@@ -686,7 +724,8 @@ get_types <- function(flea_id) {
   if (flea_id == 500) {
     n2khab::read_types() |>
       filter(
-        typeclass_name %in% c("Temperate heath and scrub", "Sclerophyllous scrub")
+        typeclass_name %in%
+          c("Temperate heath and scrub", "Sclerophyllous scrub")
       ) |>
       pull(type)
   }
@@ -694,7 +733,7 @@ get_types <- function(flea_id) {
 
 
 get_habitatmap_terr <- function(
-    path_version, polygons, meta, types, min_phab, flea_value
+  path_version, polygons, meta, types, min_phab, flea_value
 ) {
   assertthat::assert_that(is.character(path_version), is.factor(types))
   assertthat::assert_that(inherits(polygons, "SpatVector"))
@@ -740,7 +779,8 @@ get_habitatmap_terr <- function(
 combine_grb_inbo_water <- function(grb_water, inbo_water, meta) {
   inbo_water <- vect(inbo_water)
   inbo_water <- inbo_water[
-    inbo_water$layer == paste0("watersurfaces_",meta$version), ]
+    inbo_water$layer == paste0("watersurfaces_", meta$version),
+  ]
 
   # cover: values of x that overlap with y are replaced by y
   grb_water <- aggregate(x = grb_water, by = names(grb_water))
@@ -754,12 +794,11 @@ combine_grb_inbo_water <- function(grb_water, inbo_water, meta) {
 
 
 
-
 combine_sources <- function(
-    water, settlements, polygons,
-    lbg_101, lbg_104, lbg_200, lbg_300, lbg_400, lbg_500, lbg_900,
-    terr_500
-    ) {
+  water, settlements, polygons,
+  lbg_101, lbg_104, lbg_200, lbg_300, lbg_400, lbg_500, lbg_900,
+  terr_500
+) {
 
   assertthat::assert_that(inherits(water, "SpatVector")) # a branch
   assertthat::assert_that(inherits(settlements, "SpatVector")) # a target
@@ -961,15 +1000,15 @@ combine_sources <- function(
 }
 
 postprocess_prelabelling <- function(
-    water_grb_lbg,
-    settlement_mask,
-    mmu = 30
+  water_grb_lbg,
+  settlement_mask,
+  mmu = 30
 ) {
   # add column indicating fraction of poly within settlement
   settl_prop <- exactextractr::exact_extract(
     x = settlement_mask,
     y = st_as_sf(water_grb_lbg),
-    fun = 'mean',
+    fun = "mean",
     progress = FALSE
   )
   water_grb_lbg$prop_in_settlement <- settl_prop
@@ -994,9 +1033,11 @@ postprocess_prelabelling <- function(
     dplyr::group_by(grts_rank) |>
     dplyr::mutate(
       stratum_name = ifelse(
-        is.na(stratum_name), dplyr::first(stratum_name), stratum_name),
+        is.na(stratum_name), dplyr::first(stratum_name), stratum_name
+      ),
       changecat = ifelse(
-        is.na(changecat), dplyr::first(changecat), changecat),
+        is.na(changecat), dplyr::first(changecat), changecat
+      ),
       label = dplyr::case_when(
         !is.na(value) ~ as.character(value),
         layer %in% c("GRB:GBA", "GRB:GBG") ~ "101",
@@ -1187,9 +1228,9 @@ st_dissolve_by <- function(x,
 
 
 terra_dissolve_boundaries <- function(
-    polygons,
-    group_cols, # aggregate by
-    mmu # minimum mappable unit
+  polygons,
+  group_cols, # aggregate by
+  mmu # minimum mappable unit
 ) {
   assertthat::assert_that(inherits(polygons, "SpatVector"))
   assertthat::assert_that(is.character(group_cols))
@@ -1223,10 +1264,12 @@ terra_dissolve_boundaries <- function(
     summarise(
       across(
         all_of(aggregate_cols),
-        \(x) if (is.numeric(x)) {
-          mean(x, na.rm = TRUE)
-        } else {
-          paste(unique(na.omit(x)), collapse = "|")
+        \(x) {
+          if (is.numeric(x)) {
+            mean(x, na.rm = TRUE)
+          } else {
+            paste(unique(na.omit(x)), collapse = "|")
+          }
         }
       ),
       .groups = "drop"
@@ -1260,7 +1303,7 @@ terra_dissolve_boundaries <- function(
 
         # Build a spatial index using relate.
         # pairs = TRUE returns a 2-column matrix of just the intersecting
-        # indices (id.x = sliver, id.y = keeper)
+        #indices (id.x = sliver, id.y = keeper) # nolint: commented_code_linter.
         overlap_pairs <- terra::relate(
           slivers_buf, keepers, relation = "intersects", pairs = TRUE
         )
@@ -1310,10 +1353,12 @@ terra_dissolve_boundaries <- function(
           summarise(
             across(
               all_of(aggregate_cols),
-              \(x) if (is.numeric(x)) {
-                mean(x, na.rm = TRUE)
-              } else {
-                paste(unique(na.omit(x)), collapse = "|")
+              \(x) {
+                if (is.numeric(x)) {
+                  mean(x, na.rm = TRUE)
+                } else {
+                  paste(unique(na.omit(x)), collapse = "|")
+                }
               }
             ),
             .groups = "drop"
@@ -1330,7 +1375,8 @@ terra_dissolve_boundaries <- function(
 }
 
 intersect_validation_polygons <- function(
-    wsp_target, lu_changecat, input_years, mmu = 30) {
+  wsp_target, lu_changecat, input_years, mmu = 30
+) {
   out <- wsp_target |>
     st_as_sf() |>
     filter(stratum_name == lu_changecat) |>
@@ -1362,7 +1408,8 @@ intersect_validation_polygons <- function(
     tidyr::pivot_longer(
       cols = starts_with("data_"),
       names_to = "year_flea",
-      names_prefix = "data_") |>
+      names_prefix = "data_"
+    ) |>
     mutate(
       value = lapply(value, vect),
       value = lapply(value, makeValid)
@@ -1371,7 +1418,8 @@ intersect_validation_polygons <- function(
   out <- out |>
     summarize(
       intersected_data = list(
-        purrr::reduce(value, terra::intersect)),
+        purrr::reduce(value, terra::intersect)
+      ),
       .groups = "drop"
     ) |>
     mutate(
@@ -1394,7 +1442,8 @@ intersect_validation_polygons <- function(
     mutate(
       labels = paste(
         c_across(all_of(paste0("label_", input_years))),
-        collapse = "-")
+        collapse = "-"
+      )
     ) |>
     ungroup() |>
     mutate(!!!new_cols) |>
@@ -1468,10 +1517,12 @@ crop_labeled_polygons <- function(
 
 # helper function to combine small polygons with larger polygons
 # based on shared boundary length
-combineGeoms_ <- purrr::possibly(terra::combineGeoms)
+combineGeoms_ <- # nolint: object_name_linter.
+  purrr::possibly(terra::combineGeoms)
 combine_small_intersections <- function(
-    spatvec,
-    mmu = 10) {
+  spatvec,
+  mmu = 10
+) {
 
   assertthat::assert_that(is.numeric(mmu) && mmu > 0)
 
@@ -1509,7 +1560,9 @@ combine_small_intersections <- function(
 
   # 4. Fallback Strategy: Assign & Aggregate
   if (is.null(new)) {
-    message("combineGeoms failed. Switching to 'Assign and Aggregate' fallback.")
+    message(
+      "combineGeoms failed. Switching to 'Assign and Aggregate' fallback."
+    )
 
     # A. Find the nearest large polygon for each small polygon
     nearest_neighbors <- terra::nearby(
@@ -1527,9 +1580,11 @@ combine_small_intersections <- function(
       values(small_spatvec) <- values(nearest_neighbors)
     } else {
       message(
-        paste0("Nearest neighbor failed.",
-        " Returning only polygons for which area larger than threshold.")
+        paste0(
+          "Nearest neighbor failed.",
+          " Returning only polygons for which area larger than threshold."
         )
+      )
       return(large_spatvec)
     }
 
@@ -1577,7 +1632,7 @@ unnest_spatvector <- function(df, col_name) {
 
   # 4. Expand the original dataframe metadata
   # We repeat each row of the dataframe 'n_polys' times
-  df_expanded <- df[rep(1:nrow(df), n_polys), ]
+  df_expanded <- df[rep(seq_len(nrow(df)), n_polys), ]
 
   # 5. Remove the heavy list-columns from the metadata
   cols_to_remove <- names(df_expanded)[
@@ -1585,7 +1640,8 @@ unnest_spatvector <- function(df, col_name) {
   ]
   df_expanded <- df_expanded[
     , !names(df_expanded) %in% cols_to_remove,
-    drop = FALSE]
+    drop = FALSE
+  ]
 
   # 6. Merge metadata with SpatVector attributes
   values(combined_sv) <- cbind(values(combined_sv), df_expanded)
@@ -1594,9 +1650,9 @@ unnest_spatvector <- function(df, col_name) {
 }
 
 raster_to_polygons <- function(
-    tm, # temporal raster
-    vp, # validation polygons
-    input_years
+  tm, # temporal raster
+  vp, # validation polygons
+  input_years
 ) {
   assertthat::assert_that(inherits(tm, "SpatRaster"))
   assertthat::assert_that(inherits(vp, "SpatVector"))
@@ -1663,3 +1719,4 @@ safe_cover <- function(x, y, ...) {
 
   cover(x, y, ...)
 }
+# nolint end: object_usage_linter, cyclocomp_linter.

@@ -4,8 +4,8 @@ flea_data <- gsub(
   pattern = "flea-extent", replacement = "flea-data", x = git_root
 )
 
-gdb <- "Z:/Projects/PRJ_FLEA/flea_data.gdb"
-lyr <- "Z:/Projects/PRJ_FLEA/reclass_bwk2016.lyr"
+gdb <- "Z:/Projects/PRJ_FLEA/flea_data.gdb" # nolint: absolute_path_linter.
+lyr <- "Z:/Projects/PRJ_FLEA/reclass_bwk2016.lyr"# nolint: absolute_path_linter.
 
 file.exists(gdb)
 file.exists(lyr)
@@ -131,6 +131,3 @@ check <- rast(
 coltab(check) <- as.data.frame(catstable[, c("value", "color")])
 plot(check)
 minmax(check)
-
-
-

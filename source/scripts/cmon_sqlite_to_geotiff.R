@@ -79,20 +79,22 @@ convert_dec_to_base4frac <- function(x, levels = 15) {
       is.na(x),
       NA,
       as.double(
-        ifelse(
+        ifelse(# nolint start
           x > 0,
           {
             d <- floor(log(x, 4) + 1)
-            paste(c("0", "1", "2", "3")[
-              as.integer(
-                abs(
-                  diff(
-                    x %% 4^seq(d, 0)
+            paste(
+              c("0", "1", "2", "3")[
+                as.integer(
+                  abs(
+                    diff(
+                      x %% 4^seq(d, 0)
                     )
                   ) %/% 4^seq(d - 1, 0) + 1)
               ],
-              collapse = "")
-          },
+              collapse = ""
+            )
+          },# nolint end
           "0")
       ) / 10^levels
     )
@@ -113,6 +115,3 @@ testset |>
   st_as_sf(coords = c("x", "y"), crs = 31370) |>
   ggplot() +
   geom_sf(aes(colour = level1))
-
-
-

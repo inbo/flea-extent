@@ -1,0 +1,414 @@
+---
+bibliography: [references.yaml, references.bib]
+editor: 
+  markdown: 
+    wrap: sentence
+---
+
+```{r}
+#| label: setup
+#| include: false
+source("packages.R")
+library(terra)
+library(sf)
+library(ggplot2)
+library(patchwork)
+```
+
+# Materials and Methods
+
+## Sampling Design
+
+The FLEA (Flanders Ecosystem Accounting) maps are raster-based maps of Flanders that are produced with a three year interval.
+Each raster cell measures 10 m by 10 m.
+The goal for the sampling design is to provide both validation of ecosystem changes between map datums and unbiased estimates of the changes in area.
+Both the accuracies and the changes in area will be reported with 95% confidence intervals to reflect uncertainty. 
+
+As a first step, we construct the sampling frame by combining the $p$ maps into maps of change following the procedure in @gong2023.
+Maps were available for $p = 3$ years: 2016, 2019 and 2022.
+For each ecosystem class, we considered the union of the three periods (any raster cell where the ecosystem was present in at least one of the $K$ periods) and encoded each raster cell into "stable" (`111`), "gained" (`001`, `011`), "lost" (`110`, `100`), and "other complex patterns" (`101`, `010`), yielding a maximum of 4 strata per ecosystem type.
+Each of the $p$ maps has categorical raster values encoding for $K = 16$ ecosystem types.
+Thus, we obtain $16 \times 4 = 64$ strata.
+
+Within each stratum, we select a spatially balanced sample of raster cells for which we make use of the same `GRTS` master sample that is used for the carbon monitoring network (`Cmon`) [@sleutel2020] and which is redistributed as a raster map [@vancalster2024].
+The coordinate reference system, resolution and origin of the raster map are the same as used for the ecosystem maps, which makes them compatible and easy in use for selection of probabilistic spatially balanced samples.
+Each raster cell of the `GRTS` master sampling raster map holds a ranking number.
+These numbers can be used to draw spatially balanced samples of size $n$ for strata within the bounding box by sorting the ranks from low to high and selecting the $n$ lowest ranks (after cropping the raster file with the boundaries of the stratum).
+
+Because spatially balanced samples tend to be well-spread across the spatial domain (avoiding clustered selection of sampling locations), we expect that within a stratum, say "forest gained", the selected sampling units will naturally reflect the area shares of constituent ecosystem transitions (see @tbl-conversions).
+For instance, if half of the area "forest gained" is a transition from grassland to forest, we expect half of the sampling units to be located within that specific transition.
+It is however not guaranteed that every transition will be part of the sample due to finite sample sizes and relative small area shares of some transitions.
+
+As a rule, we allocated 80 sampling units to the "stable" class for each ecosystem and 240 sampling units to the classes representing changes in ecosystem type (i.e. "gained", "lost", "other complex pattern").
+Only change classes that represent at least 10 ha are considered.
+The allocation of the 240 sampling units to the "gained", "lost" and "other complex pattern" substrata is done proportional to the map area of these substrata, with the constraint that each substratum receives at least 40 sampling units.
+
+```{r}
+#| label: tbl-conversions
+#| include: true
+#| tbl-cap: Allocation of sample size among strata.
+#|  The conversions within each change class (gain, loss or other complex
+#|   pattern) are also given.
+#|  The numbers between brackets indicate the breakdown of the total sample size
+#|   within that stratum for each specific conversion.
+withr::with_dir(
+  rprojroot::find_root(rprojroot::is_git_root),
+  {
+    library(targets)
+    Sys.setenv(TAR_PROJECT = "validation_sample")
+    tm <- tar_read(temporal_map)
+    vs <- tar_read(validation_sample)
+    vp50 <- tar_read(validation_polygons_50)
+    tar_load(catstable)
+  }
+)
+vs_conversions <- terra::extract(x = tm, y = vect(vs), raw = FALSE, bind = TRUE)
+vs_conversions_df <- values(vs_conversions) |>
+  as_tibble() |>
+  rename(conversion = label) |>
+  mutate(
+    stratum_code = stringr::str_extract(stratum_name, "^bc_(\\d+)_changecat", 1)
+  ) |>
+  left_join(
+    catstable |>
+      select(value, ecosystem = label) |>
+      mutate(value = as.character(value)),
+    by = join_by(stratum_code == value)
+  ) |>
+  count(stratum_code, ecosystem, changecat, conversion, name = "n_central_cell")
+
+vs_conversions_df |>
+  mutate(stratum = paste(stratum_code, changecat)) |>
+  group_by(stratum, ecosystem, stratum_code) |>
+  arrange(desc(n_central_cell)) |>
+  summarize(
+    n_total = sum(n_central_cell),
+    conversions = xfun::join_words(
+      sprintf("%s (%s)", conversion, n_central_cell)
+    ),
+    .groups = "drop"
+  ) |>
+  arrange(as.numeric(stratum_code)) |>
+  select(ecosystem, stratum, n_total, conversions) |>
+  gt::gt(
+    groupname_col = "ecosystem"
+  ) |>
+  gt::cols_label(
+    stratum = "Stratum",
+    n_total = "Total",
+    conversions = "Conversions"
+  ) |>
+  gt::cols_width(
+    stratum ~ gt::px(90),
+    n_total ~ gt::px(50),
+    conversions ~ gt::px(320)
+  ) |>
+  gt::tab_options(
+    table.font.size = "small",
+    data_row.padding = gt::px(3),
+    row_group.font.weight = "bold",
+    row_group.padding = gt::px(4),
+    latex.use_longtable = TRUE
+  )
+```
+
+
+## Response Design
+
+### Definition of ecosystem types as applied in Flanders
+
+Level 1 of the ecosystem typology of EU Regulation 2024/3024 is a standardized and mandatory format for EU member states' ecosystem accounts.
+For levels 2 and 3 Eurostat developed a proposal based on the Corine- and EUNIS-typologies.
+Member states are encouraged to adopt these extra levels, but can also choose to adapt them according to their own national policy priorities or data availability.
+
+Level 1 contains 12 ecosystems, level 2 35 subsystems.
+For the Flemish accounts, level 2 of ecosystem '1. Settlements and other artificial areas' is based on land cover classes: buildings, unbuilt sealed soil, high green, low green, standing water and uncertain land cover.
+The latter is mostly a mixture of low green and limited (< 76%) sealed soil.
+The ecosystem extent validation includes validation of the settlement level 2 subdivisions.
+
+We list the 12 ecosystem level 1 classes below together with the level 2 subdivision of settlements.
+
+1. Settlements and other artificial areas
+
+>Area that is used as residential area, for commercial or industrial activities, services, recreation or transport. It includes not only buildings and sealed soil, but also the parts of parcels linked to those buildings which are covered with natural vegetation (e.g. lawns, trees) or standing waters (e.g. ponds in gardens an urban parks). This ecosystem equals what is considered to be ‘land take’, with the exception of running waters (rivers, streams, canals or ditches). Ecologically valuable natural vegetation heathland, inland wetland or dune grasslands occurring on settlements (e.g. recreation area and campings) is also classified under settlements.
+
+Subdivided into its level 2 components:
+
+-   1.1 Buildings
+-   1.2 Unbuilt sealed soil
+-   1.3 High green
+-   1.4 Low green
+-   1.5 Standing water
+-   1.6 Unspecified land cover
+
+2. Cropland
+
+>Professional farming area that used for annual or perennial crops. Annual crops include temporary grassland on parcels that have been used for non-grassland crops during the last five years. It includes low-stem orchards and other fruit crops, floriculture and tree nurseries. Also agro-forestry is included. Permanent greenhouses or other buildings used for growing crops are part of settlements and other artificial areas. Area managed by hobby farmers or cultivated areas in gardens are not included. Small landscape elements around croplands, like grassy margins, hedges and tree rows are considered part of this ecosystem.
+
+3. Grassland (pastures, semi-natural and natural grasslands)
+
+>Area that is dominated by low and high grasses or by muti-annual forbs, provided that it is not part of settlements and other artificial areas (e.g. gardens or parks). The area may be used for professional farming, hobby farming, may be under nature management or abandoned. Grassland parcels used for professional farming only are considered grassland if there has been a grassland crop for at least five consecutive years, otherwise they are considered as cropland. Small landscape elements around croplands, like grassy margins, hedges and tree rows are considered part of this ecosystem. Also high stem fruit orchards are classified as grassland, if they are not part of settlements.
+
+4. Forest and woodland
+
+>Vegetation dominated by trees (canopy cover ≥ 50%), including recent clear-cuts, young (re)plantations, bramble scrub, and coppice. Also woodland shrub, an ecological succession stage between grassland and a mature forest, is classified under forest and woodland. Forest stands on parcels that belong to settlements, e.g. urban parks, are not included. Plantations for short-rotation coppice (energy wood plantations), Christmas tree plantations, and nurseries for (ornamental) trees and shrubs fall under ecosystem 2. Cropland. 
+
+5. Heathland and shrub
+
+>Vegetation dominated by dwarf shrubs (Calluna, Erica, Vaccinium, Genista) in a heathland area. This includes sod-cut or burnt patches, and species-poor, virtually monospecific vegetation dominated by purple moor-grass and/or wavy hair-grass, with an absence or low cover of typical heathland plants (heather, cross-leaved heath, bog asphodel, cottongrass, ...). Usually, these form part of a larger heathland area. Heath vegetation occurring on parcels that belong to settlements, e.g. residential parcels or recreation area, are not included.
+
+6. Sparsely vegetated ecosystems
+
+>Inland dunes and very dry sandy soils with open drift sand and/or (partially) vegetated with lichens, haircap mosses, heath star moss, grey hair-grass, brown bent, sand sedge, sand spurrey, early hair-grass, silver hair-grass, or heather.
+
+7. Inland wetlands
+
+>Vegetation with > 30% wetland plants (helophytes and hydrophytes), unless it occurs on parcels that belong to settlements. The water table is near or above ground level for a large part of the year. Common and indicative wetland plants include: common reed, reed sweet-grass, cattail, bur-reed, lake club-rush, sea club-rush, large sedges (lesser pond-sedge, greater pond-sedge, beaked sedge, acute sedge), water horsetail, saw-sedge, bogbean, and marsh cinquefoil.
+
+8. Rivers and canals
+
+>Natural watercourses (rivers and streams) and artificial watercourses (canals and ditches) that are not subject to tidal influence and that measure at least 10 m in length and 3 m in width. Watercourses that are not visible above ground, e.g. because they are culverted, are classified under the ecosystem that is visible above ground. 
+
+9. Lakes and reservoirs
+
+>Clearly delineated standing open water that is present for a large part of the growing season over several years and is not located on plots with land take (e.g. garden, park or recreational area). A water body is considered 'standing' if there is no visually observable current, unless the water body follows a distinctly linear course. Uncovered collection basins at greenhouses, horticultural and agricultural holdings, and flood basins are considered water basins, as are flood basins and swales (wadis) that retain water for longer periods. Swimming pools and water reservoirs that form part of an industrial installation (e.g. wastewater treatment) are classified under settlements and other artificial areas. 
+
+10. Marine inlets and transitional waters
+
+>Tidally influenced section of the IJzer and of the Scheldt and its tributaries. The tidal zone of the Scheldt estuary encompasses the entire brackish-to-freshwater gradient. In the IJzer, the tidal zone is restricted to the 'Ganzepoot' lock complex. In addition to the river channel, estuaries include mudflats and salt marshes, up to and including the supralittoral zone which is flooded on average four times a year. The water within the quay walls of the seaports (Nieuwpoort, Blankenberge, Oostende) is also classified under transitional waters, as is done in the Water Frame Directive. The Zwin meets the EU definition of level 2-ecosystem type '10.2 Estuaries and bays' and is therefore classified under ecosystem 10. The foreshore or lower beach, the area between the mean high water line and the mean low water line, meets the EU definition of ecosystem type '10.3 Intertidal flats' and is likewise classified under ecosystem 10. This also applies to the mudflats in the Zwin. In contrast to the brackish and freshwater tidal marshes along tidally influenced rivers, the marine salt marshes near the Bay of Heist and in the Zwin are under the direct influence of seawater. They meet the EU definition of '11.4 Coastal saltmarshes' and are classified under ecosystem 11.
+
+11. Coastal beaches, dunes and wetlands
+
+>The beach above the mean high water line (upper beach) and coastal dunes, including shifting dunes, dunes vegetated with low vegetation and shrubs, and humid dune slacks, insofar as they are not located on plots with land take (e.g. campings) or on plots with a commercial agricultural function. Wooded dunes are classified under forest and woodland. 
+
+The level 1 ecosystem '12. Marine ecosystems (coastal waters, shelf and open ocean)' is not considered further in this report.
+At level 3 of the typology these land covers are detailed further according to various land use sectors (residential, commercial & industrial, transport, recreational, ...).
+Level 3 is not used for ecosystem extent mapping and validation.
+
+Combining the level 1 and level 2 that are considered for validation and area estimation, results in @tbl-16-ecosystem-types.
+
+```{r}
+#| label: tbl-16-ecosystem-types
+#| tbl-cap: The 16 level 1 and level 2 ecosystem types considered for area and
+#|  accuracy estimation.
+#|  The 'value' column is a short code to refer to the ecosystem.
+#|  The 'colour' column has the hexadecimal codes that are used to colour code
+#|   the ecosystems in maps.
+
+ct <- tar_read(catstable)
+get_text_color <- function(hex_codes) {
+  rgb_vals <- col2rgb(hex_codes)
+  # Calculate luminance using standard perceptive weightings for RGB
+  luminance <- 0.299 * rgb_vals[1, ] + 0.587 * rgb_vals[2, ] +
+    0.114 * rgb_vals[3, ]
+  # If brightness is > 128 (out of 255), use black text; otherwise use white
+  ifelse(luminance > 128, "black", "white")
+}
+
+ct |>
+  rename(colour = color) |>
+  kable(
+    booktabs = TRUE
+  ) |>
+  kable_styling(
+    full_width = FALSE
+  ) |>
+  column_spec(
+    3, monospace = TRUE, background = ct$color, color = get_text_color(ct$color)
+  )
+```
+
+
+### Choice of Sampling Unit
+
+For each selected raster cell (10 m $\times$ 10 m) (GRTS sample selection procedure), we defined: 
+
+- **Primary Sampling Unit (PSU):** A square polygon (block) with dimensions of $5 \times 5$ raster cells (centered around the GRTS selected raster cell).
+- **Secondary Sampling Units (SSU):** All 10 m $\times$ 10 m raster cells within the PSU.
+
+In practice, the entire PSU block is digitized.
+Digitization consists of subdividing the 50 m $\times$ 50 m polygon (PSU) into smaller polygons, with a primary and an (optional) alternative label assigned to each polygon).
+Each subdivision is determined by desktop interpretation of orthophotos corresponding to the years for which FLEA maps are available (2016 - 2019 - 2021).
+Every change of ecosystem type within a given year is a subdivision and every change of ecosystem type between years is a subdivision (see @fig-example-polygon).
+The resulting attribute table for each subdivision polygon needs to be filled in with validation ecosystem labels for 2016, 2019 and 2021.
+
+To speed up the validation work, the 50 m $\times$ 50 m polygons are subdivided and pre-labelled programmatically based on source layers for ecosystem types that can be easily recognized, such as buildings.
+The programmatic pre-labelling must be validated as well.
+
+This approach gives us a lot of freedom in the analysis stage (see @sec-analysis).
+
+```{r}
+#| label: fig-example-polygon
+#| fig-cap: Example of a 50 m x 50 m validation polygon and how it will be
+#|  subdivided based on changes in ecosystem types between and within years.
+#| out.width: "100%"
+
+psu_matrix <- matrix(
+  c(0, 0, 50, 0, 50, 50, 0, 50, 0, 0), ncol = 2, byrow = TRUE
+)
+psu <- st_polygon(list(psu_matrix)) %>% st_sfc()
+
+rast10 <- sf::st_make_grid(psu, offset = c(0, 0), n = 5)
+
+# Create mock ecosystem data for 2016
+p16_1 <- st_polygon(list(matrix(c(0, 0, 25, 0, 25, 50, 0, 50, 0, 0),
+                                ncol = 2, byrow = TRUE)))
+p16_2 <- st_polygon(list(matrix(c(25, 0, 50, 0, 50, 50, 25, 50, 25, 0),
+                                ncol = 2, byrow = TRUE)))
+eco_2016 <- st_sf(
+  ecosystem = c("Forest", "Grassland") |>
+    factor(levels = c("Built-up", "Forest", "Agriculture", "Grassland")),
+  jaar = 2016,
+  geometry = st_sfc(p16_1, p16_2)
+)
+
+# ecosystem data for 2019
+p19_1 <- st_polygon(list(matrix(c(0, 0, 50, 0, 50, 30, 0, 30, 0, 0),
+                                ncol = 2, byrow = TRUE)))
+p19_2 <- st_polygon(list(matrix(c(0, 30, 50, 30, 50, 50, 0, 50, 0, 30),
+                                ncol = 2, byrow = TRUE)))
+eco_2019 <- st_sf(
+  ecosystem = c("Forest", "Agriculture") |>
+    factor(levels = c("Built-up", "Forest", "Agriculture", "Grassland")),
+  jaar = 2019,
+  geometry = st_sfc(p19_1, p19_2)
+)
+
+# ecosystem data for 2021
+# Scenario: A 15x15m building is constructed in the bottom-left corner.
+# The rest of the PSU is mapped as Forest.
+p21_bldg <- st_polygon(
+  list(matrix(c(0, 0, 15, 0, 15, 15, 0, 15, 0, 0),
+              ncol = 2, byrow = TRUE))
+) %>%
+  st_sfc()
+p21_rest <- st_difference(eco_2019$geometry, p21_bldg) # The rest of the PSU
+eco_2021 <- st_sf(
+  ecosystem = c("Built-up", "Forest", "Agriculture") |>
+    factor(levels = c("Built-up", "Forest", "Agriculture", "Grassland")),
+  jaar = 2021,
+  geometry = c(p21_bldg, p21_rest)
+)
+
+# Calculate the intersections (The programmatic subdivision)
+inter_16_19 <- st_intersection(eco_2016, eco_2019) |> suppressWarnings()
+final_subdivisions <- st_intersection(inter_16_19, eco_2021) |>
+  suppressWarnings() |>
+  st_collection_extract("POLYGON")
+final_subdivisions$poly_id <- seq_len(nrow(final_subdivisions))
+final_subdivisions$area_m2 <- st_area(final_subdivisions)
+final_subdivisions <- final_subdivisions |>
+  mutate(
+    conversion = sprintf(
+      "%s%s%s",
+      str_sub(ecosystem, end = 1),
+      str_sub(ecosystem.1, end = 1),
+      str_sub(ecosystem.2, end = 1)
+    )
+  )
+
+colours <- c(
+  "Forest" = topo.colors(4)[1],
+  "Grassland" = topo.colors(4)[2],
+  "Agriculture" =  topo.colors(4)[3],
+  "Built-up" = topo.colors(4)[4]
+)
+my_levels <- c("Built-up", "Forest", "Agriculture", "Grassland")
+ordered_colours <- unname(colours[my_levels])
+
+dummy_df <- data.frame(
+  ecosystem = factor(
+    c("Built-up", "Forest", "Agriculture", "Grassland"),
+    levels = c("Built-up", "Forest", "Agriculture", "Grassland")
+  )
+)
+
+shared_scale <- scale_fill_manual(
+  name = "Ecosystem",
+  values = colours,
+  drop = FALSE
+)
+
+# Plotting the results using ggplot2 and patchwork
+# Map the actual data, but TURN OFF its legend
+plot_2016 <- ggplot() +
+  geom_sf(
+    data = eco_2016,
+    aes(fill = ecosystem),
+    alpha = 0.7,
+    show.legend = TRUE
+  ) +
+  geom_sf(data = rast10, fill = NA, linetype = "dotted") +
+  shared_scale +
+  theme_void() +
+  ggtitle("2016 ecosystems")
+
+plot_2019 <- ggplot() +
+  geom_sf(data = eco_2019,
+          aes(fill = ecosystem),
+          alpha = 0.7,
+          show.legend = TRUE) +
+  geom_sf(data = rast10, fill = NA, linetype = "dotted") +
+  shared_scale +
+  theme_void() +
+  ggtitle("2019 ecosystems")
+
+plot_2021 <- ggplot() +
+  geom_sf(data = eco_2021,
+          aes(fill = ecosystem),
+          alpha = 0.7,
+          show.legend = TRUE) +
+  geom_sf(data = rast10, fill = NA, linetype = "dotted") +
+  shared_scale +
+  theme_void() +
+  ggtitle("2021 ecosystems")
+
+plot_final <- ggplot(final_subdivisions) +
+  geom_sf(fill = "gray90", color = "black", linewidth = 0.8) +
+  geom_sf_text(aes(label = conversion), size = 4, fontface = "bold") +
+  geom_sf(data = rast10, fill = NA, linetype = "dotted") +
+  theme_void() +
+  ggtitle("Final subdivisions", subtitle = "Intersection of all years")
+
+# Combine into a 2x2 grid
+plot_2016 + plot_2019 + plot_2021 + plot_final +
+  plot_layout(ncol = 2, guides = "collect")
+```
+
+
+### Reference data used
+
+Regarding the **resolution of the aerial photographs (orthophotos)**, the medium-scale photographs from 2023 have a resolution of 15 cm.
+In the year 2000, this was still 1 m.
+Therefore, it is possible that the resolution evolved during the period from 2016 to 2022.
+As a result, photographs used to validate a 2016 ecosystem map might be less accurate than those available for 2022.
+
+## Analysis {#sec-analysis}
+
+Due to the more complex sampling and response design (balancing precision and cost-efficiency), the standard formulas provided in @olofsson2014 will only apply at the PSU level.
+However, this sampling design retains the flexibility to calculate accuracy and area estimates for different scenarios in post-processing.
+
+For instance, if we define a PSU as a block of 5 $\times$ 5 raster cells, we can determine the label at the PSU level for both the reference data and the map, and subsequently process them using the formulas from @olofsson2014.
+
+We can also determine the label on a subset of the PSU, such as the central 3 $\times$ 3 block of raster cells, and process it identically.
+
+We can also utilize all information (from all raster cells) to perform validation at the raster cell level; in this case, formulas from model-assisted survey sampling literature and/or estimators for cluster sampling will likely be required for the analysis.
+@cochran1977 provides the formula to determine the effect of cluster size when using cluster sampling to estimate a proportion:
+
+$$\begin{aligned}
+\text{total sum of squares} &= \text{within sum of squares} + \text{between sum of squares} \\
+NMP(1-P) &= M\sum_{i=1}^n{(p_i - P)^2} + Mp_i(1-p_i)
+\end{aligned}$$
+
+This relationship can be used to calculate the various variance components as a function of the cluster size $M$.
+This allows us to evaluate whether an optimal cluster size exists purely in terms of variance (disregarding costs).
+
+In all cases, we will need rules for determining the reference labels.
+Since our response design results in a vector-based ground truth, we need to translate the vector polygon data (from the digitized mapping exercise) to a raster cell or an aggregate of raster cells (3 x 3, 5 x 5).
+This will be done by assigning the label from the polygon with the largest intersecting area with the (aggregate of) raster cell(s).
+In case of polygons with equal intersecting area, a label will be selected randomly from these polygon labels.
+
+## Validation tests
+
+TODO
+
