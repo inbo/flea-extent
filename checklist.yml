@@ -24,6 +24,7 @@ spelling:
     nl-BE:
     - source/markdown/d1_validatie_landgebruik.Rmd
     - source/pipelines/check_validation_testset.Rmd
+    - source/pipelines/check_validation_testset_2.qmd
 pak:
 - davidsjoberg/ggsankey
 - git::https://scm.cms.hu-berlin.de/pflugmad/mapac.git

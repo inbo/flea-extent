@@ -447,10 +447,10 @@ compare_polys |>
 ```
 
 
-Om de vergelijking tussen de twee validatoren te vereenvoudigen, berekenen we de totale oppervlakte per ecosysteemcombinaties en vervolgens zetten we deze om naar een genormaliseerde confusiematrix.
-Omdat geen van beide validatoren te beschouwen is als referentie, moeten we hiervoor een iteratieve herweging van de oppervlaktes doen totdat zowel de rij- als de kolomtotalen sommeren tot één.
-De diagonale elementen van de matrix (zelfde label toegekend) geven dan de proportie overeenkomst tussen beide validatoren.
-De andere proporties geven aan tussen welke ecosysteemklassen er onderling verwarring is tussen de validatoren.
+Om de vergelijking tussen de twee validators te vereenvoudigen, berekenen we de totale oppervlakte per ecosysteemcombinaties en vervolgens zetten we deze om naar een genormaliseerde confusiematrix.
+Omdat geen van beide validators te beschouwen is als referentie, moeten we hiervoor een iteratieve herweging van de oppervlaktes doen totdat zowel de rij- als de kolomtotalen sommeren tot één.
+De diagonale elementen van de matrix (zelfde label toegekend) geven dan de proportie overeenkomst tussen beide validators.
+De andere proporties geven aan tussen welke ecosysteemklassen er onderling verwarring is tussen de validators.
 
 ```{r}
 #| label: tbl-compare-polys-by-ecosystem
