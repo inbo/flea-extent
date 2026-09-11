@@ -410,5 +410,34 @@ In case of polygons with equal intersecting area, a label will be selected rando
 
 ## Validation tests
 
-TODO
+```{r}
+#| label: tbl-compare-polys-by-ecosystem
+
+df_normalized <- readr::read_csv(
+  file = here::here("data", "validationtest2_normalized_confusion_matrix.csv")
+)
+
+df_formatted <- as.data.frame(df_normalized)
+df_formatted <- purrr::map_df(df_formatted, as.character) |> as.data.frame()
+
+# Format the diagonal elements to be bold (and round digits)
+for (i in 1:nrow(df_formatted)) {
+  for (j in 1:ncol(df_formatted)) {
+    val <- round(as.numeric(df_normalized[i, j]), 3)
+    if (i == j) {
+      df_formatted[i, j] <- kableExtra::cell_spec(val, bold = TRUE)
+    } else {
+      df_formatted[i, j] <- as.character(val)
+    }
+  }
+}
+row.names(df_formatted) <- colnames(df_formatted)
+
+df_formatted |> 
+  kableExtra::kbl(escape = FALSE) |> 
+  kableExtra::column_spec(1, bold = TRUE) |>
+  kableExtra::kable_material(lightable_options = "striped")
+
+```
+
 
