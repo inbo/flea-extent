@@ -1,0 +1,620 @@
+---
+title: "Evaluatie van tweede test validatieprotocol"
+author: "Hans Van Calster"
+date: "2026-09-08"
+format:
+  html:
+    toc: true
+    code-fold: true
+    code-summary: "Code"
+    embed-resources: true
+params:
+  fix_trivial_mistakes: true
+---
+
+```{r}
+#| label: setup
+#| include: FALSE
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE)
+library(dplyr)
+library(ggplot2)
+library(sf)
+library(here)
+library(units)
+library(tidyr)
+library(googlesheets4)
+gs4_auth("*inbo.be")
+
+flea_data <- gsub("extent", "data", here())
+
+
+conflicted::conflicts_prefer(dplyr::filter)
+library(INBOtheme)
+set_theme(theme_inbo(base_size = 9))
+```
+
+```{r}
+#| label: load-targets
+library(targets)
+library(terra)
+withr::with_dir(
+  new = rprojroot::find_root(rprojroot::is_git_root),
+  code = {
+    Sys.setenv(TAR_PROJECT = "validation_sample")
+    tar_load(validation_polygons_50)
+    tar_load(catstable)
+  }
+)
+```
+
+## Inlezen data
+
+```{r}
+#| label: read-notes
+notes_po <- readxl::read_excel(
+  file.path(
+    flea_data,
+    "validation_test2",
+    "data_po",
+    "grts_validatie_test2_PO.xlsx"
+  )
+) |>
+  janitor::clean_names() |>
+  rename(
+    grts_rank = rankingnummer,
+    time_minutes = tijd_min
+  ) |>
+  mutate(
+    grts_rank = as.numeric(grts_rank),
+    validator = "PO",
+    method = "polygons"
+  ) |>
+  filter(
+    !is.na(grts_rank)
+  )
+
+notes_sds <- read_sheet(
+  ss = "1KIlnm29zWeUtWQF-1ZkR2fK1o0pO92K4LAdbFgCLy_Y",
+  range = "A4:C35"
+) |>
+  janitor::clean_names() |>
+  filter(!is.na(min)) |>
+  rename(
+    grts_rank = grts,
+    time_minutes = min,
+    opmerking = opmerkingen_bij_polygoonvalidatie
+  ) |>
+  mutate(
+    validator = "SDS",
+    method = "polygons",
+    grts_rank = purrr::map_dbl(grts_rank, \(x) x)
+  )
+```
+
+
+
+```{r}
+#| label: read-validation-data
+validation_polys_po <- file.path(
+  flea_data,
+  "validation_test2",
+  "data_po",
+  "20260707_test_validation_sample_testset_30_validaties_PO.gpkg"
+) |>
+  read_sf(
+    layer = "20260707_test_validation_sample__testset_30_validaties_PO"
+  )
+validation_polys_po <- validation_polys_po |>
+  rename(
+    prelabels = labels
+  ) |>
+  mutate(
+    newlabels = paste(label_2016, label_2019, label_2022, sep = "-"),
+    validator = "PO",
+    method = "polygons"
+  )
+
+# validation polys Steven
+validation_polys_sds <- file.path(
+  flea_data,
+  "validation_test2",
+  "data_sds",
+  "FLEA validatie 2.shp"
+) |>
+  read_sf()
+
+
+validation_polys_sds <- validation_polys_sds |>
+  rename(
+    prelabels = labels
+  ) |>
+  mutate(
+    newlabels = paste(label_2016, label_2019, label_2022, sep = "-"),
+    validator = "SDS",
+    method = "polygons"
+  )
+
+
+validation_polys_sds <- validation_polys_sds |>
+  select(-fid_1)
+names(validation_polys_sds) <- names(validation_polys_po)
+validation_polys_sds <- st_set_geometry(validation_polys_sds, "geom")
+
+validation_polys <- bind_rows(
+  validation_polys_po,
+  validation_polys_sds
+)
+
+design_meta <- validation_polys_po |>
+  distinct(grts_rank, stratum_name, changecat, area_labeled) |>
+  mutate(
+    stratum = sprintf(
+      "%s (%s)",
+      stringr::str_extract(stratum_name, "\\d+"),
+      changecat
+    )
+  )
+
+notes <- bind_rows(notes_po, notes_sds) |>
+  left_join(design_meta, by = join_by(grts_rank))
+
+
+validation_polygons_50 <- vect(validation_polygons_50)
+```
+
+```{r}
+#| label: check-validation-data
+# prop polygonen met juist prelabel
+validation_polys |>
+  st_drop_geometry() |>
+  summarise(
+    sum(prelabels == newlabels) / n(),
+    .by = c(validator)
+  )
+
+# check polygonen onvolledig gevalideerd
+validation_polys |>
+  st_drop_geometry() |>
+  select(validator, grts_rank, newlabels, label_2016, label_2019, label_2022) |>
+  filter(
+    grepl("other", newlabels)
+  )
+
+# check oppervlakte
+validation_polys %>%
+  mutate(
+    area_m2 = st_area(.)
+  ) |>
+  st_drop_geometry() |>
+  group_by(validator, grts_rank) |>
+  summarise(area_m2 = sum(area_m2)) |>
+  filter(
+    !between(as.numeric(area_m2), 2490, 2501)
+  )
+
+
+# check joins
+notes |>
+  anti_join(
+    validation_polys,
+    by = join_by(validator, method, grts_rank)
+  )
+```
+
+
+```{r}
+#| label: fix-trivial-mistakes
+
+# Removing obvious mistakes to be able to better judge real interrater
+# variability
+if (params$fix_trivial_mistakes) {
+  vp <- validation_polys
+  
+  vp$label_2016[
+    vp$grts_rank == 2145 & vp$validator == "PO" & vp$label_2016 == "other"
+  ] <- "102"
+  vp$label_2019[
+    vp$grts_rank == 2145 & vp$validator == "PO" & vp$label_2019 == "other"
+  ] <- "102"
+  vp$label_2022[
+    vp$grts_rank == 2145 & vp$validator == "PO" & vp$label_2022 == "other"
+  ] <- "102"
+  
+  
+  vp$label_2016[vp$grts_rank == 7651 & vp$validator == "PO"] <- "106"
+  vp$label_2019[vp$grts_rank == 7651 & vp$validator == "PO"] <- "106"
+  vp$label_2022[vp$grts_rank == 7651 & vp$validator == "PO"] <- "106"
+  
+  vp$label_2022[vp$grts_rank == 48867 
+                & vp$validator == "PO"
+                & vp$label_2022 == "600"] <- "106"
+  
+  vp$label_2016[vp$grts_rank == 69729
+                & vp$validator == "PO"
+                & vp$label_2016 == "other"] <- "101"
+  
+  vp$label_2016[vp$grts_rank == 180499
+                & vp$validator == "SDS"
+                & vp$label_2016 == "other"] <- "200"
+  vp$label_2019[vp$grts_rank == 180499
+                & vp$validator == "SDS"
+                & vp$label_2019 == "other"] <- "200"
+  vp$label_2022[vp$grts_rank == 180499
+                & vp$validator == "SDS"
+                & vp$label_2022 == "other"] <- "200"
+  
+  vp$label_2022[vp$grts_rank == 680547
+                & vp$validator == "PO"
+                & vp$label_2022 == "600"] <- "500"
+  
+  vp$label_2016[vp$grts_rank == 690862
+                & vp$validator == "PO"
+                & vp$label_2022 == "600"] <- "500"
+  vp$label_2019[vp$grts_rank == 690862
+                & vp$validator == "PO"
+                & vp$label_2022 == "600"] <- "500"
+  vp$label_2022[vp$grts_rank == 690862
+                & vp$validator == "PO"
+                & vp$label_2022 == "600"] <- "500"
+  
+  vp$label_2016[vp$grts_rank == 583075
+                & vp$validator == "PO"
+                & vp$label_2016 == "other"] <- "101"
+  
+  vp$label_2016[vp$grts_rank == 133907
+                & vp$validator == "PO"
+                & vp$label_2016 == "600"] <- "700"
+  vp$label_2019[vp$grts_rank == 133907
+                & vp$validator == "PO"
+                & vp$label_2019 == "600"] <- "700"
+  vp$label_2022[vp$grts_rank == 133907
+                & vp$validator == "PO"
+                & vp$label_2022 == "600"] <- "700"
+  
+  vp <- vp |> 
+    mutate(
+      newlabels = paste(label_2016, label_2019, label_2022, sep = "-")
+    )
+  
+  validation_polys <- vp
+  validation_polys_sds <- validation_polys |> filter(validator == "SDS")
+  validation_polys_po <- validation_polys |> filter(validator == "PO")
+}
+```
+
+
+## Inschatting werklast
+
+```{r}
+glimpse(notes)
+summary(notes)
+```
+
+```{r}
+#| label: timing-results-average
+notes |>
+  ggplot() +
+  geom_point(
+    aes(x = validator, y = time_minutes, group = grts_rank)
+  ) +
+  geom_line(
+    aes(x = validator, y = time_minutes, group = grts_rank)
+  ) +
+  stat_summary(
+    fun.data = mean_cl_boot,
+    aes(x = validator, y = time_minutes),
+    colour = INBOtheme::inbo_felrood
+  )
+```
+
+```{r}
+#| label: timing-results-by-strata
+notes |>
+  ggplot() +
+  geom_point(
+    aes(x = validator, y = time_minutes, group = grts_rank, colour = stratum),
+    position = position_dodge(width = 0.2), alpha = 0.3
+  ) +
+  geom_line(
+    aes(x = validator, y = time_minutes, group = grts_rank, colour = stratum),
+    position = position_dodge(width = 0.2), alpha = 0.3
+  ) +
+  stat_summary(
+    fun.data = mean_cl_boot,
+    aes(x = validator, y = time_minutes, colour = stratum),
+    position = position_dodge(width = 0.2)
+  )
+```
+
+```{r}
+#| label: timings-extrapolation
+# inschatting tijd nodig voor volledige validatie
+mean_times <- notes |>
+  group_by(stratum_name) |>
+  summarise(
+    mean_time = mean(time_minutes)
+  )
+
+time_estimates <- values(validation_polygons_50) |>
+  as_tibble() |>
+  count(stratum_name, changecat) |>
+  left_join(mean_times, by = join_by(stratum_name)) |>
+  mutate(
+    stratum_name = stringr::str_extract(stratum_name, "\\d+"),
+    level = ifelse(stratum_name %in% c(101:106), 2, 1),
+    mean_time = ifelse(
+      is.na(mean_time) & level == 2,
+      mean_times$mean_time[mean_times$stratum_name == "bc_104_changecat"],
+      mean(mean_times$mean_time[mean_times$stratum_name != "bc_104_changecat"])
+    ),
+    days = mean_time * n / 60 / 7.36
+  )
+
+time_estimates |>
+  dplyr::filter(
+    !stratum_name %in% c("600", "1000")
+  ) |>
+  summarise(
+    n_halfway = sum(n) / 2,
+    n_all = sum(n),
+    days_halfway = sum(days) / 2,
+    days_all = sum(days),
+    pm_halfway = days_halfway / (160 / 12),
+    pm_all = days_all / (160 / 12)
+  ) |>
+  knitr::kable(digits = 1)
+```
+
+## Vergelijking tussen validators
+
+### Polygoon-gebaseerde validatie
+
+```{r}
+#| label: compare-polys
+compare_polys <- st_make_valid(validation_polys_sds) |>
+  st_intersection(
+    st_make_valid(validation_polys_po)
+  ) %>%
+  mutate(
+    area = st_area(.),
+    id = seq_len(n())
+  ) |>
+  select(
+    id,
+    grts_rank,
+    area,
+    label_2016_sds = label_2016,
+    label_2019_sds = label_2019,
+    label_2022_sds = label_2022,
+    label_2016_po = label_2016.1,
+    label_2019_po = label_2019.1,
+    label_2022_po = label_2022.1
+  ) |>
+  pivot_longer(
+    cols = starts_with("label_"),
+    names_to = c("year", "validator"),
+    names_prefix = "label_",
+    names_sep = "_",
+    values_to = "label"
+  ) |>
+  pivot_wider(
+    id_cols = c(id, grts_rank, area, year, geom),
+    names_from = validator,
+    values_from = label
+  ) |>
+  mutate(
+    beoordeling = ifelse(sds == po, "zelfde", "verschillend")
+  ) |>
+  left_join(design_meta, by = join_by(grts_rank))
+```
+
+```{r}
+#| label: compare-polys-by-strata
+#| out-width: "100%"
+compare_polys |>
+  ggplot() +
+  geom_col(
+    aes(x = year, y = area, fill = beoordeling)
+  ) +
+  facet_wrap(vars(stratum))
+```
+
+```{r}
+#| label: compare-polys-by-cells
+#| out-width: "110%"
+compare_polys |>
+  ggplot() +
+  geom_col(
+    aes(x = year, y = area, fill = beoordeling)
+  ) +
+  facet_wrap(~ sprintf("%s (%s)", stratum, grts_rank)) +
+  theme(legend.position = "top")
+```
+
+```{r}
+#| label: compare-polys-by-ecosystems
+#| out-width: "100%"
+compare_polys |>
+  ggplot() +
+  geom_col(
+    aes(x = year, y = area, fill = beoordeling)
+  ) +
+  facet_grid(paste0("sds: ", sds) ~ paste0("po:", po), scales = "free_y") +
+  guides(
+    x = guide_axis(check.overlap = TRUE),
+    y = guide_axis(check.overlap = TRUE)
+  )
+```
+
+
+Om de vergelijking tussen de twee validators te vereenvoudigen, berekenen we de totale oppervlakte per ecosysteemcombinaties en vervolgens zetten we deze om naar een genormaliseerde confusiematrix.
+Omdat geen van beide validators te beschouwen is als referentie, moeten we hiervoor een iteratieve herweging van de oppervlaktes doen totdat zowel de rij- als de kolomtotalen sommeren tot één.
+De diagonale elementen van de matrix (zelfde label toegekend) geven dan de proportie overeenkomst tussen beide validators.
+De andere proporties geven aan tussen welke ecosysteemklassen er onderling verwarring is tussen de validators.
+
+```{r}
+#| label: tbl-compare-polys-by-ecosystem
+
+library(mipfp)
+# Prepare raw matrix
+mat_raw <- compare_polys |>
+  st_drop_geometry() |>
+  summarize(area = sum(as.numeric(area)), .by = c(sds, po)) |>
+  pivot_wider(
+    id_cols = sds, 
+    names_from = po,
+    values_from = area,
+    values_fill = 0,
+    names_sort = TRUE) |>
+  arrange(sds) |> 
+  tibble::column_to_rownames("sds") |>
+  as.matrix()
+
+# Target row and column margins (equal weight per class)
+target_margins <- list(rep(1, nrow(mat_raw)), rep(1, ncol(mat_raw)))
+
+# Run IPF
+ipf_result <- Ipfp(mat_raw, list(1, 2), target_margins)
+normalized_matrix <- ipf_result$x.hat
+df_formatted <- as.data.frame(normalized_matrix)
+
+readr::write_csv(
+  df_formatted,
+  file = here::here("data", "validationtest2_normalized_confusion_matrix.csv")
+)
+
+# Format the diagonal elements to be bold (and round digits)
+for (i in 1:nrow(df_formatted)) {
+  for (j in 1:ncol(df_formatted)) {
+    val <- round(as.numeric(df_formatted[i, j]), 3)
+    if (i == j) {
+      df_formatted[i, j] <- kableExtra::cell_spec(val, bold = TRUE)
+    } else {
+      df_formatted[i, j] <- as.character(val)
+    }
+  }
+}
+df_formatted |> 
+  kableExtra::kbl(escape = FALSE) |> 
+  kableExtra::column_spec(1, bold = TRUE) |>
+  kableExtra::kable_material(lightable_options = "striped")
+
+```
+
+```{r}
+# Convert IPFP output to a probability matrix where sum(M) == 1
+# (If IPFP outputs rows/cols summing to 1, divide by total number of classes N)
+N <- nrow(normalized_matrix)
+P <- normalized_matrix / N
+
+# Verify: sum(P) should equal 1.0
+sum(P)
+
+# Observed agreement (sum of diagonal)
+P_o <- sum(diag(P))
+
+# Expected agreement (sum of row totals * column totals)
+row_sums <- rowSums(P)
+col_sums <- colSums(P)
+P_e <- sum(row_sums * col_sums)
+
+# Cohen's Kappa
+kappa <- (P_o - P_e) / (1 - P_e)
+cat("Cohen's Kappa:", round(kappa, 4), "\n")
+
+```
+
+
+## Zij-aan-zij vergelijking per 50 m x 50 m polygoon
+
+
+```{r}
+#| label: maps
+#| out-width: "100%"
+#| fig-height: 8
+#| fig-width: 8
+
+comparison <- bind_rows(
+  compare_polys |>
+    mutate(
+      method = "polys",
+      po = po,
+      sds = sds
+    )
+) |>
+  pivot_longer(
+    cols = c(po, sds),
+    names_to = "validator",
+    values_to = "value"
+  ) |>
+  left_join(
+    catstable |> mutate(value = as.character(value)),
+    by = join_by(value)
+  ) |>
+  mutate(
+    stratum = sprintf(
+      "%s (%s)",
+      stringr::str_extract(stratum_name, "\\d+"),
+      changecat
+    )
+  ) |>
+  left_join(
+    notes |>
+      select(grts_rank, validator, opmerking) |>
+      summarise(
+        .by = c(grts_rank),
+        opmerkingen = paste0(validator, ": ", opmerking) |>
+          stringr::str_wrap() |>
+          paste(collapse = "\n")
+      ),
+    by = join_by(
+      grts_rank
+    )
+  )
+
+all.equal(
+  sort(unique(notes$grts_rank)),
+  sort(unique(compare_polys$grts_rank))
+)
+
+flea_colours <- catstable$color
+names(flea_colours) <- catstable$label
+
+plot_map <- function(x, y, z) {
+  opm <- x$opmerkingen[1]
+  x |>
+    ggplot() +
+    geom_sf(
+      aes(fill = label), # nolint: object_usage_linter.
+      colour = "white",
+      alpha = 0.8
+    ) +
+    facet_grid(
+      rows = vars(method, validator), # nolint: object_usage_linter.
+      cols = vars(year) # nolint: object_usage_linter.
+    ) +
+    scale_fill_manual(values = flea_colours) +
+    theme_void() +
+    labs(
+      title = sprintf("stratum = %s, grts_rank = %s", y, z),
+      subtitle = opm
+    )
+}
+
+comparison_nest <- comparison |>
+  nest(.by = c(grts_rank, stratum)) |>
+  mutate(
+    map = purrr::pmap(
+      .l = list(
+        x = data,
+        y = stratum,
+        z = grts_rank
+      ),
+      .f = plot_map
+    )
+  )
+
+comparison_nest$map
+```
+
+
