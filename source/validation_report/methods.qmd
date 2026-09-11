@@ -410,8 +410,56 @@ In case of polygons with equal intersecting area, a label will be selected rando
 
 ## Validation tests
 
+Before performing the actual large-scale validation, we ran two small-scale validation tests to be able to learn how the process of validation could be improved.
+
+For these tests, two validators independently validated 30 sampling units belonging to 5 ecosystem change strata (6 replicates each).
+
+```{r}
+#| label: tbl-timing
+#| tbl-cap: Average (+/- 95% bootstrapped confidence interval) of the time it takes in minutes to validate a 50 m x 50 m sampling unit.
+
+notes <- readr::read_csv(here::here("data", "notes_test2.csv"))
+mean_times <- notes |>
+  group_by(stratum_name) |>
+  reframe(mean_cl_boot(time_minutes)) |>
+  mutate(
+    time_minutes = sprintf("%.1f [%.1f - %.1f]", y, ymin, ymax)
+  )
+
+mean_times |>
+  select(stratum_name, time_minutes) |>
+  kableExtra::kable()
+
+mts <- round(mean_times$y[mean_times$stratum_name == "bc_104_changecat"], 1)
+mtns <- round(mean_times$y[mean_times$stratum_name != "bc_104_changecat"], 1) |>
+  range()
+```
+
+From these tests, we learned that the time it takes to validate a 50 m x 50 m sampling unit differs within versus between settlement (`10x` series).
+Within settlements, more small-scale variation is present which increases the time required to validate.
+@tbl-timing shows that, on average, within the `104` stratum a validation takes `r mts` minutes, whereas, outside settlements the average times range between `r mtns[1]`
+and `r mtns[2]` minutes.
+
+
+Example of a validated sampling unit:
+
+```{r}
+#| label: fig-example-validation-test2
+#| fig-cap: caption
+
+
+```
+
+
+
+
+
+
+@tbl-compare-polys-by-ecosystem
+
 ```{r}
 #| label: tbl-compare-polys-by-ecosystem
+#| tbl-cap: Normalized confusion matrix showing agreement and disagreement between both validators
 
 df_normalized <- readr::read_csv(
   file = here::here("data", "validationtest2_normalized_confusion_matrix.csv")
@@ -437,7 +485,8 @@ df_formatted |>
   kableExtra::kbl(escape = FALSE) |> 
   kableExtra::column_spec(1, bold = TRUE) |>
   kableExtra::kable_material(lightable_options = "striped")
-
 ```
 
+
+Lessons learned:
 
