@@ -8,6 +8,8 @@ format:
     code-fold: true
     code-summary: "Code"
     embed-resources: true
+params:
+  fix_trivial_mistakes: true
 ---
 
 ```{r}
@@ -199,6 +201,88 @@ notes |>
   )
 ```
 
+
+```{r}
+#| label: fix-trivial-mistakes
+
+# Removing obvious mistakes to be able to better judge real interrater
+# variability
+if (params$fix_trivial_mistakes) {
+  vp <- validation_polys
+  
+  vp$label_2016[
+    vp$grts_rank == 2145 & vp$validator == "PO" & vp$label_2016 == "other"
+  ] <- "102"
+  vp$label_2019[
+    vp$grts_rank == 2145 & vp$validator == "PO" & vp$label_2019 == "other"
+  ] <- "102"
+  vp$label_2022[
+    vp$grts_rank == 2145 & vp$validator == "PO" & vp$label_2022 == "other"
+  ] <- "102"
+  
+  
+  vp$label_2016[vp$grts_rank == 7651 & vp$validator == "PO"] <- "106"
+  vp$label_2019[vp$grts_rank == 7651 & vp$validator == "PO"] <- "106"
+  vp$label_2022[vp$grts_rank == 7651 & vp$validator == "PO"] <- "106"
+  
+  vp$label_2022[vp$grts_rank == 48867 
+                & vp$validator == "PO"
+                & vp$label_2022 == "600"] <- "106"
+  
+  vp$label_2016[vp$grts_rank == 69729
+                & vp$validator == "PO"
+                & vp$label_2016 == "other"] <- "101"
+  
+  vp$label_2016[vp$grts_rank == 180499
+                & vp$validator == "SDS"
+                & vp$label_2016 == "other"] <- "200"
+  vp$label_2019[vp$grts_rank == 180499
+                & vp$validator == "SDS"
+                & vp$label_2019 == "other"] <- "200"
+  vp$label_2022[vp$grts_rank == 180499
+                & vp$validator == "SDS"
+                & vp$label_2022 == "other"] <- "200"
+  
+  vp$label_2022[vp$grts_rank == 680547
+                & vp$validator == "PO"
+                & vp$label_2022 == "600"] <- "500"
+  
+  vp$label_2016[vp$grts_rank == 690862
+                & vp$validator == "PO"
+                & vp$label_2022 == "600"] <- "500"
+  vp$label_2019[vp$grts_rank == 690862
+                & vp$validator == "PO"
+                & vp$label_2022 == "600"] <- "500"
+  vp$label_2022[vp$grts_rank == 690862
+                & vp$validator == "PO"
+                & vp$label_2022 == "600"] <- "500"
+  
+  vp$label_2016[vp$grts_rank == 583075
+                & vp$validator == "PO"
+                & vp$label_2016 == "other"] <- "101"
+  
+  vp$label_2016[vp$grts_rank == 133907
+                & vp$validator == "PO"
+                & vp$label_2016 == "600"] <- "700"
+  vp$label_2019[vp$grts_rank == 133907
+                & vp$validator == "PO"
+                & vp$label_2019 == "600"] <- "700"
+  vp$label_2022[vp$grts_rank == 133907
+                & vp$validator == "PO"
+                & vp$label_2022 == "600"] <- "700"
+  
+  vp <- vp |> 
+    mutate(
+      newlabels = paste(label_2016, label_2019, label_2022, sep = "-")
+    )
+  
+  validation_polys <- vp
+  validation_polys_sds <- validation_polys |> filter(validator == "SDS")
+  validation_polys_po <- validation_polys |> filter(validator == "PO")
+}
+```
+
+
 ## Inschatting werklast
 
 ```{r}
@@ -337,13 +421,14 @@ compare_polys |>
 
 ```{r}
 #| label: compare-polys-by-cells
-#| out-width: "100%"
+#| out-width: "110%"
 compare_polys |>
   ggplot() +
   geom_col(
     aes(x = year, y = area, fill = beoordeling)
   ) +
-  facet_wrap(~ sprintf("%s (%s)", stratum, grts_rank))
+  facet_wrap(~ sprintf("%s (%s)", stratum, grts_rank)) +
+  theme(legend.position = "top")
 ```
 
 ```{r}
@@ -354,11 +439,89 @@ compare_polys |>
   geom_col(
     aes(x = year, y = area, fill = beoordeling)
   ) +
-  facet_grid(vars(sds), vars(po)) +
+  facet_grid(paste0("sds: ", sds) ~ paste0("po:", po), scales = "free_y") +
   guides(
     x = guide_axis(check.overlap = TRUE),
     y = guide_axis(check.overlap = TRUE)
   )
+```
+
+
+Om de vergelijking tussen de twee validatoren te vereenvoudigen, berekenen we de totale oppervlakte per ecosysteemcombinaties en vervolgens zetten we deze om naar een genormaliseerde confusiematrix.
+Omdat geen van beide validatoren te beschouwen is als referentie, moeten we hiervoor een iteratieve herweging van de oppervlaktes doen totdat zowel de rij- als de kolomtotalen sommeren tot één.
+De diagonale elementen van de matrix (zelfde label toegekend) geven dan de proportie overeenkomst tussen beide validatoren.
+De andere proporties geven aan tussen welke ecosysteemklassen er onderling verwarring is tussen de validatoren.
+
+```{r}
+#| label: tbl-compare-polys-by-ecosystem
+
+library(mipfp)
+# Prepare raw matrix
+mat_raw <- compare_polys |>
+  st_drop_geometry() |>
+  summarize(area = sum(as.numeric(area)), .by = c(sds, po)) |>
+  pivot_wider(
+    id_cols = sds, 
+    names_from = po,
+    values_from = area,
+    values_fill = 0,
+    names_sort = TRUE) |>
+  arrange(sds) |> 
+  tibble::column_to_rownames("sds") |>
+  as.matrix()
+
+# Target row and column margins (equal weight per class)
+target_margins <- list(rep(1, nrow(mat_raw)), rep(1, ncol(mat_raw)))
+
+# Run IPF
+ipf_result <- Ipfp(mat_raw, list(1, 2), target_margins)
+normalized_matrix <- ipf_result$x.hat
+df_formatted <- as.data.frame(normalized_matrix)
+
+readr::write_csv(
+  df_formatted,
+  file = here::here("data", "validationtest2_normalized_confusion_matrix.csv")
+)
+
+# Format the diagonal elements to be bold (and round digits)
+for (i in 1:nrow(df_formatted)) {
+  for (j in 1:ncol(df_formatted)) {
+    val <- round(as.numeric(df_formatted[i, j]), 3)
+    if (i == j) {
+      df_formatted[i, j] <- kableExtra::cell_spec(val, bold = TRUE)
+    } else {
+      df_formatted[i, j] <- as.character(val)
+    }
+  }
+}
+df_formatted |> 
+  kableExtra::kbl(escape = FALSE) |> 
+  kableExtra::column_spec(1, bold = TRUE) |>
+  kableExtra::kable_material(lightable_options = "striped")
+
+```
+
+```{r}
+# Convert IPFP output to a probability matrix where sum(M) == 1
+# (If IPFP outputs rows/cols summing to 1, divide by total number of classes N)
+N <- nrow(normalized_matrix)
+P <- normalized_matrix / N
+
+# Verify: sum(P) should equal 1.0
+sum(P)
+
+# Observed agreement (sum of diagonal)
+P_o <- sum(diag(P))
+
+# Expected agreement (sum of row totals * column totals)
+row_sums <- rowSums(P)
+col_sums <- colSums(P)
+P_e <- sum(row_sums * col_sums)
+
+# Cohen's Kappa
+kappa <- (P_o - P_e) / (1 - P_e)
+cat("Cohen's Kappa:", round(kappa, 4), "\n")
+
 ```
 
 
