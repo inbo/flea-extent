@@ -25,7 +25,8 @@ library(tidyr)
 library(googlesheets4)
 gs4_auth("*inbo.be")
 
-flea_data <- gsub("extent", "data", here())
+git_root <- rprojroot::find_root(rprojroot::is_git_root)
+flea_data <- gsub("extent", "data", git_root)
 
 
 conflicted::conflicts_prefer(dplyr::filter)
@@ -617,4 +618,116 @@ comparison_nest <- comparison |>
 comparison_nest$map
 ```
 
+
+```{r}
+#| eval: false
+
+example <- comparison |>
+  nest(.by = c(grts_rank, stratum)) |>
+  filter(grts_rank == 743270)
+
+bbox_all <- example$data[[1]] |>
+  st_transform(crs = 3812) |>
+  st_bbox()
+
+get_ortho <- function(bbox, year) {
+  require(terra)
+  require(httr2)
+
+  crs_wms <- "EPSG:3812"
+  res_m   <- 0.1
+  width   <- round((bbox["xmax"] - bbox["xmin"]) / res_m)
+  height  <- round((bbox["ymax"] - bbox["ymin"]) / res_m)
+
+  req <- request("https://wms.ngi.be/inspire/ortho/service") |>
+    req_url_query(
+      SERVICE = "WMS", VERSION = "1.3.0", REQUEST = "GetMap",
+      LAYERS  = paste0("orthoimage_coverage_", year),
+      STYLES  = "", CRS = crs_wms,
+      BBOX    = paste(bbox[c("xmin","ymin","xmax","ymax")], collapse = ","),
+      WIDTH = width, HEIGHT = height,
+      FORMAT = "image/png"
+    )
+
+  tmp <- tempfile(fileext = ".png")
+  req_perform(req, path = tmp)
+
+  r <- rast(tmp) |> suppressWarnings()
+  ext(r) <- c(bbox["xmin"], bbox["xmax"], bbox["ymin"], bbox["ymax"])
+  crs(r) <- crs_wms
+  # VERY TRICKY
+  # de raster werd om één of andere reden omgekeerd ingelezen :
+  r <- flip(r)
+  r
+}
+
+r2016 <- get_ortho(bbox_all, 2016)
+r2019 <- get_ortho(bbox_all, 2019) 
+r2022 <- get_ortho(bbox_all, 2022)
+
+cp <- example$data[[1]] |> st_transform(crs = 3812)
+
+# shared coord_sf window helper
+fix_extent <- coord_sf(
+  xlim = bbox_all[c("xmin", "xmax")],
+  ylim = bbox_all[c("ymin", "ymax")],
+  expand = FALSE
+)
+
+pcp <- cp |>
+  group_by(method, validator, year, label) |>
+  summarise() |>
+  nest() |>
+  mutate(
+    plot = map(
+      .x = data,
+      .f = function(x) {
+        ggplot(data = x) +
+          geom_sf(aes(fill = label), colour = "white", alpha = 0.8) +
+          scale_fill_manual(values = flea_colours) +
+          fix_extent +
+          theme_void()
+      }
+    )
+  )
+
+pr2016 <- ggplot() +
+  tidyterra::geom_spatraster_rgb(data = r2016) +
+  fix_extent +
+  theme_void()
+pr2019 <- ggplot() +
+  tidyterra::geom_spatraster_rgb(data = r2019) +
+  fix_extent +
+  theme_void()
+pr2022 <- ggplot() +
+  tidyterra::geom_spatraster_rgb(data = r2022) +
+  fix_extent +
+  theme_void()
+
+design <- "ABC
+ DEF
+ GHI"
+
+plot_validation_example <- wrap_plots(
+  A = pcp$plot[[1]], B = pcp$plot[[2]], C = pcp$plot[[3]],
+  D = pcp$plot[[4]], E = pcp$plot[[5]], F = pcp$plot[[6]],
+  G = pr2016, H = pr2019, I = pr2022,
+  design = design,
+  guides = "collect",
+  axes = "collect"
+) +
+  plot_annotation(
+    title =  sprintf(
+      "stratum = %s, grts_rank = %s",
+      example$stratum, example$grts_rank
+    )
+  )
+
+ggsave(
+  filename = file.path(git_root, "media", "plot_validation_example.png"),
+  plot = plot_validation_example,
+  dpi = 300,
+  height = 15, width = 18, units = "cm"
+)
+```
 
