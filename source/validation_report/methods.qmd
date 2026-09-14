@@ -417,21 +417,24 @@ For these tests, two validators independently validated 30 sampling units belong
 ```{r}
 #| label: tbl-timing
 #| tbl-cap: Average (+/- 95% bootstrapped confidence interval) of the time it takes in minutes to validate a 50 m x 50 m sampling unit.
-
-notes <- readr::read_csv(here::here("data", "notes_test2.csv"))
+git_root <- rprojroot::find_root(rprojroot::is_git_root)
+notes <- readr::read_csv(
+  file.path(git_root, "data", "notes_test2.csv"),
+  show_col_types = FALSE
+)
 mean_times <- notes |>
-  group_by(stratum_name) |>
+  group_by(stratum) |>
   reframe(mean_cl_boot(time_minutes)) |>
   mutate(
     time_minutes = sprintf("%.1f [%.1f - %.1f]", y, ymin, ymax)
   )
 
 mean_times |>
-  select(stratum_name, time_minutes) |>
+  select(stratum, time_minutes) |>
   kableExtra::kable()
 
-mts <- round(mean_times$y[mean_times$stratum_name == "bc_104_changecat"], 1)
-mtns <- round(mean_times$y[mean_times$stratum_name != "bc_104_changecat"], 1) |>
+mts <- round(mean_times$y[mean_times$stratum == "104 (loss)"], 1)
+mtns <- round(mean_times$y[mean_times$stratum != "104 (loss)"], 1) |>
   range()
 ```
 
@@ -440,29 +443,59 @@ Within settlements, more small-scale variation is present which increases the ti
 @tbl-timing shows that, on average, within the `104` stratum a validation takes `r mts` minutes, whereas, outside settlements the average times range between `r mtns[1]`
 and `r mtns[2]` minutes.
 
+An example of a validated sampling unit where the validators disagreed is given in @fig-example-validation-test2.
+In this example, we see a mixture of heathland and woodland.
+The heathland seems to become more woody over time, but for one validator this was not interpreted as a change from heathland to woodland.
+The correct interpretation depends on two things that are not easily determined from an orthophoto which explains why the validators might have been in disagreement: (1) trees must be taller than 3 m, and (ii) the heathland must have more than 50% tree cover to consider it as converted to woodland.
 
-Example of a validated sampling unit:
 
 ```{r}
 #| label: fig-example-validation-test2
-#| fig-cap: caption
+#| fig-cap: Example of a double validated 50 m x 50 m sampling unit.
+#|  Columns are years 2016, 2019 and 2022 respectively.
+#|  The first row displays the validation as done by the first validator.
+#|  The second row displays the same for the second validator.
+#|  The third row shows the corresponding orthophotos.
 
+knitr::include_graphics(
+  file.path(git_root, "media", "plot_validation_example.png")
+)
 
 ```
 
 
 
+Overall, however, agreement between validators was high (@tbl-compare-polys-by-ecosystem).
+The table shows agreement and disagreement after normalizing the raw data (square meter of areas) so that all rows and all columns sum to one (double normalisation because neither validator is considered as a gold standard or reference).
+Cohen's Kappa ($\kappa = 0.88$) indicated strong agreement (standard benchmark threshold is $\kappa > 0.80$).
+This means that the validators agree $88\%$ of the time.
+Across all 13 land cover types, 11 have an agreement $> 80\%$ out of which 8 have an agreement $> 90\%$ (values on the diagonal in the table).
+Lowest agreement was found for classes 104 (low green; $F_1 = 0.702$), 103 (high green; $F_1 = 0.753$), and 300 (grassland$F_1 = 0.800$).
+
+Class 104 (low green) was often confused with 102 or 103 ($24\%$).
+Shade on orthophotos can hinder interpretation of low green.
+
+Class 200 to 300 and vice versa was $15\%$ and $12\%$ indicating a strong, symmetrical blur between these two land cover definitions.
+The blur is mainly due to grassland being considered grassland only when there has been five years uninterrupted grassland cover.
+If a grassland is ploughed and reseeded, it is considered temporary grassland and should be assigned to the cropland category.
+Therefore, validators need to rely for this case on additional information beyond what can be seen on a single orthophoto.
+
+We also observe up to 5% leakage between the settlement classes (series `10x`) and the other classes.
+Within a settlement contour, a validator should only use the `10x` series for validation.
+However, the settlement contour itself can be incomplete.
+This can happen due to mismatches and time lags between the administrative layers that collect parcel level land use information and the actual situation on the ground.
 
 
-
-@tbl-compare-polys-by-ecosystem
 
 ```{r}
 #| label: tbl-compare-polys-by-ecosystem
 #| tbl-cap: Normalized confusion matrix showing agreement and disagreement between both validators
 
 df_normalized <- readr::read_csv(
-  file = here::here("data", "validationtest2_normalized_confusion_matrix.csv")
+  file = file.path(
+    git_root, "data", "validationtest2_normalized_confusion_matrix.csv"
+  ),
+  show_col_types = FALSE
 )
 
 df_formatted <- as.data.frame(df_normalized)
@@ -486,7 +519,4 @@ df_formatted |>
   kableExtra::column_spec(1, bold = TRUE) |>
   kableExtra::kable_material(lightable_options = "striped")
 ```
-
-
-Lessons learned:
 
