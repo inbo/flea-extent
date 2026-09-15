@@ -241,7 +241,7 @@ The following conclusions can be drawn regarding the ecosystem map:
     b.  $PA < UA$ results in a negative bias (underestimation) and smaller variance.
 3.  If $PA$ and $UA$ can be estimated, we have a way to correct for bias. Bias-corrected estimates can be calculated as follows:
 
-$$P(\text{reference}=A) = \frac{UA}{$PA$}P(\text{map} = A)$$
+$$P(\text{reference}=A) = \frac{UA}{PA}P(\text{map} = A)$$
 
 4.  Even if $PA$ and $UA$ are much smaller than 1, unbiased estimates can still be obtained; however, the generated ecosystem maps will display very large spatial errors regarding ecosystem locations and will thus be unsuitable for local interpretation.
 
