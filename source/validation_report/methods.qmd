@@ -132,14 +132,14 @@ We list the 12 ecosystem level 1 classes below together with the level 2 subdivi
 
 >Area that is used as residential area, for commercial or industrial activities, services, recreation or transport. It includes not only buildings and sealed soil, but also the parts of parcels linked to those buildings which are covered with natural vegetation (e.g. lawns, trees) or standing waters (e.g. ponds in gardens an urban parks). This ecosystem equals what is considered to be ‘land take’, with the exception of running waters (rivers, streams, canals or ditches). Ecologically valuable natural vegetation heathland, inland wetland or dune grasslands occurring on settlements (e.g. recreation area and campings) is also classified under settlements.
 
-Subdivided into its level 2 components:
-
--   1.1 Buildings
--   1.2 Unbuilt sealed soil
--   1.3 High green
--   1.4 Low green
--   1.5 Standing water
--   1.6 Unspecified land cover
+    Subdivided into its level 2 components:
+    
+    -   1.1 Buildings
+    -   1.2 Unbuilt sealed soil
+    -   1.3 High green
+    -   1.4 Low green
+    -   1.5 Standing water
+    -   1.6 Unspecified land cover
 
 2. Cropland
 
@@ -227,10 +227,10 @@ For each selected raster cell (10 m $\times$ 10 m) (GRTS sample selection proced
 - **Secondary Sampling Units (SSU):** All 10 m $\times$ 10 m raster cells within the PSU.
 
 In practice, the entire PSU block is digitized.
-Digitization consists of subdividing the 50 m $\times$ 50 m polygon (PSU) into smaller polygons, with a primary and an (optional) alternative label assigned to each polygon).
-Each subdivision is determined by desktop interpretation of orthophotos corresponding to the years for which FLEA maps are available (2016 - 2019 - 2021).
+Digitization consists of subdividing the 50 m $\times$ 50 m polygon (PSU) into smaller polygons, with a primary and an (optional) alternative label assigned to each polygon.
+Each subdivision is determined by desktop interpretation of orthophotos corresponding to the years for which FLEA maps are available (2016 - 2019 - 2022).
 Every change of ecosystem type within a given year is a subdivision and every change of ecosystem type between years is a subdivision (see @fig-example-polygon).
-The resulting attribute table for each subdivision polygon needs to be filled in with validation ecosystem labels for 2016, 2019 and 2021.
+The resulting attribute table for each subdivision polygon needs to be filled in with validation ecosystem labels for 2016, 2019 and 2022.
 
 To speed up the validation work, the 50 m $\times$ 50 m polygons are subdivided and pre-labelled programmatically based on source layers for ecosystem types that can be easily recognized, such as buildings.
 The programmatic pre-labelling must be validated as well.
@@ -242,6 +242,8 @@ This approach gives us a lot of freedom in the analysis stage (see @sec-analysis
 #| fig-cap: Example of a 50 m x 50 m validation polygon and how it will be
 #|  subdivided based on changes in ecosystem types between and within years.
 #| out.width: "100%"
+#| fig.width: 8
+#| fig.height: 8
 
 psu_matrix <- matrix(
   c(0, 0, 50, 0, 50, 50, 0, 50, 0, 0), ncol = 2, byrow = TRUE
@@ -274,7 +276,7 @@ eco_2019 <- st_sf(
   geometry = st_sfc(p19_1, p19_2)
 )
 
-# ecosystem data for 2021
+# ecosystem data for 2022
 # Scenario: A 15x15m building is constructed in the bottom-left corner.
 # The rest of the PSU is mapped as Forest.
 p21_bldg <- st_polygon(
@@ -283,16 +285,16 @@ p21_bldg <- st_polygon(
 ) %>%
   st_sfc()
 p21_rest <- st_difference(eco_2019$geometry, p21_bldg) # The rest of the PSU
-eco_2021 <- st_sf(
+eco_2022 <- st_sf(
   ecosystem = c("Built-up", "Forest", "Agriculture") |>
     factor(levels = c("Built-up", "Forest", "Agriculture", "Grassland")),
-  jaar = 2021,
+  jaar = 2022,
   geometry = c(p21_bldg, p21_rest)
 )
 
 # Calculate the intersections (The programmatic subdivision)
 inter_16_19 <- st_intersection(eco_2016, eco_2019) |> suppressWarnings()
-final_subdivisions <- st_intersection(inter_16_19, eco_2021) |>
+final_subdivisions <- st_intersection(inter_16_19, eco_2022) |>
   suppressWarnings() |>
   st_collection_extract("POLYGON")
 final_subdivisions$poly_id <- seq_len(nrow(final_subdivisions))
@@ -353,15 +355,15 @@ plot_2019 <- ggplot() +
   theme_void() +
   ggtitle("2019 ecosystems")
 
-plot_2021 <- ggplot() +
-  geom_sf(data = eco_2021,
+plot_2022 <- ggplot() +
+  geom_sf(data = eco_2022,
           aes(fill = ecosystem),
           alpha = 0.7,
           show.legend = TRUE) +
   geom_sf(data = rast10, fill = NA, linetype = "dotted") +
   shared_scale +
   theme_void() +
-  ggtitle("2021 ecosystems")
+  ggtitle("2022 ecosystems")
 
 plot_final <- ggplot(final_subdivisions) +
   geom_sf(fill = "gray90", color = "black", linewidth = 0.8) +
@@ -371,7 +373,7 @@ plot_final <- ggplot(final_subdivisions) +
   ggtitle("Final subdivisions", subtitle = "Intersection of all years")
 
 # Combine into a 2x2 grid
-plot_2016 + plot_2019 + plot_2021 + plot_final +
+plot_2016 + plot_2019 + plot_2022 + plot_final +
   plot_layout(ncol = 2, guides = "collect")
 ```
 
@@ -470,7 +472,7 @@ The table shows agreement and disagreement after normalizing the raw data (squar
 Cohen's Kappa ($\kappa = 0.88$) indicated strong agreement (standard benchmark threshold is $\kappa > 0.80$).
 This means that the validators agree $88\%$ of the time.
 Across all 13 land cover types, 11 have an agreement $> 80\%$ out of which 8 have an agreement $> 90\%$ (values on the diagonal in the table).
-Lowest agreement was found for classes 104 (low green; $F_1 = 0.702$), 103 (high green; $F_1 = 0.753$), and 300 (grassland$F_1 = 0.800$).
+Lowest agreement was found for classes 104 (low green; $70\%$), 103 (high green; $75\%$), and 300 (grassland; $80\%$).
 
 Class 104 (low green) was often confused with 102 or 103 ($24\%$).
 Shade on orthophotos can hinder interpretation of low green.
