@@ -1,15 +1,10 @@
 {
-  "version": "0.0.0",
-  "license": "cc-by-4.0",
   "access_right": "open",
-  "language": "eng",
-  "title": "Flanders Ecosystem Accounting",
-  "description": "<p>This repository holds source code for accuracy assessment and validation of land use maps which are used to derive indicators for ecosystem extent accounts for Flanders.<\/p>",
-  "keywords": [
-    "natural capital accounting",
-    "ecosystem extent"
+  "communities": [
+    {
+      "identifier": "inbo"
+    }
   ],
-  "upload_type": "software",
   "contributors": [
     {
       "name": "Van Calster, Hans",
@@ -39,10 +34,15 @@
       "orcid": "0000-0002-9117-3198"
     }
   ],
-  "communities": [
-    {
-      "identifier": "inbo"
-    }
+  "description": "<p>This repository holds source code for accuracy assessment and validation of land use maps which are used to derive indicators for ecosystem extent accounts for Flanders.<\/p>",
+  "keywords": [
+    "natural capital accounting",
+    "ecosystem extent"
   ],
-  "publisher": "Research Institute for Nature and Forest (INBO)"
+  "language": "eng",
+  "license": "cc-by-4.0",
+  "publisher": "Research Institute for Nature and Forest (INBO)",
+  "title": "Flanders Ecosystem Accounting",
+  "upload_type": "software",
+  "version": "0.0.0"
 }
